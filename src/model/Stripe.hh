@@ -2,24 +2,24 @@
 #define __STRIPE_HH__
 
 #include "../include/include.hh"
+#include "ConvertibleCode.hh"
+#include "ClusterSettings.hh"
 
 class Stripe
 {
 private:
-    int _k; // eck
-    int _m; // ecm
-    int _n; // ecn = eck + ecm
-
-    int _M; // num of nodes
-
+    ConvertibleCode _code;
+    ClusterSettings _settings;
     vector<int> _stripe_indices; // stripe length: n
-
+    int _id;
 
 public:
 
-    Stripe(int k, int m, int M, vector<int> stripe_indices);
+    Stripe(ConvertibleCode code, ClusterSettings settings, int id, vector<int> stripe_indices);
     ~Stripe();
 
+    vector<int> &getStripeIndices();
+    int getId();
     void print();
 };
 

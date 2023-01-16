@@ -8,19 +8,19 @@ class StripeBatch
 {
 private:
 
-    int _k_old;
-    int _m_old;
-    int _n_old;
-
-    int _k_new;
-    int _m_new;
-    int _n_new;
-
+    ConvertibleCode _code;
+    ClusterSettings _settings;
     vector<StripeGroup> _stripe_groups;
-    /* data */
+    int _id;
+
 public:
-    StripeBatch(int k_old, int m_old, int k_new, int m_new, vector<StripeGroup> stripe_groups);
+    StripeBatch(ConvertibleCode code, ClusterSettings settings, int id, vector<StripeGroup> stripe_groups);
     ~StripeBatch();
+
+    ConvertibleCode &getCode();
+    ClusterSettings &getClusterSettings();
+    vector<StripeGroup> &getStripeGroups();
+    int getId();
 };
 
 

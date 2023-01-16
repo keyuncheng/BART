@@ -6,10 +6,13 @@
 class RecvBipartite : public Bipartite
 {
 private:
-    /* data */
+
 public:
-    RecvBipartite(StripeBatch *stp_bth);
+    RecvBipartite();
     ~RecvBipartite();
+
+    bool addStripeBatch(StripeBatch &stripe_batch);
+    bool addStripeGroup(StripeGroup &stripe_group);
 };
 
 

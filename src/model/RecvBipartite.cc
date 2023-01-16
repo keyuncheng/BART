@@ -1,16 +1,23 @@
 #include "RecvBipartite.hh"
 
-RecvBipartite::RecvBipartite(StripeBatch *stp_bth)
+RecvBipartite::RecvBipartite()
 {
-    stripe_batch = stp_bth;
-
-    // add left vertices
-
-    // add right vertices
-
-    // add edges
 }
 
 RecvBipartite::~RecvBipartite()
 {
+}
+
+bool RecvBipartite::addStripeBatch(StripeBatch &stripe_batch) {
+    for (auto stripe_group : stripe_batch.getStripeGroups()) {
+        addStripeGroup(stripe_group);
+    }
+
+    return true;
+}
+
+bool RecvBipartite::addStripeGroup(StripeGroup &stripe_group) {
+    // construct for a single stripe group
+
+    return false;
 }

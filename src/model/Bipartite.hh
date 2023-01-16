@@ -15,13 +15,14 @@ class Bipartite
 private:
     
 public:
-    StripeBatch *stripe_batch;
     vector<int> left_vertices;
     vector<int> right_vertices;
     vector<BEdge> edges;
 
     Bipartite();
     ~Bipartite();
+
+    void clear();
 };
 
 

@@ -2,6 +2,7 @@
 #define __TRANS_APPROACH_HH__
 
 #include "StripeGroup.hh"
+#include "TransitionTask.hh"
 
 enum TRANS_APCH {
     REENCODING,
@@ -12,13 +13,13 @@ enum TRANS_APCH {
 class TransApproach
 {
 private:
-    StripeGroup *_stripe_group;
-    TRANS_APCH _approach; // approach id
-
     
 public:
     TransApproach(/* args */);
     ~TransApproach();
+
+    static vector<TransitionTask> getParityMergingTasks(StripeGroup *stripe_group);
+
 };
 
 
