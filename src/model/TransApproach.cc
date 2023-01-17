@@ -12,8 +12,8 @@ vector<TransitionTask> getParityMergingTasks(StripeGroup *stripe_group) {
 
     vector<TransitionTask> transition_tasks;
 
-    ConvertibleCode code = stripe_group->getCode();
-    ClusterSettings cluster_settings = stripe_group->getClusterSettings();
+    ConvertibleCode &code = stripe_group->getCode();
+    ClusterSettings &cluster_settings = stripe_group->getClusterSettings();
     int num_nodes = cluster_settings.M;
 
     // check parameters

@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     printf("stripes:\n");
 
-    for (size_t i = 0; i < stripes.size(); i++) {
+    for (auto i = 0; i < stripes.size(); i++) {
         stripes[i].print();
     }
 }

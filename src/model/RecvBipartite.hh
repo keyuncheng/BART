@@ -13,6 +13,9 @@ public:
 
     bool addStripeBatch(StripeBatch &stripe_batch);
     bool addStripeGroup(StripeGroup &stripe_group);
+
+private:
+    bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
 };
 
 
