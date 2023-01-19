@@ -9,16 +9,18 @@ StripeGenerator::~StripeGenerator()
 }
 
 vector<Stripe> StripeGenerator::GenerateStripes(ConvertibleCode code, ClusterSettings settings) {
+    int num_stripes = settings.N;
+    int num_nodes = settings.M;
     // random number generator
-    const int range_from  = 0;
-    const int range_to    = settings.M - 1;
+    const int range_from = 0;
+    const int range_to = num_nodes - 1;
     std::random_device rand_dev;
     std::mt19937 generator(rand_dev());
     std::uniform_int_distribution<int> distr(range_from, range_to);
 
     vector<Stripe> stripes;
 
-    for (int i = 0; i < settings.N; i++) {
+    for (int stripe_id = 0; stripe_id < num_stripes; stripe_id++) {
         vector<int> stripe_indices;
         
         // generate indices of stripe
@@ -31,7 +33,7 @@ vector<Stripe> StripeGenerator::GenerateStripes(ConvertibleCode code, ClusterSet
             }
         }
 
-        Stripe stripe(code, settings, i, stripe_indices);
+        Stripe stripe(code, settings, stripe_id, stripe_indices);
         stripes.push_back(stripe);
     }
 

@@ -1,11 +1,10 @@
 #include "StripeBatch.hh"
 
-StripeBatch::StripeBatch(ConvertibleCode code, ClusterSettings settings, int id, vector<StripeGroup> stripe_groups)
+StripeBatch::StripeBatch(ConvertibleCode code, ClusterSettings settings, int id)
 {
     _code = code;
     _settings = settings;
     _id = id;
-    _stripe_groups = stripe_groups;
 }
 
 StripeBatch::~StripeBatch()
@@ -26,4 +25,11 @@ vector<StripeGroup> &StripeBatch::getStripeGroups() {
 
 int StripeBatch::getId() {
     return _id;
+}
+
+void StripeBatch::print() {
+    printf("StripeBatch %d:\n", _id);
+    for (auto &stripe_group : _stripe_groups) {
+        stripe_group.print();
+    }
 }

@@ -4,6 +4,7 @@ Stripe::Stripe(ConvertibleCode code, ClusterSettings settings, int id, vector<in
 {
     _code = code;
     _settings = settings;
+    _id = id;
     _stripe_indices = stripe_indices;
 }
 

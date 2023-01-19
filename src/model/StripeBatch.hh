@@ -14,13 +14,15 @@ private:
     int _id;
 
 public:
-    StripeBatch(ConvertibleCode code, ClusterSettings settings, int id, vector<StripeGroup> stripe_groups);
+    StripeBatch(ConvertibleCode code, ClusterSettings settings, int id);
     ~StripeBatch();
 
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
     vector<StripeGroup> &getStripeGroups();
     int getId();
+
+    void print();
 };
 
 

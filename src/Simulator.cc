@@ -2,11 +2,15 @@
 #include "model/ConvertibleCode.hh"
 #include "model/ClusterSettings.hh"
 #include "util/StripeGenerator.hh"
+#include "model/StripeBatch.hh"
+#include "model/StripeGroup.hh"
+#include "model/RecvBipartite.hh"
+#include "util/Utils.hh"
 
 int main(int argc, char *argv[]) {
 
     if (argc != 7) {
-        printf("usage: ./Simulator k_i m_i k_f i_f N M");
+        printf("usage: ./Simulator k_i m_i k_f m_f N M");
         return -1;
     }
 
@@ -19,23 +23,17 @@ int main(int argc, char *argv[]) {
 
     StripeGenerator stripe_generator;
 
-    ConvertibleCode code;
+    // initialize code
+    ConvertibleCode code(k_i, m_i, k_f, m_f);
     ClusterSettings settings;
-
-    // code parameters
-    code.k_i = k_i;
-    code.m_i = m_i;
-    code.n_i = k_i + m_i;
-
-    code.k_f = k_f;
-    code.m_f = m_f;
-    code.n_f = k_f + m_f;
-
-    code.alpha = k_f / k_i;
-    code.beta = k_f - code.alpha * k_i;
-
     settings.N = N;
     settings.M = M;
+
+    // check the number of stripes are valid
+    if (Utils::isParamValid(code, settings) == false) {
+        printf("invalid parameters\n");
+        return -1;
+    }
 
     vector<Stripe> stripes = stripe_generator.GenerateStripes(code, settings);
 
@@ -44,4 +42,36 @@ int main(int argc, char *argv[]) {
     for (auto i = 0; i < stripes.size(); i++) {
         stripes[i].print();
     }
+
+    // put all the stripes into a batch
+    vector<Stripe> stripe_group_list;
+    vector<StripeGroup> stripe_batch_list;
+
+    // divide stripes sequentially into stripe groups
+    for (size_t stripe_id = 0, stripe_group_id = 0; stripe_id < stripes.size(); stripe_id++) {
+        Stripe &stripe = stripes[stripe_id];
+        // add the stripe into stripe group
+        stripe_group_list.push_back(stripe);
+
+        if (stripe_group_list.size() == (size_t) code.lambda_i) {
+            StripeGroup stripe_group(code, settings, stripe_group_id, stripe_group_list);
+            stripe_batch_list.push_back(stripe_group);
+            stripe_group_id++;
+            stripe_group_list.clear();
+        }
+
+    }    
+
+    StripeBatch stripe_batch(code, settings, 0);
+    stripe_batch.getStripeGroups() = stripe_batch_list;
+
+    stripe_batch.print();
+
+    // construct recv bipartite graph
+    RecvBipartite recv_bipartite;
+    recv_bipartite.addStripeBatch(stripe_batch);
+
+    recv_bipartite.print();
+
+    return 0;
 }

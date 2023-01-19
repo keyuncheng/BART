@@ -2,6 +2,7 @@
 #define __RECV_BIPARTITE_HH__
 
 #include "Bipartite.hh"
+#include "../util/Utils.hh"
 
 class RecvBipartite : public Bipartite
 {
@@ -13,6 +14,8 @@ public:
 
     bool addStripeBatch(StripeBatch &stripe_batch);
     bool addStripeGroup(StripeGroup &stripe_group);
+
+    void print();
 
 private:
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);

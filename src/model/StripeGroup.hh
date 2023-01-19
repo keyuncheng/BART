@@ -23,6 +23,8 @@ public:
     ClusterSettings &getClusterSettings();
     vector<Stripe> &getStripes();
     int getId();
+
+    void print();
 };
 
 

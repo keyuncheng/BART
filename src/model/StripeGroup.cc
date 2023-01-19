@@ -27,3 +27,10 @@ vector<Stripe> &StripeGroup::getStripes() {
 int StripeGroup::getId() {
     return _id;
 }
+
+void StripeGroup::print() {
+    printf("Stripe group %d:\n", _id);
+    for (auto &stripe : _stripes) {
+        stripe.print();
+    }
+}
