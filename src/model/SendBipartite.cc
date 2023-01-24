@@ -20,17 +20,34 @@ bool SendBipartite::addStripeBatchFromRecvGraph(StripeBatch &stripe_batch,  Recv
 
 bool SendBipartite::addStripeGroupFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
     ConvertibleCode &code = stripe_group.getCode();
-    
-    bool ret_val = true;
 
     // if k' = alpha * k
     if (code.k_f == code.k_i * code.alpha) {
-        ret_val = addStripeGroupWithParityMergingFromRecvGraph(stripe_group, recv_bipartite);
+        // add parity merging to bipartite graph
+        if (ENABLE_PARITY_MERGING == true) {
+            if (addStripeGroupWithParityMergingFromRecvGraph(stripe_group, recv_bipartite) == false) {
+                return false;
+            }
+        }
+
+        // add re-encoding to bipartite graph
+        if (ENABLE_RE_ENCODING == true) {
+            if (addStripeGroupWithReEncodingFromRecvGraph(stripe_group, recv_bipartite) == false) {
+                return false;
+            } 
+        }
+
+        // add partial parity merging to bipartite graph
+        if (ENABLE_PARTIAL_PARITY_MERGING == true) {
+            if (addStripeGroupWithPartialParityMergingFromRecvGraph(stripe_group, recv_bipartite) == false) {
+                return false;
+            }
+        }
     } else {
-        ret_val = false;
+        return false;
     }
 
-    return ret_val;
+    return true;
 }
 
 bool SendBipartite::addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {

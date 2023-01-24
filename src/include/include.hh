@@ -14,4 +14,10 @@
 
 using namespace std;
 
+
+#define ENABLE_PARITY_MERGING true
+#define ENABLE_RE_ENCODING true
+#define ENABLE_PARTIAL_PARITY_MERGING true
+
+
 #endif // __INCLUDE_HH__

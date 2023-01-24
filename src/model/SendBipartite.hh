@@ -21,6 +21,8 @@ public:
 
 private:
     bool addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);
+    bool addStripeGroupWithReEncodingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);
+    bool addStripeGroupWithPartialParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);
 
 };
 

@@ -19,6 +19,8 @@ public:
 
 private:
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
+    bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
+    bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);
 };
 
 

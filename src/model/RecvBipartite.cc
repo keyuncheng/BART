@@ -22,17 +22,34 @@ bool RecvBipartite::addStripeBatch(StripeBatch &stripe_batch) {
 bool RecvBipartite::addStripeGroup(StripeGroup &stripe_group) {
     // construct for a single stripe group
     ConvertibleCode &code = stripe_group.getCode();
-    
-    bool ret_val = true;
 
     // if k' = alpha * k
     if (code.k_f == code.k_i * code.alpha) {
-        ret_val = addStripeGroupWithParityMerging(stripe_group);
+        // add parity merging to bipartite graph
+        if (ENABLE_PARITY_MERGING == true) {
+            if (addStripeGroupWithParityMerging(stripe_group) == false) {
+                return false;
+            }
+        }
+
+        // add re-encoding to bipartite graph
+        if (ENABLE_RE_ENCODING == true) {
+            if (addStripeGroupWithReEncoding(stripe_group) == false) {
+                return false;
+            } 
+        }
+
+        // add partial parity merging to bipartite graph
+        if (ENABLE_PARTIAL_PARITY_MERGING == true) {
+            if (addStripeGroupWithPartialParityMerging(stripe_group) == false) {
+                return false;
+            }
+        }
     } else {
-        ret_val = false;
+        return false;
     }
 
-    return ret_val;
+    return true;
 }
 
 bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
@@ -207,6 +224,16 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
 
     return true;
 }
+
+
+bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
+    return true;
+}
+
+bool RecvBipartite::addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group) {
+    return true;
+}
+
 
 void RecvBipartite::print() {
     printf("recv bipartite graph:\n");
