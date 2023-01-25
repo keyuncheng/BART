@@ -25,6 +25,10 @@ bool RecvBipartite::addStripeGroup(StripeGroup &stripe_group) {
 
     // if k' = alpha * k
     if (code.k_f == code.k_i * code.alpha) {
+        // add data blocks to bipartite graph
+        if (addStripeGroupWithData(stripe_group) == false) {
+            return false;
+        }
         // add parity merging to bipartite graph
         if (ENABLE_PARITY_MERGING == true) {
             if (addStripeGroupWithParityMerging(stripe_group) == false) {
@@ -52,7 +56,7 @@ bool RecvBipartite::addStripeGroup(StripeGroup &stripe_group) {
     return true;
 }
 
-bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
+bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     ConvertibleCode &code = stripe_group.getCode();
 
     // if k' = alpha * k
@@ -222,6 +226,10 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
         left_vertices_map[bvtx.id] = bvtx;
     }
 
+    return true;
+}
+
+bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     return true;
 }
 

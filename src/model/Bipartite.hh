@@ -13,6 +13,7 @@ typedef struct BlockVtx {
     int block_id;
     int in_degree;
     int out_degree;
+    int costs;
 } BlockVtx;
 
 typedef struct NodeVtx {
@@ -20,13 +21,15 @@ typedef struct NodeVtx {
     int node_id;
     int in_degree;
     int out_degree;
+    int costs;
 } NodeVtx;
 
 typedef struct BEdge {
     int id;
     BlockVtx *lvtx; // left vertex
     NodeVtx *rvtx; // right vertex
-    int weight; // weight of the edge
+    int weight; // weight of the edge (in current implementation, weight is fixed to 1)
+    int cost; // cost of the edge
 } Edge;
 
 class Bipartite

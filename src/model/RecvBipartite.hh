@@ -18,6 +18,7 @@ public:
     void print();
 
 private:
+    bool addStripeGroupWithData(StripeGroup &stripe_group);
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
     bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
     bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);

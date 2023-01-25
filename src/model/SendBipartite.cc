@@ -23,6 +23,10 @@ bool SendBipartite::addStripeGroupFromRecvGraph(StripeGroup &stripe_group, RecvB
 
     // if k' = alpha * k
     if (code.k_f == code.k_i * code.alpha) {
+        // add data blocks to bipartite graph
+        if (addStripeGroupWithDataFromRecvGraph(stripe_group, recv_bipartite) == false) {
+            return false;
+        }
         // add parity merging to bipartite graph
         if (ENABLE_PARITY_MERGING == true) {
             if (addStripeGroupWithParityMergingFromRecvGraph(stripe_group, recv_bipartite) == false) {
@@ -50,8 +54,8 @@ bool SendBipartite::addStripeGroupFromRecvGraph(StripeGroup &stripe_group, RecvB
     return true;
 }
 
-bool SendBipartite::addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
-    ConvertibleCode &code = stripe_group.getCode();
+bool SendBipartite::addStripeGroupWithDataFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
+        ConvertibleCode &code = stripe_group.getCode();
 
     // if k' = alpha * k
     if (code.k_f != code.k_i * code.alpha || code.m_f > code.m_i) {
@@ -177,6 +181,17 @@ bool SendBipartite::addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &st
     return true;
 }
 
+bool SendBipartite::addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
+    return true;
+}
+
+bool SendBipartite::addStripeGroupWithReEncodingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
+    return true;
+}
+
+bool SendBipartite::addStripeGroupWithPartialParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite) {
+    return true;
+}
 
 void SendBipartite::print() {
     printf("recv bipartite graph:\n");
