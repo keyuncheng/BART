@@ -81,7 +81,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     }
 
     printf("data block distribution:\n");
-    Utils::print_int_vector(num_data_stored);    
+    Utils::print_int_vector(num_data_stored);
 
     // candidate nodes for data relocation
     vector<int> data_relocation_candidates;
@@ -92,13 +92,12 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     }
 
     printf("data relocation candidates:\n");
-    Utils::print_int_vector(data_relocation_candidates);  
+    Utils::print_int_vector(data_relocation_candidates);
 
     // data relocation
     for (int node_id = 0; node_id < num_nodes; node_id++) {
         if (num_data_stored[node_id] > 1) {
             bool block_overlapped = false;
-            // start to search from the 2nd stripe in group
             for (int stripe_id = 0; stripe_id < code.alpha; stripe_id++) {
                 vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
                 for (int block_id = 0; block_id < code.k_i; block_id++) {
@@ -113,29 +112,49 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                         break;
                     }
 
-                    // add block as left vertex
-                    BlockVtx bvtx = {
-                        .id = -1,
-                        .block_id = block_id,
-                        .in_degree = 0,
-                        .out_degree = 1,
-                        .stripe_batch_id = -1,
-                        .stripe_group_id = stripe_group.getId(),
-                        .stripe_id = stripe_id,
-                        .stripe_id_global = stripes[stripe_id].getId()
-                    };
-                    bvtx.id = left_vertices_map.size();
-                    left_vertices_map[bvtx.id] = bvtx;
+                    // 1. get BlockVtx
+                    int bvtx_id = -1;
+                    for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
+                        BlockVtx &bvtx = it->second;
+                        if (
+                            bvtx.stripe_group_id == stripe_group.getId() && 
+                            bvtx.stripe_id == stripe_id && 
+                            bvtx.stripe_id_global == stripes[stripe_id].getId() && 
+                            bvtx.block_id == block_id
+                        ) {
+                            bvtx_id = bvtx.id;
+                        } else {
+                            // add block as left vertex
+                            BlockVtx bvtx = {
+                                .id = -1,
+                                .stripe_batch_id = -1,
+                                .stripe_group_id = stripe_group.getId(),
+                                .stripe_id_global = stripes[stripe_id].getId(),
+                                .stripe_id = stripe_id,
+                                .block_id = block_id,
+                                .in_degree = 0,
+                                .out_degree = 1,
+                                .costs = 0
+                            };
+                            bvtx.id = left_vertices_map.size();
+                            left_vertices_map[bvtx.id] = bvtx;
+                            bvtx_id = bvtx.id;
+                        }
+                    }
 
-                    // add candidate nodes as right vertices
+                    BlockVtx &bvtx = left_vertices_map[bvtx_id];
+
+
+                    // 2. add candidate nodes as right vertices
                     for (auto data_relocation_candidate : data_relocation_candidates) {
                         // check if node has been added before
                         if (right_vertices_map.find(data_relocation_candidate) == right_vertices_map.end()) {
                             NodeVtx nvtx = {
                                 .id = -1,
+                                .node_id = data_relocation_candidate,
                                 .in_degree = 1,
                                 .out_degree = 0,
-                                .node_id = data_relocation_candidate
+                                .costs = 0
                             };
                             nvtx.id = right_vertices_map.size();
                             right_vertices_map[nvtx.node_id] = nvtx;
@@ -146,14 +165,15 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                         }
 
                         // add corresponding edge
-                        Edge edge = {
+                        BNEdge edge = {
                             .id = -1,
                             .lvtx = &left_vertices_map[bvtx.id],
                             .rvtx = &right_vertices_map[data_relocation_candidate],
-                            .weight = 1
+                            .weight = 1, // edges have weight = 1
+                            .cost = 1  // relocating a data block have cost = 1
                         };
-                        edge.id = edges_map.size();
-                        edges_map[edge.id] = edge;
+                        edge.id = bnedges_map.size();
+                        bnedges_map[edge.id] = edge;
 
                     }
 
@@ -162,6 +182,46 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
         }
     }
 
+    return true;
+}
+
+bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
+    ConvertibleCode &code = stripe_group.getCode();
+
+    // if k' = alpha * k
+    if (code.k_f != code.k_i * code.alpha || code.m_f > code.m_i) {
+        printf("invalid parameters\n");
+        return false;
+    }
+
+    ClusterSettings &cluster_settings = stripe_group.getClusterSettings();
+    int num_nodes = cluster_settings.M;
+
+    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<int> num_data_stored(num_nodes, 0);
+
+     // check which node already stores at least one data block
+    for (auto stripe : stripes) {
+        vector<int> &stripe_indices = stripe.getStripeIndices();
+
+        for (int block_id = 0; block_id < code.k_i; block_id++) {
+            num_data_stored[stripe_indices[block_id]] += 1;
+        }
+    }
+
+    printf("data block distribution:\n");
+    Utils::print_int_vector(num_data_stored);
+
+    // candidate nodes for data relocation (no any data block stored on that node)
+    vector<int> data_relocation_candidates;
+    for (int node_id = 0; node_id < num_nodes; node_id++) {
+        if (num_data_stored[node_id] == 0) {
+            data_relocation_candidates.push_back(node_id);
+        }
+    }
+
+    printf("data relocation candidates:\n");
+    Utils::print_int_vector(data_relocation_candidates);
 
     // parity relocation
 
@@ -170,18 +230,37 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
 
     // proceed for every parity block
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
-        // add parity block
-        BlockVtx bvtx = {
-            .id = -1,
-            .block_id = code.k_f + parity_id,
-            .stripe_id = -1,
-            .stripe_id_global = -1,
-            .stripe_group_id = stripe_group.getId(),
-            .stripe_batch_id = -1,
-            .in_degree = 0,
-            .out_degree = 0,
-        };
-        bvtx.id = left_vertices_map.size();
+
+        // 1. get BlockVtx
+        int bvtx_id = -1;
+        for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
+            BlockVtx &bvtx = it->second;
+            if (
+                bvtx.stripe_group_id == stripe_group.getId() && 
+                bvtx.block_id == code.k_f + parity_id
+            ) {
+                bvtx_id = bvtx.id;
+            } else {
+                // add parity block
+                BlockVtx bvtx = {
+                    .id = -1,
+                    .stripe_batch_id = -1,
+                    .stripe_group_id = stripe_group.getId(),
+                    .stripe_id = -1,
+                    .stripe_id_global = -1,
+                    .block_id = code.k_f + parity_id,
+                    .in_degree = 0,
+                    .out_degree = 0,
+                    .costs = 0
+                };
+                bvtx.id = left_vertices_map.size();
+                left_vertices_map[bvtx.id] = bvtx;
+                bvtx_id = bvtx.id;
+            }
+        }
+
+        BlockVtx &bvtx = left_vertices_map[bvtx_id];
+
         for (auto parity_relocation_candidate : parity_relocation_candidates) {
             // calculate the number of parity blocks with the same parity_id at the candidate node
             int num_parity_blocks_required = code.alpha;
@@ -196,9 +275,10 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
             if (right_vertices_map.find(parity_relocation_candidate) == right_vertices_map.end()) {
                 NodeVtx nvtx = {
                     .id = -1,
+                    .node_id = parity_relocation_candidate,
                     .in_degree = num_parity_blocks_required,
                     .out_degree = 0,
-                    .node_id = parity_relocation_candidate
+                    .costs = 0
                 };
                 nvtx.id = right_vertices_map.size();
                 right_vertices_map[nvtx.node_id] = nvtx;
@@ -209,32 +289,138 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
             }
 
             // add edge
-            Edge edge = {
+            BNEdge edge = {
                 .id = -1,
                 .lvtx = &left_vertices_map[bvtx.id],
                 .rvtx = &right_vertices_map[parity_relocation_candidate],
-                .weight = num_parity_blocks_required
+                .weight = 1,
+                .cost = num_parity_blocks_required // cost: number of data blocks needed to repair the parity block
             };
-            edge.id = edges_map.size();
-            edges_map[edge.id] = edge;
+            edge.id = bnedges_map.size();
+            bnedges_map[edge.id] = edge;
             
             // increase the out-degree for block
             bvtx.out_degree += num_parity_blocks_required;
         }
 
-        // add parity block into the map
-        left_vertices_map[bvtx.id] = bvtx;
     }
 
     return true;
 }
 
-bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
-    return true;
-}
-
 
 bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
+
+    ConvertibleCode &code = stripe_group.getCode();
+
+    // if k' = alpha * k
+    if (code.k_f != code.k_i * code.alpha || code.m_f > code.m_i) {
+        printf("invalid parameters\n");
+        return false;
+    }
+
+    ClusterSettings &cluster_settings = stripe_group.getClusterSettings();
+    int num_nodes = cluster_settings.M;
+
+    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<int> num_data_stored(num_nodes, 0);
+
+     // check which node already stores at least one data block
+    for (auto stripe : stripes) {
+        vector<int> &stripe_indices = stripe.getStripeIndices();
+
+        for (int block_id = 0; block_id < code.k_i; block_id++) {
+            num_data_stored[stripe_indices[block_id]] += 1;
+        }
+    }
+
+    printf("data block distribution:\n");
+    Utils::print_int_vector(num_data_stored);
+
+    // candidate nodes for data relocation (no any data block stored on that node)
+    vector<int> data_relocation_candidates;
+    for (int node_id = 0; node_id < num_nodes; node_id++) {
+        if (num_data_stored[node_id] == 0) {
+            data_relocation_candidates.push_back(node_id);
+        }
+    }
+
+    printf("data relocation candidates:\n");
+    Utils::print_int_vector(data_relocation_candidates);
+
+    // parity relocation
+
+    // candidate nodes for parity relocation (the same as data relocation)
+    vector<int> parity_relocation_candidates = data_relocation_candidates;
+
+    // Step 1. create a compute vertex to represent the dummy block to do re-encoding
+
+    // Step 1.1 get ComputeVtx
+    int cvtx_id = -1;
+    for (auto it = compute_vtx_map.begin(); it != compute_vtx_map.end(); it++) {
+        ComputeVtx &cvtx = it->second;
+        if (
+            cvtx.stripe_group_id == stripe_group.getId()
+        ) {
+            cvtx_id = cvtx.id;
+        } else {
+            // add parity block
+            ComputeVtx cvtx = {
+                .id = -1,
+                .stripe_batch_id = -1,
+                .stripe_group_id = stripe_group.getId(),
+                .stripe_id = -1,
+                .stripe_id_global = -1,
+                .block_id = -1,
+                .in_degree = 0,
+                .out_degree = 0,
+                .costs = 0
+            };
+            cvtx.id = compute_vtx_map.size();
+            compute_vtx_map[cvtx.id] = cvtx;
+            cvtx_id = cvtx.id;
+        }
+    }
+
+    ComputeVtx &bvtx = compute_vtx_map[cvtx_id];
+
+    // Step 1.2 create n edges to represent the number blocks required to do re-encoding. On a node with x data blocks, the edge is with cost (k_f - x)
+    
+    for (int node_id = 0; node_id < num_nodes; node_id++) {
+        int num_data_blocks_required = code.k_f - num_data_stored[node_id];
+
+        // add node vertex
+        if (right_vertices_map.find(node_id) == right_vertices_map.end()) {
+            NodeVtx nvtx = {
+                .id = -1,
+                .node_id = node_id,
+                .in_degree = num_data_blocks_required,
+                .out_degree = 0,
+                .costs = 0
+            };
+            nvtx.id = right_vertices_map.size();
+            right_vertices_map[nvtx.node_id] = nvtx;
+        } else {
+            // increase the in_degree
+            NodeVtx &nvtx = right_vertices_map[node_id];
+            nvtx.in_degree += num_data_blocks_required;
+        }
+
+        // add edge
+        BCEdge edge = {
+            .id = -1,
+            .lvtx = &left_vertices_map[bvtx.id],
+            .rvtx = &right_vertices_map[parity_relocation_candidate],
+            .weight = 1,
+            .cost = num_parity_blocks_required // cost: number of data blocks needed to repair the parity block
+        };
+        edge.id = edges_map.size();
+        edges_map[edge.id] = edge;
+        
+        // increase the out-degree for block
+        bvtx.out_degree += num_parity_blocks_required;
+    }
+
     return true;
 }
 

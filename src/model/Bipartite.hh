@@ -4,31 +4,20 @@
 #include "../include/include.hh"
 #include "StripeBatch.hh"
 
-typedef struct BlockVtx {
-    int id;
-    int stripe_batch_id;
-    int stripe_group_id;
-    int stripe_id;
-    int stripe_id_global;
-    int block_id;
-    int in_degree;
-    int out_degree;
-    int costs;
-} BlockVtx;
 
-typedef struct NodeVtx {
-    int id;
-    int node_id;
-    int in_degree;
-    int out_degree;
-    int costs;
-} NodeVtx;
+typedef struct Vertex {
+    int id; // vertex id
+    int in_degree; // sum of in-degree
+    int out_degree; // sum of out-degree
+    int weight; // sum of weights
+    int costs; // sum of costs
+} Vertex;
 
-typedef struct BEdge {
+typedef struct Edge { // block to block edge
     int id;
-    BlockVtx *lvtx; // left vertex
-    NodeVtx *rvtx; // right vertex
-    int weight; // weight of the edge (in current implementation, weight is fixed to 1)
+    Vertex *lvtx; // left vertex
+    Vertex *rvtx; // right vertex
+    int weight; // weight of the edge
     int cost; // cost of the edge
 } Edge;
 
@@ -37,9 +26,10 @@ class Bipartite
 private:
     
 public:
-    map<int, BlockVtx> left_vertices_map;
-    map<int, NodeVtx> right_vertices_map;
-    map<int, BEdge> edges_map;
+    map<int, Vertex> left_vertices_map; // left vertices map
+    map<int, Vertex> right_vertices_map; // right vertices map
+
+    map<int, Edge> edges_map; // block to node edges
 
     Bipartite();
     ~Bipartite();
