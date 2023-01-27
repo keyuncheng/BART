@@ -17,6 +17,7 @@ public:
     bool addStripeGroup(StripeGroup &stripe_group);
 
     void print();
+    void print_meta();
 
 private:
     bool addStripeGroupWithData(StripeGroup &stripe_group);
@@ -24,7 +25,12 @@ private:
     bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
     bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);
 
-    map<int, BlockMeta> block_meta_map; // block metadata
+    map<int, Vertex> internal_vertices_map; // internal vertices map (for re-encoding only)
+
+    map<int, BlockMeta> data_block_meta_map; // data block metadata
+    map<int, BlockMeta> parity_block_meta_map; // parity block metadata
+    map<int, BlockMeta> compute_block_meta_map; // compute block metadata
+    map<int, BlockMeta> compute_node_meta_map; // compute node metadata
     map<int, NodeMeta> node_meta_map; // node metadata
 
 };

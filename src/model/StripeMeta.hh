@@ -4,7 +4,8 @@
 enum BlockType {
     DATA_BLK,
     PARITY_BLK,
-    COMPUTE_BLK, // dummy vertex for re-encoding
+    COMPUTE_BLK, // dummy block for re-encoding
+    COMPUTE_NODE // dummy node for re-encoding
 };
 
 typedef struct BlockMeta {

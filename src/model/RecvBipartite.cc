@@ -112,71 +112,111 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                         break;
                     }
 
-                    // 1. get BlockVtx
+                    // 1. get vertex of data block 
                     int bvtx_id = -1;
-                    for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
-                        BlockVtx &bvtx = it->second;
+                    for (auto it = data_block_meta_map.begin(); it != data_block_meta_map.end(); it++) {
+                        // find vertex id from block metadata
+                        BlockMeta &block_meta = it->second;
                         if (
-                            bvtx.stripe_group_id == stripe_group.getId() && 
-                            bvtx.stripe_id == stripe_id && 
-                            bvtx.stripe_id_global == stripes[stripe_id].getId() && 
-                            bvtx.block_id == block_id
+                            block_meta.type == DATA_BLK &&
+                            block_meta.stripe_group_id == stripe_group.getId() && 
+                            block_meta.stripe_id == stripe_id && 
+                            block_meta.stripe_id_global == stripes[stripe_id].getId() && 
+                            block_meta.block_id == block_id
                         ) {
-                            bvtx_id = bvtx.id;
-                        } else {
-                            // add block as left vertex
-                            BlockVtx bvtx = {
-                                .id = -1,
-                                .stripe_batch_id = -1,
-                                .stripe_group_id = stripe_group.getId(),
-                                .stripe_id_global = stripes[stripe_id].getId(),
-                                .stripe_id = stripe_id,
-                                .block_id = block_id,
-                                .in_degree = 0,
-                                .out_degree = 1,
-                                .costs = 0
-                            };
-                            bvtx.id = left_vertices_map.size();
-                            left_vertices_map[bvtx.id] = bvtx;
-                            bvtx_id = bvtx.id;
-                        }
+                            bvtx_id = block_meta.vtx_id;
+                            break;
+                        } 
                     }
 
-                    BlockVtx &bvtx = left_vertices_map[bvtx_id];
+                    // block metadata not found
+                    if (bvtx_id == -1) {
+                        // add block as left vertex
+                        Vertex bvtx = {
+                            .id = -1,
+                            .in_degree = 0,
+                            .out_degree = 0,
+                            .weights = 0,
+                            .costs = 0
+                        };
+
+                        bvtx.id = left_vertices_map.size();
+                        bvtx_id = bvtx.id;
+                        left_vertices_map[bvtx_id] = bvtx;
+
+                        // add block metadata
+                        BlockMeta new_block_meta = {
+                            .id = -1,
+                            .type = DATA_BLK,
+                            .stripe_batch_id = -1,
+                            .stripe_group_id = stripe_group.getId(),
+                            .stripe_id_global = stripes[stripe_id].getId(),
+                            .stripe_id = stripe_id,
+                            .block_id = block_id,
+                            .vtx_id = bvtx_id
+                        };
+                        
+                        new_block_meta.id = data_block_meta_map.size();
+                        data_block_meta_map[new_block_meta.id] = new_block_meta;
+                    }
+
+                    Vertex &bvtx = left_vertices_map[bvtx_id];
 
 
                     // 2. add candidate nodes as right vertices
                     for (auto data_relocation_candidate : data_relocation_candidates) {
-                        // check if node has been added before
-                        if (right_vertices_map.find(data_relocation_candidate) == right_vertices_map.end()) {
-                            NodeVtx nvtx = {
+                        
+                        // find vertex of the node
+                        int nvtx_id = -1;
+                        // check from node meta
+                        for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+                            NodeMeta &node_meta = it->second;
+                            if (node_meta.node_id == data_relocation_candidate) {
+                                nvtx_id = node_meta.vtx_id;
+                                break;
+                            }
+                        }
+
+                        // add vertex and metadata
+                        if (nvtx_id == -1) {
+                            Vertex nvtx = {
                                 .id = -1,
-                                .node_id = data_relocation_candidate,
-                                .in_degree = 1,
+                                .in_degree = 0,
                                 .out_degree = 0,
+                                .weights = 0,
                                 .costs = 0
                             };
                             nvtx.id = right_vertices_map.size();
-                            right_vertices_map[nvtx.node_id] = nvtx;
-                        } else {
-                            // increase the in_degree
-                            NodeVtx &nvtx = right_vertices_map[data_relocation_candidate];
-                            nvtx.in_degree += 1;
+                            nvtx_id = nvtx.id;
+                            right_vertices_map[nvtx_id] = nvtx;
+                            
+                            NodeMeta node_meta = {
+                                .id = -1,
+                                .node_id = data_relocation_candidate,
+                                .vtx_id = nvtx_id
+                            };
+
+                            node_meta.id = node_meta_map.size();
+                            node_meta_map[node_meta.id] = node_meta;
                         }
 
-                        // add corresponding edge
-                        BNEdge edge = {
+                        Vertex &nvtx = right_vertices_map[nvtx_id];
+
+                        // add edge (bvtx -> nvtx)
+                        Edge edge = {
                             .id = -1,
-                            .lvtx = &left_vertices_map[bvtx.id],
-                            .rvtx = &right_vertices_map[data_relocation_candidate],
-                            .weight = 1, // edges have weight = 1
-                            .cost = 1  // relocating a data block have cost = 1
+                            .lvtx = &bvtx,
+                            .rvtx = &nvtx,
+                            .weight = 1, // edge has weight = 1
+                            .cost = 1  // relocation edge has cost = 1
                         };
-                        edge.id = bnedges_map.size();
-                        bnedges_map[edge.id] = edge;
+                        edge.id = edges_map.size();
+                        edges_map[edge.id] = edge;
+
+                        bvtx.out_degree += edge.weight; // increase the out_degree of block vertex
+                        nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
 
                     }
-
                 }
             }
         }
@@ -231,35 +271,54 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     // proceed for every parity block
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
 
-        // 1. get BlockVtx
+        // 1. get vertex of parity block 
         int bvtx_id = -1;
-        for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
-            BlockVtx &bvtx = it->second;
+        for (auto it = parity_block_meta_map.begin(); it != parity_block_meta_map.end(); it++) {
+            // find vertex id from block metadata
+            BlockMeta &block_meta = it->second;
             if (
-                bvtx.stripe_group_id == stripe_group.getId() && 
-                bvtx.block_id == code.k_f + parity_id
+                block_meta.type == PARITY_BLK &&
+                block_meta.stripe_group_id == stripe_group.getId() && 
+                block_meta.block_id == code.k_f + parity_id
             ) {
-                bvtx_id = bvtx.id;
-            } else {
-                // add parity block
-                BlockVtx bvtx = {
-                    .id = -1,
-                    .stripe_batch_id = -1,
-                    .stripe_group_id = stripe_group.getId(),
-                    .stripe_id = -1,
-                    .stripe_id_global = -1,
-                    .block_id = code.k_f + parity_id,
-                    .in_degree = 0,
-                    .out_degree = 0,
-                    .costs = 0
-                };
-                bvtx.id = left_vertices_map.size();
-                left_vertices_map[bvtx.id] = bvtx;
-                bvtx_id = bvtx.id;
-            }
+                bvtx_id = block_meta.vtx_id;
+                break;
+            } 
         }
 
-        BlockVtx &bvtx = left_vertices_map[bvtx_id];
+        // block metadata not found
+        if (bvtx_id == -1) {
+            // add block as left vertex
+            Vertex bvtx = {
+                .id = -1,
+                .in_degree = 0,
+                .out_degree = 0,
+                .weights = 0,
+                .costs = 0
+            };
+
+            bvtx.id = left_vertices_map.size();
+            bvtx_id = bvtx.id;
+            left_vertices_map[bvtx_id] = bvtx;
+
+            // add block metadata
+            BlockMeta new_block_meta = {
+                .id = -1,
+                .type = PARITY_BLK,
+                .stripe_batch_id = -1,
+                .stripe_group_id = stripe_group.getId(),
+                .stripe_id_global = -1,
+                .stripe_id = -1,
+                .block_id = code.k_f + parity_id,
+                .vtx_id = bvtx_id
+            };
+            
+            new_block_meta.id = parity_block_meta_map.size();
+            parity_block_meta_map[new_block_meta.id] = new_block_meta;
+        }
+
+        Vertex &bvtx = left_vertices_map[bvtx_id];
+
 
         for (auto parity_relocation_candidate : parity_relocation_candidates) {
             // calculate the number of parity blocks with the same parity_id at the candidate node
@@ -271,36 +330,56 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
                 }
             }
 
-            // add node vertex
-            if (right_vertices_map.find(parity_relocation_candidate) == right_vertices_map.end()) {
-                NodeVtx nvtx = {
+            // find vertex of the node
+            int nvtx_id = -1;
+            // check from node meta
+            for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+                NodeMeta &node_meta = it->second;
+                if (node_meta.node_id == parity_relocation_candidate) {
+                    nvtx_id = node_meta.vtx_id;
+                    break;
+                }
+            }
+
+            // add vertex and metadata
+            if (nvtx_id == -1) {
+                Vertex nvtx = {
                     .id = -1,
-                    .node_id = parity_relocation_candidate,
-                    .in_degree = num_parity_blocks_required,
+                    .in_degree = 0,
                     .out_degree = 0,
+                    .weights = 0,
                     .costs = 0
                 };
                 nvtx.id = right_vertices_map.size();
-                right_vertices_map[nvtx.node_id] = nvtx;
-            } else {
-                // increase the in_degree
-                NodeVtx &nvtx = right_vertices_map[parity_relocation_candidate];
-                nvtx.in_degree += num_parity_blocks_required;
+                nvtx_id = nvtx.id;
+                right_vertices_map[nvtx_id] = nvtx;
+                
+                NodeMeta node_meta = {
+                    .id = -1,
+                    .node_id = parity_relocation_candidate,
+                    .vtx_id = nvtx_id
+                };
+
+                node_meta.id = node_meta_map.size();
+                node_meta_map[node_meta.id] = node_meta;
             }
 
+            Vertex &nvtx = right_vertices_map[nvtx_id];
+            
+
             // add edge
-            BNEdge edge = {
+            Edge edge = {
                 .id = -1,
-                .lvtx = &left_vertices_map[bvtx.id],
-                .rvtx = &right_vertices_map[parity_relocation_candidate],
+                .lvtx = &bvtx,
+                .rvtx = &nvtx,
                 .weight = 1,
                 .cost = num_parity_blocks_required // cost: number of data blocks needed to repair the parity block
             };
-            edge.id = bnedges_map.size();
-            bnedges_map[edge.id] = edge;
+            edge.id = edges_map.size();
+            edges_map[edge.id] = edge;
             
-            // increase the out-degree for block
-            bvtx.out_degree += num_parity_blocks_required;
+            bvtx.out_degree += edge.weight; // increase the out_degree of block vertex
+            nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
         }
 
     }
@@ -353,73 +432,284 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     // candidate nodes for parity relocation (the same as data relocation)
     vector<int> parity_relocation_candidates = data_relocation_candidates;
 
-    // Step 1. create a compute vertex to represent the dummy block to do re-encoding
+    // Step 1. create a compute block (on left) to represent the dummy block to do re-encoding
 
-    // Step 1.1 get ComputeVtx
-    int cvtx_id = -1;
-    for (auto it = compute_vtx_map.begin(); it != compute_vtx_map.end(); it++) {
-        ComputeVtx &cvtx = it->second;
+    // 1. get vertex of compute block 
+    int cbvtx_id = -1;
+    for (auto it = compute_block_meta_map.begin(); it != compute_block_meta_map.end(); it++) {
+        // find vertex id from block metadata
+        BlockMeta &block_meta = it->second;
         if (
-            cvtx.stripe_group_id == stripe_group.getId()
+            block_meta.type == COMPUTE_BLK &&
+            block_meta.stripe_group_id == stripe_group.getId()
         ) {
-            cvtx_id = cvtx.id;
-        } else {
-            // add parity block
-            ComputeVtx cvtx = {
-                .id = -1,
-                .stripe_batch_id = -1,
-                .stripe_group_id = stripe_group.getId(),
-                .stripe_id = -1,
-                .stripe_id_global = -1,
-                .block_id = -1,
-                .in_degree = 0,
-                .out_degree = 0,
-                .costs = 0
-            };
-            cvtx.id = compute_vtx_map.size();
-            compute_vtx_map[cvtx.id] = cvtx;
-            cvtx_id = cvtx.id;
-        }
+            cbvtx_id = block_meta.vtx_id;
+            break;
+        } 
     }
 
-    ComputeVtx &bvtx = compute_vtx_map[cvtx_id];
+    // block metadata not found
+    if (cbvtx_id == -1) {
+        // add block as left vertex
+        Vertex cbvtx = {
+            .id = -1,
+            .in_degree = 0,
+            .out_degree = 0,
+            .weights = 0,
+            .costs = 0
+        };
+
+        cbvtx.id = left_vertices_map.size();
+        cbvtx_id = cbvtx.id;
+        left_vertices_map[cbvtx_id] = cbvtx;
+
+        // add block metadata
+        BlockMeta new_block_meta = {
+            .id = -1,
+            .type = COMPUTE_BLK,
+            .stripe_batch_id = -1,
+            .stripe_group_id = stripe_group.getId(),
+            .stripe_id_global = -1,
+            .stripe_id = -1,
+            .block_id = -1,
+            .vtx_id = cbvtx_id
+        };
+        
+        new_block_meta.id = compute_block_meta_map.size();
+        compute_block_meta_map[new_block_meta.id] = new_block_meta;
+    }
+
+    Vertex &cbvtx = left_vertices_map[cbvtx_id];
+
 
     // Step 1.2 create n edges to represent the number blocks required to do re-encoding. On a node with x data blocks, the edge is with cost (k_f - x)
     
     for (int node_id = 0; node_id < num_nodes; node_id++) {
         int num_data_blocks_required = code.k_f - num_data_stored[node_id];
 
-        // add node vertex
-        if (right_vertices_map.find(node_id) == right_vertices_map.end()) {
-            NodeVtx nvtx = {
+        // find vertex of the node
+        int nvtx_id = -1;
+        // check from node meta
+        for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+            NodeMeta &node_meta = it->second;
+            if (node_meta.node_id == node_id) {
+                nvtx_id = node_meta.vtx_id;
+                break;
+            }
+        }
+
+        // add vertex and metadata
+        if (nvtx_id == -1) {
+            Vertex nvtx = {
                 .id = -1,
-                .node_id = node_id,
-                .in_degree = num_data_blocks_required,
+                .in_degree = 0,
                 .out_degree = 0,
+                .weights = 0,
                 .costs = 0
             };
             nvtx.id = right_vertices_map.size();
-            right_vertices_map[nvtx.node_id] = nvtx;
-        } else {
-            // increase the in_degree
-            NodeVtx &nvtx = right_vertices_map[node_id];
-            nvtx.in_degree += num_data_blocks_required;
+            nvtx_id = nvtx.id;
+            right_vertices_map[nvtx_id] = nvtx;
+            
+            NodeMeta node_meta = {
+                .id = -1,
+                .node_id = node_id,
+                .vtx_id = nvtx_id
+            };
+
+            node_meta.id = node_meta_map.size();
+            node_meta_map[node_meta.id] = node_meta;
         }
 
+        Vertex &nvtx = right_vertices_map[nvtx_id];
+
         // add edge
-        BCEdge edge = {
+        Edge edge = {
             .id = -1,
-            .lvtx = &left_vertices_map[bvtx.id],
-            .rvtx = &right_vertices_map[parity_relocation_candidate],
+            .lvtx = &cbvtx,
+            .rvtx = &nvtx,
             .weight = 1,
-            .cost = num_parity_blocks_required // cost: number of data blocks needed to repair the parity block
+            .cost = num_data_blocks_required // cost: number of data blocks needed to repair the parity block
         };
         edge.id = edges_map.size();
         edges_map[edge.id] = edge;
         
         // increase the out-degree for block
-        bvtx.out_degree += num_parity_blocks_required;
+        cbvtx.out_degree += edge.weight; // increase the out_degree of block vertex
+        nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
     }
+
+
+    // Step 2 for each parity block, create a compute node in the middle of the bipartite graph to represent re-encoding, and connect them
+
+    for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
+
+        // 2.1 get vertex of the parity block 
+        int bvtx_id = -1;
+        for (auto it = parity_block_meta_map.begin(); it != parity_block_meta_map.end(); it++) {
+            // find vertex id from block metadata
+            BlockMeta &block_meta = it->second;
+            if (
+                block_meta.type == PARITY_BLK &&
+                block_meta.stripe_group_id == stripe_group.getId() && 
+                block_meta.block_id == code.k_f + parity_id
+            ) {
+                bvtx_id = block_meta.vtx_id;
+                break;
+            } 
+        }
+
+        // block metadata not found
+        if (bvtx_id == -1) {
+            // add block as left vertex
+            Vertex bvtx = {
+                .id = -1,
+                .in_degree = 0,
+                .out_degree = 0,
+                .weights = 0,
+                .costs = 0
+            };
+
+            bvtx.id = left_vertices_map.size();
+            bvtx_id = bvtx.id;
+            left_vertices_map[bvtx_id] = bvtx;
+
+            // add block metadata
+            BlockMeta new_block_meta = {
+                .id = -1,
+                .type = PARITY_BLK,
+                .stripe_batch_id = -1,
+                .stripe_group_id = stripe_group.getId(),
+                .stripe_id_global = -1,
+                .stripe_id = -1,
+                .block_id = code.k_f + parity_id,
+                .vtx_id = bvtx_id
+            };
+            
+            new_block_meta.id = parity_block_meta_map.size();
+            parity_block_meta_map[new_block_meta.id] = new_block_meta;
+        }
+
+        Vertex &bvtx = left_vertices_map[bvtx_id];
+
+
+        // 2.2 get vertex of compute node corresponding to the parity block
+        int cn_vtx_id = -1;
+        for (auto it = compute_node_meta_map.begin(); it != compute_node_meta_map.end(); it++) {
+            // find vertex id from block metadata
+            BlockMeta &block_meta = it->second;
+            if (
+                block_meta.type == COMPUTE_NODE &&
+                block_meta.stripe_group_id == stripe_group.getId()
+            ) {
+                cn_vtx_id = block_meta.vtx_id;
+                break;
+            } 
+        }
+
+        // block metadata not found
+        if (cn_vtx_id == -1) {
+            // add block as left vertex
+            Vertex cn_vtx = {
+                .id = -1,
+                .in_degree = 0,
+                .out_degree = 0,
+                .weights = 0,
+                .costs = 0
+            };
+
+            cn_vtx.id = internal_vertices_map.size();
+            cn_vtx_id = cn_vtx.id;
+            internal_vertices_map[cn_vtx_id] = cn_vtx;
+
+            // add block metadata
+            BlockMeta new_block_meta = {
+                .id = -1,
+                .type = COMPUTE_NODE,
+                .stripe_batch_id = -1,
+                .stripe_group_id = stripe_group.getId(),
+                .stripe_id_global = -1,
+                .stripe_id = -1,
+                .block_id = -1,
+                .vtx_id = cn_vtx_id
+            };
+            
+            new_block_meta.id = compute_block_meta_map.size();
+            compute_block_meta_map[new_block_meta.id] = new_block_meta;
+        }
+
+        Vertex &cn_vtx = internal_vertices_map[cn_vtx_id];
+
+        // 2.3 connect the parity block and compute node
+        // add edge
+        Edge edge = {
+            .id = -1,
+            .lvtx = &bvtx,
+            .rvtx = &cn_vtx,
+            .weight = 1,
+            .cost = 0 // cost: no cost from parity block to compute block
+        };
+        edge.id = edges_map.size();
+        edges_map[edge.id] = edge;
+
+        // 2.4 for each parity block relocation candidate, connect them with compute node
+
+        for (auto parity_relocation_candidate : parity_relocation_candidates) {
+            // find vertex of the node
+            int nvtx_id = -1;
+            // check from node meta
+            for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+                NodeMeta &node_meta = it->second;
+                if (node_meta.node_id == parity_relocation_candidate) {
+                    nvtx_id = node_meta.vtx_id;
+                    break;
+                }
+            }
+
+            // add vertex and metadata
+            if (nvtx_id == -1) {
+                Vertex nvtx = {
+                    .id = -1,
+                    .in_degree = 0,
+                    .out_degree = 0,
+                    .weights = 0,
+                    .costs = 0
+                };
+                nvtx.id = right_vertices_map.size();
+                nvtx_id = nvtx.id;
+                right_vertices_map[nvtx_id] = nvtx;
+                
+                NodeMeta node_meta = {
+                    .id = -1,
+                    .node_id = parity_relocation_candidate,
+                    .vtx_id = nvtx_id
+                };
+
+                node_meta.id = node_meta_map.size();
+                node_meta_map[node_meta.id] = node_meta;
+            }
+
+            Vertex &nvtx = right_vertices_map[nvtx_id];
+            
+
+            // add edge
+            Edge edge = {
+                .id = -1,
+                .lvtx = &cn_vtx,
+                .rvtx = &nvtx,
+                .weight = 1,
+                .cost = 1 // cost: 1 (from compute node to parity node representing relocation)
+            };
+            edge.id = edges_map.size();
+            edges_map[edge.id] = edge;
+            
+            cn_vtx.out_degree += edge.weight; // increase the out_degree of block vertex
+            nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
+        }
+    }
+
+    
+
 
     return true;
 }
@@ -428,27 +718,64 @@ bool RecvBipartite::addStripeGroupWithPartialParityMerging(StripeGroup &stripe_g
     return true;
 }
 
+void RecvBipartite::print_meta() {
+    printf("block_meta:\n");
+
+    printf("data_block_meta:\n");
+    for (auto it = data_block_meta_map.begin(); it != data_block_meta_map.end(); it++) {
+        BlockMeta &block_meta = it->second;
+        printf("id: %d, type: %d, vtx_id: %d, stripe_batch_id: %d, stripe_group_id: %d, stripe_id: %d, stripe_id (global): %d, block_id: %d\n", block_meta.id, block_meta.type, block_meta.vtx_id, block_meta.stripe_batch_id, block_meta.stripe_group_id, block_meta.stripe_id, block_meta.stripe_id_global, block_meta.block_id);
+    }
+
+    printf("parity_block_meta:\n");
+    for (auto it = parity_block_meta_map.begin(); it != parity_block_meta_map.end(); it++) {
+        BlockMeta &block_meta = it->second;
+        printf("id: %d, type: %d, vtx_id: %d, stripe_batch_id: %d, stripe_group_id: %d, stripe_id: %d, stripe_id (global): %d, block_id: %d\n", block_meta.id, block_meta.type, block_meta.vtx_id, block_meta.stripe_batch_id, block_meta.stripe_group_id, block_meta.stripe_id, block_meta.stripe_id_global, block_meta.block_id);
+    }
+
+    printf("compute_block_meta:\n");
+    for (auto it = compute_block_meta_map.begin(); it != compute_block_meta_map.end(); it++) {
+        BlockMeta &block_meta = it->second;
+        printf("id: %d, type: %d, vtx_id: %d, stripe_batch_id: %d, stripe_group_id: %d, stripe_id: %d, stripe_id (global): %d, block_id: %d\n", block_meta.id, block_meta.type, block_meta.vtx_id, block_meta.stripe_batch_id, block_meta.stripe_group_id, block_meta.stripe_id, block_meta.stripe_id_global, block_meta.block_id);
+    }
+
+    printf("compute_node_meta:\n");
+    for (auto it = compute_node_meta_map.begin(); it != compute_node_meta_map.end(); it++) {
+        BlockMeta &block_meta = it->second;
+        printf("id: %d, type: %d, vtx_id: %d, stripe_batch_id: %d, stripe_group_id: %d, stripe_id: %d, stripe_id (global): %d, block_id: %d\n", block_meta.id, block_meta.type, block_meta.vtx_id, block_meta.stripe_batch_id, block_meta.stripe_group_id, block_meta.stripe_id, block_meta.stripe_id_global, block_meta.block_id);
+    }
+
+    printf("node_meta:\n");
+    for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+        NodeMeta &node_meta = it->second;
+        printf("id: %d, node_id: %d, vtx_id: %d\n", node_meta.id, node_meta.node_id, node_meta.vtx_id);
+    }
+}
 
 void RecvBipartite::print() {
     printf("recv bipartite graph:\n");
     printf("Left vertices:\n");
     for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
-        int lvtx_id = it->first;
-        BlockVtx &lvtx = it->second;
-        printf("id: %d, stripe_group_id: %d, stripe_id_global: %d, block_id: %d, out_degree: %d\n", lvtx_id, lvtx.stripe_group_id, lvtx.stripe_id_global, lvtx.block_id, lvtx.out_degree);
+        Vertex &lvtx = it->second;
+        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", lvtx.id, lvtx.in_degree, lvtx.out_degree, lvtx.weights, lvtx.costs);
     }
 
     printf("Right vertices:\n");
     for (auto it = right_vertices_map.begin(); it != right_vertices_map.end(); it++) {
-        int rvtx_id = it->first;
-        NodeVtx &rvtx = it->second;
-        printf("node_id: %d, id: %d, in_degree: %d\n", rvtx_id, rvtx.id, rvtx.in_degree);
+        Vertex &rvtx = it->second;
+        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", rvtx.id, rvtx.in_degree, rvtx.out_degree, rvtx.weights, rvtx.costs);
+    }
+
+    printf("Internal vertices:\n");
+    for (auto it = internal_vertices_map.begin(); it != internal_vertices_map.end(); it++) {
+        Vertex &ivtx = it->second;
+        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", ivtx.id, ivtx.in_degree, ivtx.out_degree, ivtx.weights, ivtx.costs);
     }
 
     printf("Edges: \n");
     for (auto it = edges_map.begin(); it != edges_map.end(); it++) {
         int edge_id = it->first;
         Edge &edge = it->second;
-        printf("id: %d, lvtx(.id): %d, rvtx(.node_id): %d, weight: %d\n", edge_id, edge.lvtx->id, edge.rvtx->node_id, edge.weight);
+        printf("id: %d, lvtx(.id): %d, rvtx(.node_id): %d, weight: %d, cost: %d\n", edge_id, edge.lvtx->id, edge.rvtx->id, edge.weight, edge.cost);
     }
 }

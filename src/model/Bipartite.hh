@@ -9,7 +9,7 @@ typedef struct Vertex {
     int id; // vertex id
     int in_degree; // sum of in-degree
     int out_degree; // sum of out-degree
-    int weight; // sum of weights
+    int weights; // sum of weights
     int costs; // sum of costs
 } Vertex;
 
@@ -28,7 +28,6 @@ private:
 public:
     map<int, Vertex> left_vertices_map; // left vertices map
     map<int, Vertex> right_vertices_map; // right vertices map
-
     map<int, Edge> edges_map; // block to node edges
 
     Bipartite();
