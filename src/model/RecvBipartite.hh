@@ -17,6 +17,8 @@ public:
     bool addStripeGroup(StripeGroup &stripe_group);
 
     void print();
+
+    int get_node_vtx_id();
     void print_meta();
 
 private:
@@ -24,6 +26,11 @@ private:
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
     bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
     bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);
+
+
+    Vertex *get_block_vtx(BlockMeta &in_block_meta);
+    Vertex *get_node_vtx(NodeMeta &in_node_meta);
+
 
     map<int, Vertex> internal_vertices_map; // internal vertices map (for re-encoding only)
 
