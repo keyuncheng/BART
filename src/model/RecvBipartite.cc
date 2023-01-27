@@ -458,19 +458,19 @@ void RecvBipartite::print() {
     printf("recv bipartite graph:\n");
     printf("Left vertices:\n");
     for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
-        Vertex &lvtx = it->second;
+        Vertex &lvtx = *(it->second);
         printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", lvtx.id, lvtx.in_degree, lvtx.out_degree, lvtx.weights, lvtx.costs);
     }
 
     printf("Right vertices:\n");
     for (auto it = right_vertices_map.begin(); it != right_vertices_map.end(); it++) {
-        Vertex &rvtx = it->second;
+        Vertex &rvtx = *(it->second);
         printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", rvtx.id, rvtx.in_degree, rvtx.out_degree, rvtx.weights, rvtx.costs);
     }
 
     printf("Internal vertices:\n");
     for (auto it = internal_vertices_map.begin(); it != internal_vertices_map.end(); it++) {
-        Vertex &ivtx = it->second;
+        Vertex &ivtx = *(it->second);
         printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", ivtx.id, ivtx.in_degree, ivtx.out_degree, ivtx.weights, ivtx.costs);
     }
 
@@ -533,15 +533,15 @@ Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
             .costs = 0
         };
 
+        bvtx.id = vertices_map.size();
+        bvtx_id = bvtx.id;
+        vertices_map[bvtx_id] = bvtx;
         // left vertex
         if (in_block_meta.type == DATA_BLK || in_block_meta.type == PARITY_BLK || in_block_meta.type == COMPUTE_BLK) {
-            bvtx.id = left_vertices_map.size();
-            left_vertices_map[bvtx_id] = bvtx;
+            left_vertices_map[bvtx_id] = &vertices_map[bvtx_id];
         } else if (in_block_meta.type == COMPUTE_NODE) {
-            bvtx.id = internal_vertices_map.size();
-            internal_vertices_map[bvtx_id] = bvtx;
+            internal_vertices_map[bvtx_id] = &vertices_map[bvtx_id];
         }
-        bvtx_id = bvtx.id;
 
         // add block metadata
         BlockMeta new_block_meta = in_block_meta;
@@ -551,9 +551,9 @@ Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
     }
 
     if (in_block_meta.type == DATA_BLK || in_block_meta.type == PARITY_BLK || in_block_meta.type == COMPUTE_BLK) {
-        return &left_vertices_map[bvtx_id];
+        return left_vertices_map[bvtx_id];
     } else if (in_block_meta.type == COMPUTE_NODE) {
-        return &internal_vertices_map[bvtx_id];
+        return internal_vertices_map[bvtx_id];
     } else {
         return NULL;
     }
@@ -580,9 +580,10 @@ Vertex *RecvBipartite::get_node_vtx(NodeMeta &in_node_meta) {
             .weights = 0,
             .costs = 0
         };
-        nvtx.id = right_vertices_map.size();
+        nvtx.id = vertices_map.size();
         nvtx_id = nvtx.id;
-        right_vertices_map[nvtx_id] = nvtx;
+        vertices_map[nvtx_id] = nvtx;
+        right_vertices_map[nvtx_id] = &vertices_map[nvtx_id];
         
         NodeMeta node_meta = {
             .id = -1,
@@ -594,5 +595,5 @@ Vertex *RecvBipartite::get_node_vtx(NodeMeta &in_node_meta) {
         node_meta_map[node_meta.id] = node_meta;
     }
 
-    return &right_vertices_map[nvtx_id];
+    return right_vertices_map[nvtx_id];
 }

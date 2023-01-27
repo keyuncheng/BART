@@ -26,8 +26,9 @@ class Bipartite
 private:
     
 public:
-    map<int, Vertex> left_vertices_map; // left vertices map
-    map<int, Vertex> right_vertices_map; // right vertices map
+    map<int, Vertex> vertices_map; // vertices map
+    map<int, Vertex *> left_vertices_map; // left vertices map
+    map<int, Vertex *> right_vertices_map; // right vertices map
     map<int, Edge> edges_map; // block to node edges
 
     Bipartite();

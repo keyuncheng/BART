@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
     RecvBipartite recv_bipartite;
     recv_bipartite.addStripeBatch(stripe_batch);
 
+    recv_bipartite.print_meta();
     recv_bipartite.print();
 
     return 0;

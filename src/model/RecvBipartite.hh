@@ -17,8 +17,6 @@ public:
     bool addStripeGroup(StripeGroup &stripe_group);
 
     void print();
-
-    int get_node_vtx_id();
     void print_meta();
 
 private:
@@ -32,7 +30,7 @@ private:
     Vertex *get_node_vtx(NodeMeta &in_node_meta);
 
 
-    map<int, Vertex> internal_vertices_map; // internal vertices map (for re-encoding only)
+    map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
 
     map<int, BlockMeta> data_block_meta_map; // data block metadata
     map<int, BlockMeta> parity_block_meta_map; // parity block metadata
