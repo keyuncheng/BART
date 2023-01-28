@@ -112,6 +112,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                         break;
                     }
 
+                    // get data block vertex
                     BlockMeta block_meta = {
                         .id = -1,
                         .type = DATA_BLK,
@@ -125,7 +126,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                     Vertex &bvtx = *get_block_vtx(block_meta);
 
 
-                    // 2. add candidate nodes as right vertices
+                    // 2. add candidate nodes for data relocation as node vertices
                     for (auto data_relocation_candidate : data_relocation_candidates) {
                         
                         NodeMeta node_meta = {
@@ -201,9 +202,10 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     // candidate nodes for parity relocation (the same as data relocation)
     vector<int> parity_relocation_candidates = data_relocation_candidates;
 
-    // proceed for every parity block
+    // relocate for every parity block
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
 
+        // get vertex for parity block
         BlockMeta block_meta = {
             .id = -1,
             .type = PARITY_BLK,
@@ -226,6 +228,7 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
                 }
             }
 
+            // get vertex for parity block relocation
             NodeMeta node_meta = {
                 .id = -1,
                 .node_id = parity_relocation_candidate,
@@ -247,8 +250,8 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
             
             bvtx.out_degree += edge.weight; // increase the out_degree of block vertex
             nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
-        }
 
+        }
     }
 
     return true;
@@ -299,9 +302,9 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     // candidate nodes for parity relocation (the same as data relocation)
     vector<int> parity_relocation_candidates = data_relocation_candidates;
 
-    // Step 1. create a compute block (on left) to represent the dummy block to do re-encoding
+    // Step 1: create a compute block (on left) to represent the dummy block to do re-encoding
 
-    // 1. get vertex of compute block 
+    // Step 1.1 get vertex of compute block 
     BlockMeta compute_block_meta = {
         .id = -1,
         .type = COMPUTE_BLK,
@@ -314,12 +317,13 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     };
     Vertex &cb_vtx = *get_block_vtx(compute_block_meta);
 
-    // Step 1.2 create n edges to represent the number blocks required to do re-encoding. On a node with x data blocks, the edge is with cost (k_f - x)
+    // Step 1.2: create edges to all candidate nodes for re-encoding. On a node with x data blocks, the edge is with cost (k_f - x)
     
     for (int node_id = 0; node_id < num_nodes; node_id++) {
+        // number of data blocks required
         int num_data_blocks_required = code.k_f - num_data_stored[node_id];
 
-        // find vertex of the node
+        // get vertex of candidate nodes for re-encoding computation (all nodes are possible candidates)
         NodeMeta node_meta = {
             .id = -1,
             .node_id = node_id,
@@ -337,14 +341,15 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
         };
         edge.id = edges_map.size();
         edges_map[edge.id] = edge;
-        
+
         // increase the out-degree for block
         cb_vtx.out_degree += edge.weight; // increase the out_degree of block vertex
         nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
+
     }
 
 
-    // Step 2 for each parity block, create a compute node in the middle of the bipartite graph to represent re-encoding, and connect them
+    // Step 2: for each parity block, create a compute node in the middle of the bipartite graph to represent re-encoding, and connect it with the parity block and the candidate relocation node. (p -> cn -> n)
 
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
 
@@ -374,8 +379,7 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
         };
         Vertex &cn_vtx = *get_block_vtx(compute_node_meta);
 
-        // 2.3 connect the parity block and compute node
-        // add edge
+        // 2.3 add edge to connect the parity block and compute node
         Edge edge = {
             .id = -1,
             .lvtx = &bvtx,
@@ -386,7 +390,7 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
         edge.id = edges_map.size();
         edges_map[edge.id] = edge;
 
-        // 2.4 for each parity block relocation candidate, connect them with compute node
+        // 2.4 for each parity block relocation candidate, connect it with compute node
 
         for (auto parity_relocation_candidate : parity_relocation_candidates) {
             // find vertex of the node
@@ -407,9 +411,9 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
             };
             edge.id = edges_map.size();
             edges_map[edge.id] = edge;
-            
+
             cn_vtx.out_degree += edge.weight; // increase the out_degree of block vertex
-            nvtx.in_degree += edge.weight; // increase the in_degree of node vertex
+            nvtx.in_degree += edge.weight; // increase the in_degree of node vertex   
         }
     }
 
@@ -485,28 +489,28 @@ void RecvBipartite::print() {
 Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
 
     // 1. get block map
-    map<int, BlockMeta> *block_map_ptr = NULL;
+    map<int, BlockMeta> *block_meta_map_ptr = NULL;
 
     if (in_block_meta.type == DATA_BLK) {
-        block_map_ptr = &data_block_meta_map;
+        block_meta_map_ptr = &data_block_meta_map;
     } else if (in_block_meta.type == PARITY_BLK) {
-        block_map_ptr = &parity_block_meta_map;
+        block_meta_map_ptr = &parity_block_meta_map;
     } else if (in_block_meta.type == COMPUTE_BLK) {
-        block_map_ptr = &compute_block_meta_map;
+        block_meta_map_ptr = &compute_block_meta_map;
     } else if (in_block_meta.type == COMPUTE_NODE) {
-        block_map_ptr = &compute_node_meta_map;
+        block_meta_map_ptr = &compute_node_meta_map;
     }
 
-    if (block_map_ptr == NULL) {
-        printf("invalid block metadata\n");
+    if (block_meta_map_ptr == NULL) {
+        printf("invalid input block metadata\n");
         return NULL;
     }
 
     // 2. get vertex of data block 
     int bvtx_id = -1;
-    map<int, BlockMeta> &block_map = *block_map_ptr;
+    map<int, BlockMeta> &block_meta_map = *block_meta_map_ptr;
 
-    for (auto it = block_map.begin(); it != block_map.end(); it++) {
+    for (auto it = block_meta_map.begin(); it != block_meta_map.end(); it++) {
         // find vertex id from block metadata
         BlockMeta &block_meta = it->second;
         if (
@@ -524,7 +528,7 @@ Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
 
     // block metadata not found
     if (bvtx_id == -1) {
-        // add block as left vertex
+        // add a block vertex
         Vertex bvtx = {
             .id = -1,
             .in_degree = 0,
@@ -536,7 +540,6 @@ Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
         bvtx.id = vertices_map.size();
         bvtx_id = bvtx.id;
         vertices_map[bvtx_id] = bvtx;
-        // left vertex
         if (in_block_meta.type == DATA_BLK || in_block_meta.type == PARITY_BLK || in_block_meta.type == COMPUTE_BLK) {
             left_vertices_map[bvtx_id] = &vertices_map[bvtx_id];
         } else if (in_block_meta.type == COMPUTE_NODE) {
@@ -545,9 +548,9 @@ Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {
 
         // add block metadata
         BlockMeta new_block_meta = in_block_meta;
-        
-        new_block_meta.id = block_map.size();
-        block_map[new_block_meta.id] = new_block_meta;
+        new_block_meta.id = block_meta_map.size();
+        new_block_meta.vtx_id = bvtx_id;
+        block_meta_map[new_block_meta.id] = new_block_meta;
     }
 
     if (in_block_meta.type == DATA_BLK || in_block_meta.type == PARITY_BLK || in_block_meta.type == COMPUTE_BLK) {
@@ -585,14 +588,11 @@ Vertex *RecvBipartite::get_node_vtx(NodeMeta &in_node_meta) {
         vertices_map[nvtx_id] = nvtx;
         right_vertices_map[nvtx_id] = &vertices_map[nvtx_id];
         
-        NodeMeta node_meta = {
-            .id = -1,
-            .node_id = in_node_meta.node_id,
-            .vtx_id = nvtx_id
-        };
 
-        node_meta.id = node_meta_map.size();
-        node_meta_map[node_meta.id] = node_meta;
+        NodeMeta new_node_meta = in_node_meta;
+        new_node_meta.id = node_meta_map.size();
+        new_node_meta.vtx_id = nvtx_id;
+        node_meta_map[new_node_meta.id] = new_node_meta;
     }
 
     return right_vertices_map[nvtx_id];
