@@ -1,9 +1,11 @@
 #ifndef __BIPARTITE_HH__
 #define __BIPARTITE_HH__
 
+#include <queue>
+
 #include "../include/include.hh"
 #include "StripeBatch.hh"
-
+#include "../util/Utils.hh"
 
 typedef struct Vertex {
     int id; // vertex id
@@ -24,15 +26,33 @@ typedef struct Edge { // block to block edge
 class Bipartite
 {
 private:
+    static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
     
 public:
     map<int, Vertex> vertices_map; // vertices map
+    map<int, Edge> edges_map; // block to node edges
+
     map<int, Vertex *> left_vertices_map; // left vertices map
     map<int, Vertex *> right_vertices_map; // right vertices map
-    map<int, Edge> edges_map; // block to node edges
+
+    
+    // max flow solution
+    map<int, Edge> edges_max_flow_map; // edges of max flow solution
+
 
     Bipartite();
     ~Bipartite();
+
+    void print();
+    void print_vertices(map<int, Vertex> &vmap);
+    void print_vertices(map<int, Vertex *> &vmap);
+    void print_edges(map<int, Edge> &emap);
+
+    bool buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths);
+
+    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int>> &paths);
+
+
 
     void clear();
 };

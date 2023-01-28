@@ -461,29 +461,16 @@ void RecvBipartite::print_meta() {
 void RecvBipartite::print() {
     printf("recv bipartite graph:\n");
     printf("Left vertices:\n");
-    for (auto it = left_vertices_map.begin(); it != left_vertices_map.end(); it++) {
-        Vertex &lvtx = *(it->second);
-        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", lvtx.id, lvtx.in_degree, lvtx.out_degree, lvtx.weights, lvtx.costs);
-    }
+    print_vertices(left_vertices_map);
 
     printf("Right vertices:\n");
-    for (auto it = right_vertices_map.begin(); it != right_vertices_map.end(); it++) {
-        Vertex &rvtx = *(it->second);
-        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", rvtx.id, rvtx.in_degree, rvtx.out_degree, rvtx.weights, rvtx.costs);
-    }
+    print_vertices(right_vertices_map);
 
     printf("Internal vertices:\n");
-    for (auto it = internal_vertices_map.begin(); it != internal_vertices_map.end(); it++) {
-        Vertex &ivtx = *(it->second);
-        printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", ivtx.id, ivtx.in_degree, ivtx.out_degree, ivtx.weights, ivtx.costs);
-    }
+    print_vertices(internal_vertices_map);
 
     printf("Edges: \n");
-    for (auto it = edges_map.begin(); it != edges_map.end(); it++) {
-        int edge_id = it->first;
-        Edge &edge = it->second;
-        printf("id: %d, lvtx(.id): %d, rvtx(.node_id): %d, weight: %d, cost: %d\n", edge_id, edge.lvtx->id, edge.rvtx->id, edge.weight, edge.cost);
-    }
+    print_edges(edges_map);
 }
 
 Vertex *RecvBipartite::get_block_vtx(BlockMeta &in_block_meta) {

@@ -18,6 +18,10 @@ public:
 
     static void print_int_vector(vector<int> &vec);
     static void print_int_array(int *arr, int len);
+    static void print_int_matrix(int **matrix, int r, int c);
+
+    static int **init_int_matrix(int r, int c);
+    static void destroy_int_matrix(int **matrix, int r, int c);
 };
 
 
