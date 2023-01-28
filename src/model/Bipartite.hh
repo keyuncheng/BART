@@ -50,7 +50,7 @@ public:
 
     bool buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths);
 
-    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int>> &paths);
+    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
 
 
 
