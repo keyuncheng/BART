@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
     vector<vector<int>> recv_graph_paths;
     // copy the vertices and metadata to solution
 
-    int recv_max_flow = Bipartite::findMaxflowByFordFulkerson(recv_bipartite, recv_graph_paths, 1, code.k_i);
+    int recv_max_flow = RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(recv_bipartite, recv_graph_paths, 1, code.k_f);
 
     if (recv_bipartite.buildMaxFlowSolutionFromPaths(recv_graph_paths) == false) {
         printf("invalid max flow solution\n");

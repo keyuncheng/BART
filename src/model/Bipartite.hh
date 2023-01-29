@@ -26,7 +26,6 @@ typedef struct Edge { // block to block edge
 class Bipartite
 {
 private:
-    static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
     
 public:
     map<int, Vertex> vertices_map; // vertices map
@@ -50,6 +49,7 @@ public:
 
     bool buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths);
 
+    static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
     static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
 
 

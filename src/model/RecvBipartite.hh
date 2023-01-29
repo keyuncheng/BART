@@ -19,24 +19,31 @@ public:
     void print();
     void print_meta();
 
+    static bool BFSGraphForRecvGraph(RecvBipartite &recv_bipartite, int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, map<int, vector<int>> &cur_reloc_node_map);
+    static int findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
+
 private:
     bool addStripeGroupWithData(StripeGroup &stripe_group);
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
     bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
     bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);
 
+    Vertex *getBlockVtx(BlockMeta &in_block_meta);
+    Vertex *getNodeVtx(NodeMeta &in_node_meta);
 
-    Vertex *get_block_vtx(BlockMeta &in_block_meta);
-    Vertex *get_node_vtx(NodeMeta &in_node_meta);
+    BlockMeta *getBlockMeta(int vtx_id);
+    NodeMeta *getNodeMeta(int vtx_id);
 
 
     map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
-
-    map<int, BlockMeta> data_block_meta_map; // data block metadata
-    map<int, BlockMeta> parity_block_meta_map; // parity block metadata
-    map<int, BlockMeta> compute_block_meta_map; // compute block metadata
-    map<int, BlockMeta> compute_node_meta_map; // compute node metadata
+    
+    map<int, BlockMeta> block_meta_map; // block meta map
     map<int, NodeMeta> node_meta_map; // node metadata
+
+    map<int, BlockMeta *> data_block_meta_map; // data block metadata
+    map<int, BlockMeta *> parity_block_meta_map; // parity block metadata
+    map<int, BlockMeta *> compute_block_meta_map; // compute block metadata
+    map<int, BlockMeta *> compute_node_meta_map; // compute node metadata
 
 };
 

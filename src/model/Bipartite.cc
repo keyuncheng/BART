@@ -187,8 +187,8 @@ bool Bipartite::buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths) {
             return false;
         }
 
-        printf("path (size: %ld):\n", path.size());
-        Utils::print_int_vector(path);
+        // printf("path (size: %ld):\n", path.size());
+        // Utils::print_int_vector(path);
 
 
         for (int vtx_idx = 0; vtx_idx < path.size() - 1; vtx_idx++) {
