@@ -19,10 +19,11 @@ public:
     void print();
     void print_meta();
 
-    static bool BFSGraphForRecvGraph(RecvBipartite &recv_bipartite, int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, map<int, vector<int>> &cur_reloc_node_map);
-    static int findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
+    bool BFSGraphForRecvGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, map<int, vector<int>> &cur_reloc_node_map);
+    int findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_limit);
+    bool findNegativeCycle(int **res_graph_weight_mtx, int **res_graph_cost_mtx, int num_vertices, int src_idx, int sink_idx, vector<int> &nccycle, int l_limit, int r_limit);
 
-
+    
 
 private:
     bool addStripeGroupWithData(StripeGroup &stripe_group);

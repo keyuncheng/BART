@@ -10,12 +10,12 @@ enum BlockType {
 
 typedef struct BlockMeta {
     int id; // meta id
+    BlockType type; // block type
     int stripe_batch_id; // stripe batch id
     int stripe_group_id; // stripe group id
-    int stripe_id; // stripe id (in the stripe group)
     int stripe_id_global; // stripe id (among all stripes)
+    int stripe_id; // stripe id (in the stripe group)
     int block_id; // block id in the stripe (0 - k - 1)
-    BlockType type; // block type
     int vtx_id; // Vertex id (in the graph)
 } BlockMeta;
 

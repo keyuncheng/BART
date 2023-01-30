@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstdio>
 #include <cmath>
+#include <bits/stdc++.h>
+#include <cstring>
 #include <cstdlib>
 #include <string>
 #include <vector>
