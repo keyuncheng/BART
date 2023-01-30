@@ -679,6 +679,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
 
     // clear the output paths
     paths.clear();
+    vector<vector<int>> initial_paths;
 
     // create two dummy nodes representing the source and target(sink) node
     int src_idx = recv_bipartite.vertices_map.size();
@@ -693,6 +694,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
         Edge &edge = it->second;
         graph_weight_mtx[edge.lvtx->id][edge.rvtx->id] = edge.weight;
         graph_cost_mtx[edge.lvtx->id][edge.rvtx->id] = edge.cost;
+        graph_cost_mtx[edge.rvtx->id][edge.lvtx->id] = -edge.cost;
     }
 
     // add virtual edges from source node to left vertices. Edges are with weight = l_limit and cost = 0
@@ -700,6 +702,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
         Vertex &lvtx = *(it->second);
         graph_weight_mtx[src_idx][lvtx.id] = l_limit;
         graph_cost_mtx[src_idx][lvtx.id] = 0;
+        graph_cost_mtx[lvtx.id][src_idx] = 0;
     }
 
     // add virtual edges from right vertices to sink. Edges are with weight = r_limit and cost = 0
@@ -707,6 +710,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
         Vertex &rvtx = *(it->second);
         graph_weight_mtx[rvtx.id][sink_idx] = r_limit;
         graph_cost_mtx[rvtx.id][sink_idx] = 0;
+        graph_cost_mtx[sink_idx][rvtx.id] = 0;
     }
 
     printf("recv graph_weight_matrix:\n");
@@ -736,8 +740,6 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
 
     while (RecvBipartite::BFSGraphForRecvGraph(recv_bipartite, src_idx, sink_idx, num_vertices, graph_weight_mtx, res_graph_weight_mtx, parent, cur_reloc_node_map) == true) {
 
-    // while (Bipartite::BFSGraph(src_idx, sink_idx, num_vertices, graph_weight_mtx, res_graph_weight_mtx, parent) == true) {
-
         // find the minimum residual capacity of the edges along the path from source to sink by BFS.
         int uid, vid; // dummy vertices
         int path_flow = INT_MAX;
@@ -751,8 +753,10 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
             // update residual capacities of the edges and reverse edges along the path
             for (int vid = sink_idx; vid != src_idx; vid = parent[vid]) { // reversely traverse the path from sink to source
                 uid = parent[vid]; // u: parent of v
+
+                // update flows
                 res_graph_weight_mtx[uid][vid] -= path_flow;
-                res_graph_weight_mtx[vid][uid] += path_flow;            
+                res_graph_weight_mtx[vid][uid] += path_flow;
             }
 
             // add path flow to overall flow
@@ -767,8 +771,9 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
             reverse(path.begin(), path.end());
 
             // store the src to sink path to paths
-            paths.push_back(path);
+            initial_paths.push_back(path);
 
+            // mark the current destination node as relocated (with a block)
             // find metadata of the block and node
             BlockMeta &block_meta = *(recv_bipartite.getBlockMeta(path[1]));
             NodeMeta &node_meta = *(recv_bipartite.getNodeMeta(path[path.size() - 2]));
@@ -781,6 +786,68 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bi
                 cur_sg_reloc_nodes.push_back(reloc_node_id);
             }
 
+        }
+    }
+
+    printf("res_graph_weight_mtx:\n");
+    Utils::print_int_matrix(res_graph_weight_mtx, num_vertices, num_vertices);
+
+    // currently, the residual weight graph stores the initially chosen paths, copy it out
+    int cur_max_flow = max_flow;
+    paths = initial_paths;
+
+    // initialize the sink to src costs as infinite
+    vector<int> t_to_s_costs(num_vertices, INT_MAX);
+    t_to_s_costs[sink_idx] = 0; // dist(sink) = 0
+
+    // repeat the iterations for |V| - 1 times
+    for (int iter = 0; iter < num_vertices - 1; iter++) {
+        // for every edge in residual graph, update t_to_s_costs
+        for (int uid = 0; uid < num_vertices; uid++) {
+            for (int vid = 0; vid < num_vertices; vid++) {
+
+                // get edge (non-zero weight)
+                int edge_weight = res_graph_weight_mtx[uid][vid];
+                if (edge_weight == 0) {
+                    continue;
+                }
+
+                // get edge cost
+                int edge_cost = res_graph_cost_mtx[uid][vid];
+
+                // there is an (non-zero cost) edge between u and v
+                if (t_to_s_costs[uid] != INT_MAX && t_to_s_costs[vid] > t_to_s_costs[uid] + edge_cost) {
+                    t_to_s_costs[vid] = t_to_s_costs[uid] + edge_cost;
+                    printf("%d, %d, %d, %d\n", uid, vid, edge_weight, edge_cost);
+                    printf("iter: %d, t_to_s_costs:\n", iter);
+                    Utils::print_int_vector(t_to_s_costs);
+                }
+            }
+        }
+    }
+
+
+    // now the t_to_s_costs stores the minimum distances to all nodes
+    // check negative cost cycles
+    for (int uid = 0; uid < num_vertices; uid++) {
+        bool found_negative_cost = false;
+        for (int vid = 0; vid < num_vertices; vid++) {
+            // get edge (non-zero weight)
+            int edge_weight = res_graph_weight_mtx[uid][vid];
+            if (edge_weight == 0) {
+                continue;
+            }
+
+            // get edge cost
+            int edge_cost = res_graph_cost_mtx[uid][vid];
+            if (t_to_s_costs[uid] != INT_MAX && t_to_s_costs[vid] > t_to_s_costs[uid] + edge_cost) {
+                printf("find negative_cycles, (%d, %d, %d, %d, %d)\n", uid, vid, t_to_s_costs[uid], t_to_s_costs[vid], edge_cost);
+                found_negative_cost = true;
+                break;
+            }
+        }
+        if (found_negative_cost == true) {
+            break;
         }
     }
 

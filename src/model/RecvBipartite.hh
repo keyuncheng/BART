@@ -22,6 +22,8 @@ public:
     static bool BFSGraphForRecvGraph(RecvBipartite &recv_bipartite, int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, map<int, vector<int>> &cur_reloc_node_map);
     static int findMaxflowByFordFulkersonForRecvGraph(RecvBipartite &recv_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
 
+
+
 private:
     bool addStripeGroupWithData(StripeGroup &stripe_group);
     bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
