@@ -23,6 +23,8 @@ public:
     int findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_limit);
     bool findNegativeCycle(int **res_graph_weight_mtx, int **res_graph_cost_mtx, int num_vertices, int src_idx, int sink_idx, vector<int> &nccycle, int l_limit, int r_limit);
 
+    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<int> &load_dist);
+
     
 
 private:
@@ -36,7 +38,6 @@ private:
 
     BlockMeta *getBlockMeta(int vtx_id);
     NodeMeta *getNodeMeta(int vtx_id);
-
 
     map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
     

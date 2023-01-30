@@ -6,6 +6,7 @@
 #include "model/StripeGroup.hh"
 #include "model/RecvBipartite.hh"
 #include "util/Utils.hh"
+#include "model/StripeMergeG.hh"
 
 int main(int argc, char *argv[]) {
 
@@ -74,9 +75,42 @@ int main(int argc, char *argv[]) {
     recv_bipartite.print_meta();
     recv_bipartite.print();
 
-    int recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_f);
+    int recv_max_flow = -1;
+
+    if (ENABLE_RE_ENCODING) {
+        recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_f);
+    } else {
+        recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_i);
+    }
+
 
     printf("maximum flow of recv graph: %d\n", recv_max_flow);
+
+    vector<int> load_dist(settings.M, 0);
+    recv_bipartite.getLoadDist(code, settings, load_dist);
+    int bw_bc = 0;
+    for (auto item : load_dist) {
+        bw_bc += item;
+    }
+
+    printf("Balanced Conversion bandwidth: %d, load_dist:\n", bw_bc);
+    Utils::print_int_vector(load_dist);
+
+
+    // stripe-merge-g
+    StripeMergeG stripe_merge_g;
+    vector<vector<int>> smg_solutions;
+    vector<int> smg_load_dist;
+    stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions);
+    stripe_merge_g.getLoadDist(code, settings, smg_solutions, smg_load_dist);
+
+    int bw_smg = 0;
+    for (auto item : smg_load_dist) {
+        bw_smg += item;
+    }
+    printf("StripeMerge-G bandwidth: %d load_dist:\n", bw_smg);
+    Utils::print_int_vector(smg_load_dist);
+
 
     return 0;
 }

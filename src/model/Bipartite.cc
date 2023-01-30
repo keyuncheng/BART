@@ -191,7 +191,7 @@ bool Bipartite::buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths) {
         // Utils::print_int_vector(path);
 
 
-        for (int vtx_idx = 0; vtx_idx < path.size() - 1; vtx_idx++) {
+        for (int vtx_idx = 0; vtx_idx < int(path.size() - 1); vtx_idx++) {
             int uid = path[vtx_idx];
             int vid = path[vtx_idx + 1];
 

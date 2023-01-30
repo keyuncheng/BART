@@ -1024,3 +1024,27 @@ bool RecvBipartite::findNegativeCycle(int **res_graph_weight_mtx, int **res_grap
 
     return false;
 }
+
+void RecvBipartite::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<int> &load_dist) {
+    int num_nodes = settings.M;
+
+    load_dist.resize(num_nodes);
+    for (auto &item : load_dist) {
+        item = 0;
+    }
+
+    map<int, int> vtx_node_map;
+    for (auto it = node_meta_map.begin(); it != node_meta_map.end(); it++) {
+        NodeMeta &node_meta = it->second;
+        vtx_node_map[node_meta.vtx_id] = node_meta.node_id;
+    }
+
+    for (auto it = edges_max_flow_map.begin(); it != edges_max_flow_map.end(); it++) {
+        Edge &edge = it->second;
+
+        int node_id = vtx_node_map[edge.rvtx->id];
+        load_dist[node_id] += edge.cost;
+    }
+
+    return;
+}
