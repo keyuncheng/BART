@@ -11,7 +11,7 @@
 int main(int argc, char *argv[]) {
 
     if (argc != 7) {
-        printf("usage: ./Simulator k_i m_i k_f m_f N M");
+        printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file");
         return -1;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    vector<Stripe> stripes = stripe_generator.GenerateStripes(code, settings);
+    vector<Stripe> stripes = stripe_generator.generateStripes(code, settings);
 
     printf("stripes:\n");
 

@@ -18,6 +18,8 @@ public:
     Stripe(ConvertibleCode code, ClusterSettings settings, int id, vector<int> stripe_indices);
     ~Stripe();
 
+    ConvertibleCode &getCode();
+    ClusterSettings &getClusterSettings();
     vector<int> &getStripeIndices();
     int getId();
     void print();

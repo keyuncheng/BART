@@ -12,6 +12,14 @@ Stripe::~Stripe()
 {
 }
 
+ConvertibleCode &Stripe::getCode() {
+    return _code;
+}
+
+ClusterSettings &Stripe::getClusterSettings() {
+    return _settings;
+}
+
 vector<int> &Stripe::getStripeIndices() {
     return _stripe_indices;
 }
