@@ -47,10 +47,10 @@ public:
     void print_vertices(map<int, Vertex *> &vmap);
     void print_edges(map<int, Edge> &emap);
 
-    bool buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths);
+    bool buildMaxFlowSolutionFromPaths(vector<vector<int> > &paths);
 
     static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
-    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int>> &paths, int l_limit, int r_limit);
+    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int> > &paths, int l_limit, int r_limit);
 
 
 

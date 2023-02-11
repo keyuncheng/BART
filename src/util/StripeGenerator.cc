@@ -1,6 +1,6 @@
 #include "StripeGenerator.hh"
 
-StripeGenerator::StripeGenerator(/* args */)
+StripeGenerator::StripeGenerator()
 {
 }
 
@@ -8,15 +8,12 @@ StripeGenerator::~StripeGenerator()
 {
 }
 
-vector<Stripe> StripeGenerator::generateStripes(ConvertibleCode &code, ClusterSettings &settings) {
+vector<Stripe> StripeGenerator::generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator) {
     int num_stripes = settings.N;
     int num_nodes = settings.M;
-    // random number generator
-    const int range_from = 0;
-    const int range_to = num_nodes - 1;
-    std::random_device rand_dev;
-    std::mt19937 generator(rand_dev());
-    std::uniform_int_distribution<int> distr(range_from, range_to);
+
+    // generate distribution
+    std::uniform_int_distribution<int> distr(0, num_nodes - 1);
 
     vector<Stripe> stripes;
 
@@ -25,7 +22,7 @@ vector<Stripe> StripeGenerator::generateStripes(ConvertibleCode &code, ClusterSe
         
         // generate indices of stripe
         while (stripe_indices.size() < (size_t) code.n_i) {
-            int random_node = distr(generator);
+            int random_node = distr(random_generator);
             auto it = find(stripe_indices.begin(), stripe_indices.end(), random_node);
 
             if (it == stripe_indices.end()) {

@@ -32,14 +32,14 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    vector<Stripe> stripes = stripe_generator.generateStripes(code, settings);
+    // random generator
+    mt19937 random_generator = Utils::createRandomGenerator();
+
+    // generate random stripes, and store in the placement file
+    vector<Stripe> stripes = stripe_generator.generateRandomStripes(code, settings, random_generator);
     stripe_generator.storeStripes(stripes, placement_file);
 
-    printf("stripes:\n");
-
-    for (size_t i = 0; i < stripes.size(); i++) {
-        stripes[i].print();
-    }
+    printf("finished generating %d (%d, %d) stripes in %d storage nodes", settings.N, code.k_i, code.m_i, settings.M);
 
     return 0;
 }

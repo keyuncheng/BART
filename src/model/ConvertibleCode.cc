@@ -41,3 +41,7 @@ int ConvertibleCode::lcm(int a, int b) {
 
     return max_num;
 }
+
+bool ConvertibleCode::isValidForPM() {
+    return (lambda_f == 1) && (m_f < m_i);
+}

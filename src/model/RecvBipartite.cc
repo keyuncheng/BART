@@ -81,7 +81,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     }
 
     printf("data block distribution:\n");
-    Utils::print_int_vector(num_data_stored);
+    Utils::printIntVector(num_data_stored);
 
     // candidate nodes for data relocation
     vector<int> data_relocation_candidates;
@@ -92,7 +92,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     }
 
     printf("data relocation candidates:\n");
-    Utils::print_int_vector(data_relocation_candidates);
+    Utils::printIntVector(data_relocation_candidates);
 
     // data relocation
     for (int node_id = 0; node_id < num_nodes; node_id++) {
@@ -184,7 +184,7 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     }
 
     printf("data block distribution:\n");
-    Utils::print_int_vector(num_data_stored);
+    Utils::printIntVector(num_data_stored);
 
     // candidate nodes for data relocation (no any data block stored on that node)
     vector<int> data_relocation_candidates;
@@ -195,7 +195,7 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     }
 
     printf("data relocation candidates:\n");
-    Utils::print_int_vector(data_relocation_candidates);
+    Utils::printIntVector(data_relocation_candidates);
 
     // parity relocation
 
@@ -284,7 +284,7 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     }
 
     printf("data block distribution:\n");
-    Utils::print_int_vector(num_data_stored);
+    Utils::printIntVector(num_data_stored);
 
     // candidate nodes for data relocation (no any data block stored on that node)
     vector<int> data_relocation_candidates;
@@ -295,7 +295,7 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     }
 
     printf("data relocation candidates:\n");
-    Utils::print_int_vector(data_relocation_candidates);
+    Utils::printIntVector(data_relocation_candidates);
 
     // parity relocation
 
@@ -678,7 +678,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_lim
     }
 
     // clear the output paths
-    vector<vector<int>> initial_paths;
+    vector<vector<int> > initial_paths;
 
     // create two dummy nodes representing the source and target(sink) node
     int src_idx = vertices_map.size();
@@ -686,8 +686,8 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_lim
     int num_vertices = vertices_map.size() + 2;
     
     // create graph weight and cost matrix (dim: (num_vertices + 2))
-    int **graph_weight_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
-    int **graph_cost_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
+    int **graph_weight_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
+    int **graph_cost_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
     
     for (auto it = edges_map.begin(); it != edges_map.end(); it++) {
         Edge &edge = it->second;
@@ -713,22 +713,22 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_lim
     }
 
     printf("recv graph_weight_matrix:\n");
-    Utils::print_int_matrix(graph_weight_mtx, num_vertices, num_vertices);
+    Utils::printIntMatrix(graph_weight_mtx, num_vertices, num_vertices);
     printf("recv graph_cost_matrix:\n");
-    Utils::print_int_matrix(graph_cost_mtx, num_vertices, num_vertices);
+    Utils::printIntMatrix(graph_cost_mtx, num_vertices, num_vertices);
 
     // create residual graphs for weight and cost by copying
-    int **res_graph_weight_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
-    int **res_graph_cost_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
+    int **res_graph_weight_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
+    int **res_graph_cost_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
     for (int rid = 0; rid < num_vertices; rid++) {
         memcpy(res_graph_weight_mtx[rid], graph_weight_mtx[rid], num_vertices * sizeof(int));
         memcpy(res_graph_cost_mtx[rid], graph_cost_mtx[rid], num_vertices * sizeof(int));
     }
 
     // printf("recv res_graph_weight_matrix:\n");
-    // Utils::print_int_matrix(res_graph_weight_mtx, num_vertices, num_vertices);
+    // Utils::printIntMatrix(res_graph_weight_mtx, num_vertices, num_vertices);
     // printf("recv res_graph_cost_matrix:\n");
-    // Utils::print_int_matrix(res_graph_cost_mtx, num_vertices, num_vertices);
+    // Utils::printIntMatrix(res_graph_cost_mtx, num_vertices, num_vertices);
 
 
     vector<int> parent(num_vertices, 0); // it stores path from source to sink by 
@@ -830,7 +830,7 @@ int RecvBipartite::findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_lim
         if (found_negative_cost_cycle == true) {
 
             printf("detected negative cycle (size %ld)\n", nccycle.size());
-            Utils::print_int_vector(nccycle);
+            Utils::printIntVector(nccycle);
 
             // check the maximum possible weight of the cycle
             int max_weight_cycle = INT_MAX;
@@ -938,7 +938,7 @@ bool RecvBipartite::findNegativeCycle(int **res_graph_weight_mtx, int **res_grap
     }
 
     // printf("recv res_graph_weight_mtx:\n");
-    // Utils::print_int_matrix(res_graph_weight_mtx, num_vertices, num_vertices);
+    // Utils::printIntMatrix(res_graph_weight_mtx, num_vertices, num_vertices);
 
     nccycle.clear();
 
@@ -970,7 +970,7 @@ bool RecvBipartite::findNegativeCycle(int **res_graph_weight_mtx, int **res_grap
                     cycle_parents[vid] = uid;
                     // printf("%d, %d, %d, %d\n", uid, vid, edge_weight, edge_cost);
                     // printf("iter: %d, t_to_s_costs:\n", iter);
-                    // Utils::print_int_vector(t_to_s_costs);
+                    // Utils::printIntVector(t_to_s_costs);
                 }
             }
         }

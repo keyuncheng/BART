@@ -39,7 +39,7 @@ void Bipartite::print_edges(map<int, Edge> &emap) {
     }
 }
 
-int Bipartite::findMaxflowByFordFulkerson(Bipartite &bipartite, vector<vector<int>> &paths, int l_limit, int r_limit) {
+int Bipartite::findMaxflowByFordFulkerson(Bipartite &bipartite, vector<vector<int> > &paths, int l_limit, int r_limit) {
     if (bipartite.vertices_map.empty() == true || bipartite.edges_map.empty() == true || l_limit <= 0 || r_limit <= 0) {
         printf("invalid input parameters\n");
         return -1;
@@ -54,8 +54,8 @@ int Bipartite::findMaxflowByFordFulkerson(Bipartite &bipartite, vector<vector<in
     int num_vertices = bipartite.vertices_map.size() + 2;
     
     // create graph weight and cost matrix (dim: (num_vertices + 2))
-    int **graph_weight_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
-    int **graph_cost_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
+    int **graph_weight_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
+    int **graph_cost_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
     
     for (auto it = bipartite.edges_map.begin(); it != bipartite.edges_map.end(); it++) {
         Edge &edge = it->second;
@@ -78,22 +78,22 @@ int Bipartite::findMaxflowByFordFulkerson(Bipartite &bipartite, vector<vector<in
     }
 
     printf("recv graph_weight_matrix:\n");
-    Utils::print_int_matrix(graph_weight_mtx, num_vertices, num_vertices);
+    Utils::printIntMatrix(graph_weight_mtx, num_vertices, num_vertices);
     printf("recv graph_cost_matrix:\n");
-    Utils::print_int_matrix(graph_cost_mtx, num_vertices, num_vertices);
+    Utils::printIntMatrix(graph_cost_mtx, num_vertices, num_vertices);
 
     // create residual graphs for weight and cost by copying
-    int **res_graph_weight_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
-    int **res_graph_cost_mtx = Utils::init_int_matrix(num_vertices, num_vertices);
+    int **res_graph_weight_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
+    int **res_graph_cost_mtx = Utils::initIntMatrix(num_vertices, num_vertices);
     for (int rid = 0; rid < num_vertices; rid++) {
         memcpy(res_graph_weight_mtx[rid], graph_weight_mtx[rid], num_vertices * sizeof(int));
         memcpy(res_graph_cost_mtx[rid], graph_cost_mtx[rid], num_vertices * sizeof(int));
     }
 
     // printf("recv res_graph_weight_matrix:\n");
-    // Utils::print_int_matrix(res_graph_weight_mtx, num_vertices, num_vertices);
+    // Utils::printIntMatrix(res_graph_weight_mtx, num_vertices, num_vertices);
     // printf("recv res_graph_cost_matrix:\n");
-    // Utils::print_int_matrix(res_graph_cost_mtx, num_vertices, num_vertices);
+    // Utils::printIntMatrix(res_graph_cost_mtx, num_vertices, num_vertices);
 
 
     vector<int> parent(num_vertices, 0); // it stores path from source to sink by 
@@ -177,7 +177,7 @@ bool Bipartite::BFSGraph(int sid, int tid, int num_vertices, int **graph, int **
     return false;
 }
 
-bool Bipartite::buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths) {
+bool Bipartite::buildMaxFlowSolutionFromPaths(vector<vector<int> > &paths) {
     // clear all edges
     edges_max_flow_map.clear();
 
@@ -188,7 +188,7 @@ bool Bipartite::buildMaxFlowSolutionFromPaths(vector<vector<int>> &paths) {
         }
 
         // printf("path (size: %ld):\n", path.size());
-        // Utils::print_int_vector(path);
+        // Utils::printIntVector(path);
 
 
         for (int vtx_idx = 0; vtx_idx < int(path.size() - 1); vtx_idx++) {

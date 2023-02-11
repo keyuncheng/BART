@@ -15,10 +15,10 @@ public:
     StripeMergeG(/* args */);
     ~StripeMergeG();
 
-    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int>> &solutions);
-    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int>> &solutions);
+    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions);
+    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int> > &solutions);
 
-    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int>> &solutions, vector<int> &load_dist);
+    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &load_dist);
 };
 
 

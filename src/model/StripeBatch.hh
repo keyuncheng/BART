@@ -2,6 +2,7 @@
 #define __STRIPE_BATCH_HH__
 
 #include "../include/include.hh"
+#include "../util/Utils.hh"
 #include "StripeGroup.hh"
 
 class StripeBatch
@@ -14,8 +15,12 @@ private:
     int _id;
 
 public:
-    StripeBatch(ConvertibleCode code, ClusterSettings settings, int id);
+    StripeBatch(ConvertibleCode &code, ClusterSettings &settings, int id);
     ~StripeBatch();
+
+    bool constructInSequence(vector<Stripe> &stripes);
+    bool constructByRandomPick(vector<Stripe> &stripes, mt19937 &random_generator);
+    bool constructByCost(vector<Stripe> &stripes);
 
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();

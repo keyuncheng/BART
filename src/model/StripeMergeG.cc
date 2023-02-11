@@ -9,7 +9,7 @@ StripeMergeG::~StripeMergeG()
 {
 }
 
-void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int>> &solutions) {
+void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions) {
     ConvertibleCode &code = stripe_batch.getCode();
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
@@ -20,7 +20,7 @@ void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<v
     }
     
     for (auto &stripe_group : stripe_groups) {
-        vector<vector<int>> sg_solutions;
+        vector<vector<int> > sg_solutions;
         getSolutionForStripeGroup(stripe_group, sg_solutions);
 
         for (auto sg_solution : sg_solutions) {
@@ -31,7 +31,7 @@ void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<v
     return;
 }
 
-void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int>> &solutions) {
+void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int> > &solutions) {
     ConvertibleCode &code = stripe_group.getCode();
     ClusterSettings &settings = stripe_group.getClusterSettings();
 
@@ -56,7 +56,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     }
 
     printf("data block distribution:\n");
-    Utils::print_int_vector(num_data_stored);
+    Utils::printIntVector(num_data_stored);
 
     // candidate nodes for data relocation (no any data block stored on that node)
     vector<int> data_relocation_candidates;
@@ -67,7 +67,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     }
 
     // printf("data relocation candidates:\n");
-    // Utils::print_int_vector(data_relocation_candidates);
+    // Utils::printIntVector(data_relocation_candidates);
 
     // relocate data blocks
     for (int node_id = 0; node_id < num_nodes; node_id++) {
@@ -113,7 +113,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     vector<int> parity_relocation_candidates = data_relocation_candidates;
 
     // printf("parity relocation candidates:\n");
-    // Utils::print_int_vector(parity_relocation_candidates);
+    // Utils::printIntVector(parity_relocation_candidates);
 
     // relocate for every parity block
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
@@ -132,7 +132,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
         // printf("map:\n");
         // for (auto it = parity_dist.begin(); it != parity_dist.end(); it++) {
         //     printf("%d: ", it->first);
-        //     Utils::print_int_vector(it->second);
+        //     Utils::printIntVector(it->second);
         // }
 
         // find the minimum number of blocks required
@@ -173,7 +173,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     }
 }
 
-void StripeMergeG::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int>> &solutions, vector<int> &load_dist) {
+void StripeMergeG::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &load_dist) {
     int num_nodes = settings.M;
 
     load_dist.resize(num_nodes);

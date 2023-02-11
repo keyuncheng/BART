@@ -32,6 +32,8 @@ public:
     ConvertibleCode(int k_in, int m_in, int k_out, int m_out);
     ~ConvertibleCode();
 
+    bool isValidForPM();
+
 private:
     int lcm(int a, int b);
 };

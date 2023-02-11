@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 7) {
+    if (argc != 8) {
         printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file");
         return -1;
     }
@@ -21,8 +21,10 @@ int main(int argc, char *argv[]) {
     int m_f = atoi(argv[4]);
     int N = atoi(argv[5]);
     int M = atoi(argv[6]);
+    string placement_file = argv[7];
 
-    StripeGenerator stripe_generator;
+    // random generator
+    mt19937 random_generator = Utils::createRandomGenerator();
 
     // initialize code
     ConvertibleCode code(k_i, m_i, k_f, m_f);
@@ -36,10 +38,17 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    vector<Stripe> stripes = stripe_generator.generateStripes(code, settings);
+    // stripe generator
+    StripeGenerator stripe_generator;
+
+    // // randomly generate stripes
+    // vector<Stripe> stripes = stripe_generator.generateStripes(code, settings);
+
+    // load stripes from placement file
+    vector<Stripe> stripes;
+    stripe_generator.loadStripes(code, settings, stripes, placement_file);
 
     printf("stripes:\n");
-
     for (size_t i = 0; i < stripes.size(); i++) {
         stripes[i].print();
     }
@@ -94,12 +103,12 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Balanced Conversion bandwidth: %d, load_dist:\n", bw_bc);
-    Utils::print_int_vector(load_dist);
+    Utils::printIntVector(load_dist);
 
 
     // stripe-merge-g
     StripeMergeG stripe_merge_g;
-    vector<vector<int>> smg_solutions;
+    vector<vector<int> > smg_solutions;
     vector<int> smg_load_dist;
     stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions);
     stripe_merge_g.getLoadDist(code, settings, smg_solutions, smg_load_dist);
@@ -109,7 +118,7 @@ int main(int argc, char *argv[]) {
         bw_smg += item;
     }
     printf("StripeMerge-G bandwidth: %d load_dist:\n", bw_smg);
-    Utils::print_int_vector(smg_load_dist);
+    Utils::printIntVector(smg_load_dist);
 
 
     return 0;

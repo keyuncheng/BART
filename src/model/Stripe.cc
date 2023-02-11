@@ -1,6 +1,6 @@
 #include "Stripe.hh"
 
-Stripe::Stripe(ConvertibleCode code, ClusterSettings settings, int id, vector<int> stripe_indices)
+Stripe::Stripe(ConvertibleCode &code, ClusterSettings &settings, int id, vector<int> &stripe_indices)
 {
     _code = code;
     _settings = settings;

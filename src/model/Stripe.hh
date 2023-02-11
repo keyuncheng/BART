@@ -15,7 +15,7 @@ private:
 
 public:
 
-    Stripe(ConvertibleCode code, ClusterSettings settings, int id, vector<int> stripe_indices);
+    Stripe(ConvertibleCode &code, ClusterSettings &settings, int id, vector<int> &stripe_indices);
     ~Stripe();
 
     ConvertibleCode &getCode();

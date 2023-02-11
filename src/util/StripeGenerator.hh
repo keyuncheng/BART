@@ -8,16 +8,18 @@
 #include "../model/ConvertibleCode.hh"
 #include "../model/ClusterSettings.hh"
 #include "../model/Stripe.hh"
+#include "../util/Utils.hh"
 
 class StripeGenerator
 {
 private:
-    /* data */
 public:
-    StripeGenerator(/* args */);
+
+    StripeGenerator();
+    StripeGenerator(mt19937 &random_generator);
     ~StripeGenerator();
 
-    vector<Stripe> generateStripes(ConvertibleCode &code, ClusterSettings &settings);
+    vector<Stripe> generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator);
 
     void storeStripes(vector<Stripe> &stripes, string placement_file);
     bool loadStripes(ConvertibleCode &code, ClusterSettings &settings, vector<Stripe> &stripes, string placement_file);

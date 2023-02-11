@@ -16,12 +16,20 @@ public:
 
     static bool isParamValid(const ConvertibleCode &code, const ClusterSettings &settings);
 
-    static void print_int_vector(vector<int> &vec);
-    static void print_int_array(int *arr, int len);
-    static void print_int_matrix(int **matrix, int r, int c);
+    static mt19937 createRandomGenerator();
 
-    static int **init_int_matrix(int r, int c);
-    static void destroy_int_matrix(int **matrix, int r, int c);
+    static void printIntVector(vector<int> &vec);
+    static void printIntArray(int *arr, int len);
+    static void printIntMatrix(int **matrix, int r, int c);
+
+    static int **initIntMatrix(int r, int c);
+    static void destroyIntMatrix(int **matrix, int r, int c);
+
+    static vector<int> argsortIntVector(vector<int> &vec);
+
+    static void makeCombUtil(vector<vector<int> >& ans,
+    vector<int>& tmp, int n, int left, int k);
+    static vector<vector<int> > getCombinations(int n, int k);
 };
 
 
