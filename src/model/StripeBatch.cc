@@ -44,7 +44,7 @@ bool StripeBatch::constructInSequence(vector<Stripe> &stripes) {
     ConvertibleCode &code = stripes[0].getCode();
     ClusterSettings &settings = stripes[0].getClusterSettings();
 
-    // check if the number of stripes is a multiple of theta
+    // check if the number of stripes is a multiple of lambda_i
     if (stripes.size() % code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;
@@ -83,7 +83,7 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
 
     int num_stripes = stripes.size();
 
-    // check if the number of stripes is a multiple of theta
+    // check if the number of stripes is a multiple of lambda_i
     if (num_stripes % code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;
@@ -138,7 +138,7 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
 
     int num_stripes = stripes.size();
 
-    // check if the number of stripes is a multiple of theta
+    // check if the number of stripes is a multiple of lambda_i
     if (num_stripes % code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;

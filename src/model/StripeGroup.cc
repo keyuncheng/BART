@@ -99,6 +99,7 @@ int StripeGroup::getDataRelocationCost() {
     int data_relocation_cost = 0;
     vector<int> data_distribution = getDataDistribution();
 
+    // it targets at general parameters (meaning that for a converted group, there must exist no more than lambda_f data blocks in a node)
     for (int node_id = 0; node_id < num_nodes; node_id++) {
         if (data_distribution[node_id] > _code.lambda_f) {
             data_relocation_cost += data_distribution[node_id] - _code.lambda_f;
@@ -136,7 +137,7 @@ int StripeGroup::getMinParityMergingCost() {
             }
         }
 
-        // find the node with minimum cost
+        // find minimum cost among all nodes
         int min_pm_cost = *min_element(pm_costs.begin(), pm_costs.end());
         total_pm_cost += min_pm_cost;
     }
@@ -152,6 +153,8 @@ int StripeGroup::getMinReEncodingCost() {
 
     int total_re_cost = 0;
     vector<int> sorted_idx = Utils::argsortIntVector(data_distribution);
+
+    // it targets at general parameters (for each of lambda_f converted stripes, we should collect k_f data blocks to a node, no matter where they come from)
     for (int final_sid = 0; final_sid < _code.lambda_f; final_sid++) {
         // required number of data blocks at the compute node
         int num_data_required = _code.k_f - data_distribution[sorted_idx[final_sid]];

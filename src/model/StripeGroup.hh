@@ -13,7 +13,7 @@ private:
 
     ConvertibleCode _code;
     ClusterSettings _settings;
-    vector<Stripe> _stripes;
+    vector<Stripe> _stripes; // TODO: convert to vector<Stripe *> for memory saving
     int _id;
 
 public:
