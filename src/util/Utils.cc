@@ -27,6 +27,11 @@ mt19937 Utils::createRandomGenerator() {
     return generator;
 }
 
+int Utils::randomInt(int l, int r, mt19937 &random_generator) {
+    std::uniform_int_distribution<int> distr(l, r);
+    return distr(random_generator);
+}
+
 void Utils::printIntVector(vector<int> &vec) {
     for (auto item : vec) {
         printf("%d ", item);

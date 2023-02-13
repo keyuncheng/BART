@@ -35,8 +35,10 @@ int main(int argc, char *argv[]) {
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
 
+
     // generate random stripes, and store in the placement file
     vector<Stripe> stripes = stripe_generator.generateRandomStripes(code, settings, random_generator);
+    printf("1\n");
     stripe_generator.storeStripes(stripes, placement_file);
 
     printf("finished generating %d (%d, %d) stripes in %d storage nodes", settings.N, code.k_i, code.m_i, settings.M);

@@ -12,13 +12,13 @@ class StripeMergeG
 private:
     /* data */
 public:
-    StripeMergeG(/* args */);
+    StripeMergeG();
     ~StripeMergeG();
 
-    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions);
-    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int> > &solutions);
+    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions, mt19937 random_generator);
+    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int> > &solutions, mt19937 random_generator);
 
-    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &load_dist);
+    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist);
 };
 
 

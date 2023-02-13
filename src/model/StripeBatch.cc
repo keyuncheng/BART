@@ -92,9 +92,6 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
     // mark if the stripes are selected
     vector<bool> stripes_selected(num_stripes, false);
 
-    // generate distribution
-    std::uniform_int_distribution<int> distr(0, num_stripes - 1);
-
     vector<Stripe *> stripes_in_group;
     int sg_id = 0; // stripe group id
 
@@ -104,7 +101,7 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
         // randomly pick a non-selected stripe into group
         int stripe_id = -1;
         while (true) {
-            stripe_id = distr(random_generator);
+            stripe_id = Utils::randomInt(0, num_stripes - 1, random_generator);
             if (stripes_selected[stripe_id] == false) {
                 stripes_selected[stripe_id] = true;
                 break;

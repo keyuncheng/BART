@@ -12,9 +12,6 @@ vector<Stripe> StripeGenerator::generateRandomStripes(ConvertibleCode &code, Clu
     int num_stripes = settings.N;
     int num_nodes = settings.M;
 
-    // generate distribution
-    std::uniform_int_distribution<int> distr(0, num_nodes - 1);
-
     vector<Stripe> stripes;
 
     for (int stripe_id = 0; stripe_id < num_stripes; stripe_id++) {
@@ -22,10 +19,9 @@ vector<Stripe> StripeGenerator::generateRandomStripes(ConvertibleCode &code, Clu
         
         // generate indices of stripe
         while (stripe_indices.size() < (size_t) code.n_i) {
-            int random_node = distr(random_generator);
-            auto it = find(stripe_indices.begin(), stripe_indices.end(), random_node);
+            int random_node = Utils::randomInt(0, num_nodes - 1, random_generator);
 
-            if (it == stripe_indices.end()) {
+            if (find(stripe_indices.begin(), stripe_indices.end(), random_node) == stripe_indices.end()) {
                 stripe_indices.push_back(random_node);
             }
         }

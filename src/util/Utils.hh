@@ -17,6 +17,7 @@ public:
     static bool isParamValid(const ConvertibleCode &code, const ClusterSettings &settings);
 
     static mt19937 createRandomGenerator();
+    static int randomInt(int l, int r, mt19937 &random_generator);
 
     static void printIntVector(vector<int> &vec);
     static void printIntArray(int *arr, int len);

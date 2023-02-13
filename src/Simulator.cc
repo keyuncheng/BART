@@ -46,30 +46,41 @@ int main(int argc, char *argv[]) {
     vector<Stripe> stripes;
     stripe_generator.loadStripes(code, settings, stripes, placement_file);
 
-    printf("stripes:\n");
-    for (size_t i = 0; i < stripes.size(); i++) {
-        stripes[i].print();
-    }
+    // printf("stripes:\n");
+    // for (size_t i = 0; i < stripes.size(); i++) {
+    //     stripes[i].print();
+    // }
 
     if (approach == "SM") {
         // stripe-merge-g
+
+        // Step 1: enumerate all possible stripe groups, and sort by cost; then filter out non-overlapped stripe groups with minimum cost
         StripeBatch stripe_batch(code, settings, 0);
         stripe_batch.constructByCost(stripes);
         stripe_batch.print();
 
-        // stripe-merge-g
+        // Step 2: generate transition solutions from given stripe groups
         StripeMergeG stripe_merge_g;
         vector<vector<int> > smg_solutions;
-        vector<int> smg_load_dist;
-        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions);
-        stripe_merge_g.getLoadDist(code, settings, smg_solutions, smg_load_dist);
+        vector<int> send_load_dist, recv_load_dist;
+        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions, random_generator);
 
+        // get load distribution
+        stripe_merge_g.getLoadDist(code, settings, smg_solutions, send_load_dist, recv_load_dist);
+
+        // get bandwidth
         int bw_smg = 0;
-        for (auto item : smg_load_dist) {
+        for (auto item : send_load_dist) {
             bw_smg += item;
         }
-        printf("StripeMerge-G bandwidth: %d load_dist:\n", bw_smg);
-        Utils::printIntVector(smg_load_dist);
+
+        printf("StripeMerge-G send load distribution:, maximum_load: %d, minimum_load: %d\n",
+            *max_element(send_load_dist.begin(), send_load_dist.end()), *min_element(send_load_dist.begin(), send_load_dist.end()));
+        Utils::printIntVector(send_load_dist);
+        printf("StripeMerge-G recv load distribution:, maximum_load: %d, minimum_load: %d\n",
+            *max_element(recv_load_dist.begin(), recv_load_dist.end()), *min_element(recv_load_dist.begin(), recv_load_dist.end()));
+        Utils::printIntVector(recv_load_dist);
+        printf("StripeMerge-G bandwidth: %d\n", bw_smg);
     }
     // construct a stripe batch
 
