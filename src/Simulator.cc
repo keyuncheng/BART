@@ -7,6 +7,7 @@
 #include "model/RecvBipartite.hh"
 #include "util/Utils.hh"
 #include "model/StripeMergeG.hh"
+#include "model/BalancdConversion.hh"
 
 int main(int argc, char *argv[]) {
 
@@ -66,7 +67,7 @@ int main(int argc, char *argv[]) {
         stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions, random_generator);
 
         // get load distribution
-        stripe_merge_g.getLoadDist(code, settings, smg_solutions, send_load_dist, recv_load_dist);
+        Utils::getLoadDist(code, settings, smg_solutions, send_load_dist, recv_load_dist);
 
         // get bandwidth
         int bw_smg = 0;
@@ -74,27 +75,59 @@ int main(int argc, char *argv[]) {
             bw_smg += item;
         }
 
-        printf("StripeMerge-G send load distribution:, maximum_load: %d, minimum_load: %d\n",
-            *max_element(send_load_dist.begin(), send_load_dist.end()), *min_element(send_load_dist.begin(), send_load_dist.end()));
+        int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
+        int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
+        int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+        int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+
+        printf("StripeMerge-G send load distribution:, minimum_load: %d, maximum_load: %d\n", min_send_load, max_send_load);
         Utils::printIntVector(send_load_dist);
-        printf("StripeMerge-G recv load distribution:, maximum_load: %d, minimum_load: %d\n",
-            *max_element(recv_load_dist.begin(), recv_load_dist.end()), *min_element(recv_load_dist.begin(), recv_load_dist.end()));
+        printf("StripeMerge-G recv load distribution:, minimum_load: %d, maximum_load: %d\n", min_recv_load, max_recv_load);
         Utils::printIntVector(recv_load_dist);
         printf("StripeMerge-G bandwidth: %d\n", bw_smg);
+    } else if (approach == "BT") {
+        // balanced transition
+
+        // Step 1: construct a stripe batch
+        
+        // possible construction techniques: sequentially construct; randomly construct; construct by cost
+        StripeBatch stripe_batch(code, settings, 0);
+
+        // stripe_batch.constructInSequence(stripes);
+        // stripe_batch.constructByRandomPick(stripes, random_generator);
+        stripe_batch.constructByCost(stripes);
+        stripe_batch.print();
+
+        BalancdConversion balanced_conversion;
+        vector<vector<int> > bt_solutions;
+        balanced_conversion.getSolutionForStripeBatch(stripe_batch, bt_solutions, random_generator);
+
+        // load distribution
+        vector<int> send_load_dist, recv_load_dist;
+        Utils::getLoadDist(code, settings, bt_solutions, send_load_dist, recv_load_dist);
+
+        // get bandwidth
+        int bw_bt = 0;
+        for (auto item : send_load_dist) {
+            bw_bt += item;
+        }
+
+        int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
+        int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
+        int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+        int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+        
+        printf("Balanced Transition send load distribution:, minimum_load: %d, maximum_load: %d\n", min_send_load, max_send_load);
+        Utils::printIntVector(send_load_dist);
+        printf("Balanced Transition recv load distribution:, minimum_load: %d, maximum_load: %d\n", min_recv_load, max_recv_load);
+        Utils::printIntVector(recv_load_dist);
+        printf("Balanced Transition bandwidth: %d\n", bw_bt);
+
     }
-    // construct a stripe batch
-
-    // StripeBatch stripe_batch_seq(code, settings, 0);
-    // stripe_batch_seq.constructInSequence(stripes);
-    // stripe_batch_seq.print();
-
-    // StripeBatch stripe_batch_rand(code, settings, 0);
-    // stripe_batch_rand.constructByRandomPick(stripes, random_generator);
-    // stripe_batch_rand.print();
 
 
 
-
+    // prev: construct with min-cost max-flow
 
     // // construct recv bipartite graph
     // RecvBipartite recv_bipartite;

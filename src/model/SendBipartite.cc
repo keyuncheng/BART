@@ -216,3 +216,85 @@ void SendBipartite::print() {
     //     printf("id: %d, lvtx(.id): %d, rvtx(.node_id): %d, weight: %d\n", edge_id, edge.lvtx->id, edge.rvtx->node_id, edge.weight);
     // }
 }
+
+bool SendBipartite::constructSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions) {
+    // construct solution <sg_id, block_type, stripe_id, block_id, from_node, to_node> from recv graph
+    // input: in each of solution from recv graph, we set from_node to -1, then we make it initialized in send graph
+    // output: <stripe_id, block_id, from_node, to_node>
+
+    ConvertibleCode &code = stripe_batch.getCode();
+    vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
+
+    // initialize solutions
+    solutions.clear();
+
+    for (auto &partial_solution : solutions_from_recv_graph) {
+        int sg_id = partial_solution[0];
+        int block_type = partial_solution[1];
+        int stripe_id = partial_solution[2];
+        int block_id = partial_solution[3];
+        int from_node_id = partial_solution[4];
+        int to_node_id = partial_solution[5];
+
+        StripeGroup &stripe_group = stripe_groups[sg_id];
+
+        if (block_type == DATA_BLK) {
+            Stripe &stripe = *stripe_group.getStripes()[stripe_id];
+            vector<int> &stripe_indices = stripe.getStripeIndices();
+            from_node_id = stripe_indices[block_id];
+
+            vector<int> solution;
+            solution.push_back(stripe_id);
+            solution.push_back(block_id);
+            solution.push_back(from_node_id);
+            solution.push_back(to_node_id);
+
+            solutions.push_back(solution);
+
+        } else if (block_type == PARITY_BLK) {
+            int parity_id = block_id - code.k_f;
+            vector<Stripe *> &stripes = stripe_group.getStripes();
+            for (int sid = 0; sid < code.lambda_i; sid++) {
+                vector<int> &stripe_indices = stripes[sid]->getStripeIndices();
+                if (stripe_indices[code.k_i + parity_id] != to_node_id) {
+                    stripe_id = sid;
+                    block_id = code.k_i + parity_id;
+                    from_node_id = stripe_indices[code.k_i + parity_id];
+
+                    vector<int> solution;
+                    solution.push_back(stripe_id);
+                    solution.push_back(block_id);
+                    solution.push_back(from_node_id);
+                    solution.push_back(to_node_id);
+
+                    solutions.push_back(solution);
+                }
+            }
+        } else if (block_type == COMPUTE_BLK) {
+            vector<Stripe *> &stripes = stripe_group.getStripes();
+            for (int sid = 0; sid < code.lambda_i; sid++) {
+                vector<int> &stripe_indices = stripes[sid]->getStripeIndices();
+                for (int bid = 0; bid < code.k_i; bid++) {
+                    if (stripe_indices[bid] != to_node_id) {
+                        stripe_id = sid;
+                        block_id = bid;
+                        from_node_id = stripe_indices[bid];
+
+                        vector<int> solution;
+                        solution.push_back(stripe_id);
+                        solution.push_back(block_id);
+                        solution.push_back(from_node_id);
+                        solution.push_back(to_node_id);
+
+                        solutions.push_back(solution);
+                    }
+                }
+            }
+        } else {
+            printf("error: invalid block type\n");
+            return false;
+        }
+    }
+
+    return true;
+}

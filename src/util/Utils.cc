@@ -128,3 +128,52 @@ vector<vector<int> > Utils::getCombinations(int n, int k) {
     makeCombUtil(ans, tmp, n, 0, k);
     return ans;
 }
+
+void Utils::makeEnumUtil(vector<vector<int> >& ans,
+    vector<int> tmp, int left, int right, int k) {
+    
+    if (left == right) {
+        ans.push_back(tmp);
+        return;
+    }
+
+    for (int item = 0; item < k; item++) {
+        tmp.push_back(item);
+        makeEnumUtil(ans, tmp, left + 1, right, k);
+        tmp.pop_back();
+    }
+}
+
+vector<vector<int> > Utils::getEnumeration(int n, int k) {
+    vector<vector<int>> ans;
+    vector<int> tmp;
+    makeEnumUtil(ans, tmp, 0, n, k);
+    return ans;
+}
+
+void Utils::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist) {
+    int num_nodes = settings.M;
+
+    // format for each solution: <stripe_id, block_id, from_node, to_node>
+
+    // initialize send_load_dist and recv_load_dist
+    send_load_dist.resize(num_nodes);
+    for (auto &item : send_load_dist) {
+        item = 0;
+    }
+    recv_load_dist.resize(num_nodes);
+    for (auto &item : recv_load_dist) {
+        item = 0;
+    }
+    
+    // record loads for each node_id
+    for (auto &solution : solutions) {
+        int from_node_id = solution[2];
+        int to_node_id = solution[3];
+
+        send_load_dist[from_node_id] += 1;
+        recv_load_dist[to_node_id] += 1;
+    }
+
+    return;
+}

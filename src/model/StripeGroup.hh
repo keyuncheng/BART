@@ -7,6 +7,11 @@
 #include "ClusterSettings.hh"
 #include "Stripe.hh"
 
+enum TransApproach {
+    RE_ENCODE,
+    PARITY_MERGE
+};
+
 class StripeGroup
 {
 private:

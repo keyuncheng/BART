@@ -13,6 +13,9 @@ void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<v
     ConvertibleCode &code = stripe_batch.getCode();
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
+    // initialize the solution
+    solutions.clear();
+
     // check whether the code is valid for SM
     if (code.isValidForPM() == false) {
         printf("invalid parameters\n");
@@ -67,7 +70,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
 
     vector<int> parity_relocated_nodes; // nodes that are already relocated with a parity block
 
-    // relocate for every parity block
+    // find the data blocks that needs relocation
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
         // get parity distribution
         vector<int> &parity_distribution = parity_distributions[parity_id];
@@ -137,8 +140,8 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     // candidate nodes for data relocation (no any data block stored on that node)
     vector<int> data_reloc_candidates;
     for (int node_id = 0; node_id < num_nodes; node_id++) {
-        // in parity merging, lambda_f = 1, find nodes where no data block is stored, and no parity block is relocated
-        if (data_distribution[node_id] == 0 && (find(parity_relocated_nodes.begin(), parity_relocated_nodes.end(), node_id) == parity_relocated_nodes.end())) {
+        // find nodes store more than lambda_f data block (in parity merging, lambda_f = 1, we find nodes where no data block is stored, and no parity block is relocated)
+        if (data_distribution[node_id] < code.lambda_f && (find(parity_relocated_nodes.begin(), parity_relocated_nodes.end(), node_id) == parity_relocated_nodes.end())) {
             data_reloc_candidates.push_back(node_id);
         }
     }
@@ -152,7 +155,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     // relocate data blocks
     for (int node_id = 0; node_id < num_nodes; node_id++) {
         // find nodes store more than 1 data block
-        if (data_distribution[node_id] <= 1) {
+        if (data_distribution[node_id] <= code.lambda_f) {
             continue;
         }
         int num_db_overlapped = 0;
@@ -165,7 +168,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
                 }
                 num_db_overlapped++;
                 // do relocation starting from the 2nd overlapped data block
-                if (num_db_overlapped > 1) {
+                if (num_db_overlapped > code.lambda_f) {
                     data_blocks_to_reloc.push_back(pair<int, int>(stripe_id, block_id));
                 }
             }
@@ -197,6 +200,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
         }
     }
 
+    // create data relocation task for each data block
     for (auto &item : data_blocks_to_reloc) {
         int stripe_id = item.first;
         int block_id = item.second;
@@ -228,31 +232,4 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     // printf("data relocation candidates (after data relocation):\n");
     // Utils::printIntVector(data_reloc_candidates);
     
-}
-
-void StripeMergeG::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist) {
-    int num_nodes = settings.M;
-
-    // format for each solution: <stripe_id, block_id, from_node, to_node>
-
-    // initialize send_load_dist and recv_load_dist
-    send_load_dist.resize(num_nodes);
-    for (auto &item : send_load_dist) {
-        item = 0;
-    }
-    recv_load_dist.resize(num_nodes);
-    for (auto &item : recv_load_dist) {
-        item = 0;
-    }
-    
-    // record loads for each node_id
-    for (auto &solution : solutions) {
-        int from_node_id = solution[2];
-        int to_node_id = solution[3];
-
-        send_load_dist[from_node_id] += 1;
-        recv_load_dist[to_node_id] += 1;
-    }
-
-    return;
 }

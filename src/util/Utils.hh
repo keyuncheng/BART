@@ -31,6 +31,12 @@ public:
     static void makeCombUtil(vector<vector<int> >& ans,
     vector<int>& tmp, int n, int left, int k);
     static vector<vector<int> > getCombinations(int n, int k);
+
+    static void makeEnumUtil(vector<vector<int> >& ans,
+    vector<int> tmp, int left, int right, int k);
+    static vector<vector<int> > getEnumeration(int n, int k);
+
+    static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist);
 };
 
 

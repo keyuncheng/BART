@@ -19,6 +19,9 @@ public:
 
     void print();
 
+    // construct solution based on recv graph
+    bool constructSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions);
+
 private:
     bool addStripeGroupWithDataFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);
     bool addStripeGroupWithParityMergingFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);

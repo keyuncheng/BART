@@ -52,8 +52,6 @@ public:
     static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
     static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int> > &paths, int l_limit, int r_limit);
 
-
-
     void clear();
 };
 

@@ -25,6 +25,20 @@ public:
 
     void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<int> &load_dist);
 
+
+    // construct stripe batch with approaches
+    bool constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<int> &approaches);
+
+    // construct stripe group with approaches
+    bool constructStripeGroupWithApproach(StripeGroup &stripe_group, int approach);
+
+    bool constructSGWithData(StripeGroup &stripe_group);
+    bool constructSGWithParityMerging(StripeGroup &stripe_group);
+    bool constructSGWithReEncoding(StripeGroup &stripe_group);
+
+    // find load-balanced solution greedily for each block in each stripe group
+    bool findSolutionWithApproachesGreedy(vector<vector<int> > &solutions, mt19937 random_generator);
+
     
 
 private:
