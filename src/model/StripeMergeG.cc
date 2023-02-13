@@ -13,8 +13,8 @@ void StripeMergeG::getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<v
     ConvertibleCode &code = stripe_batch.getCode();
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
-    // if k' = alpha * k
-    if (code.k_f != code.k_i * code.alpha || code.m_f > code.m_i) {
+    // check whether the code is valid for SM
+    if (code.isValidForPM() == false) {
         printf("invalid parameters\n");
         return;
     }
@@ -43,12 +43,12 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
 
     int num_nodes = settings.M;
 
-    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<Stripe *> &stripes = stripe_group.getStripes();
     vector<int> num_data_stored(num_nodes, 0);
 
      // check which node already stores at least one data block
     for (auto stripe : stripes) {
-        vector<int> &stripe_indices = stripe.getStripeIndices();
+        vector<int> &stripe_indices = stripe->getStripeIndices();
 
         for (int block_id = 0; block_id < code.k_i; block_id++) {
             num_data_stored[stripe_indices[block_id]] += 1;
@@ -74,7 +74,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
         if (num_data_stored[node_id] > 1) {
             bool db_overlapped = false;
             for (int stripe_id = 0; stripe_id < code.alpha; stripe_id++) {
-                vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
+                vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
                 for (int block_id = 0; block_id < code.k_i; block_id++) {
                     if (stripe_indices[block_id] == node_id) {
                         if (db_overlapped == false) {
@@ -122,7 +122,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
         for (auto parity_relocation_candidate : parity_relocation_candidates) {
             // identify the stripe ids that parity_id is NOT stored at parity_relocation_candidate
             for (int stripe_id = 0; stripe_id < code.alpha; stripe_id++) {
-                vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
+                vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
                 if (stripe_indices[code.k_i + parity_id] != parity_relocation_candidate) {
                     parity_dist[parity_relocation_candidate].push_back(stripe_id);
                 }
@@ -160,7 +160,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
 
         // create a data relocation task
         for (auto stripe_id : parity_dist[parity_reloc_node_id]) {
-            vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
+            vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
 
             vector<int> solution;
             solution.push_back(stripe_id);

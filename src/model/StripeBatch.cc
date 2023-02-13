@@ -50,7 +50,7 @@ bool StripeBatch::constructInSequence(vector<Stripe> &stripes) {
         return false;
     }
 
-    vector<Stripe> stripes_in_group;
+    vector<Stripe *> stripes_in_group;
     int sg_id = 0;
 
     // put stripes sequentially into stripe groups
@@ -58,7 +58,7 @@ bool StripeBatch::constructInSequence(vector<Stripe> &stripes) {
 
         // add the stripe into stripe group
         Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(stripe);
+        stripes_in_group.push_back(&stripe);
 
         if (stripes_in_group.size() == (size_t) code.lambda_i) {
             StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);
@@ -89,17 +89,17 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
         return false;
     }
 
-    // mark if the stripe are selected
+    // mark if the stripes are selected
     vector<bool> stripes_selected(num_stripes, false);
 
     // generate distribution
     std::uniform_int_distribution<int> distr(0, num_stripes - 1);
 
-    vector<Stripe> stripes_in_group;
+    vector<Stripe *> stripes_in_group;
     int sg_id = 0; // stripe group id
 
     // put stripes randomly into stripe groups
-    for (size_t idx = 0; idx < num_stripes; idx++) {
+    for (int idx = 0; idx < num_stripes; idx++) {
 
         // randomly pick a non-selected stripe into group
         int stripe_id = -1;
@@ -113,7 +113,7 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
 
         // add the stripe into stripe group
         Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(stripe);
+        stripes_in_group.push_back(&stripe);
 
         if (stripes_in_group.size() == (size_t) code.lambda_i) {
             StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);
@@ -144,18 +144,18 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
         return false;
     }
 
-    // enumerate all possible stripe groups <enum_id, <stripe_ids, cost>>
+    // enumerate all possible stripe groups
     vector<vector<int> > combinations = Utils::getCombinations(num_stripes, code.lambda_i);
     int num_candidate_sgs = combinations.size();
-    vector<int> candidate_sgs_costs(num_candidate_sgs, -1);
+    vector<int> candidate_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
 
     for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
         // construct candidate stripe group
         vector<int> &comb = combinations[cand_id];
 
-        vector<Stripe> stripes_in_group;
+        vector<Stripe *> stripes_in_group;
         for (int sid = 0; sid < code.lambda_i; sid++) {
-            stripes_in_group.push_back(stripes[comb[sid]]);
+            stripes_in_group.push_back(&stripes[comb[sid]]);
         }
 
         StripeGroup candidate_sg(code, settings, -1, stripes_in_group);
@@ -165,7 +165,14 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
         candidate_sgs_costs[cand_id] = transition_cost;
     }
 
-    vector<bool> is_comb_valid(num_candidate_sgs, true); // mark all combinations as valid
+    printf("total number of candidate stripe groups: %d\n", num_candidate_sgs);
+    // for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
+    //     printf("candidate_id: %d, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
+    //     Utils::printIntVector(combinations[cand_id]);
+    // }
+
+    // initialize all combinations as valid
+    vector<bool> is_comb_valid(num_candidate_sgs, true);
     
     int num_sgs = num_stripes / code.lambda_i;
     vector<int> sorted_stripe_ids; // sorted stripe ids
@@ -201,23 +208,30 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
                 }
             }
         }
+
+        int num_remaining_candidates = 0;
+        for (auto item : is_comb_valid) {
+            num_remaining_candidates += (item == true ? 1 : 0);
+        }
+
+        printf("pick candidate_id: %d, cost: %d, remaining number of candidates: (%d / %d)\n", min_cost_cand_id, valid_comb_trans_costs[min_cost_id], num_remaining_candidates, num_candidate_sgs);
     }
         
-    if (sorted_stripe_ids.size() != num_stripes) {
+    if (sorted_stripe_ids.size() != (size_t) num_stripes) {
         printf("error: invalid sorted_stripe_ids\n");
         return false;
     }
 
     // 2. put stripes by sorted stripe ids (by cost) into stripe groups
-    vector<Stripe> stripes_in_group;
+    vector<Stripe *> stripes_in_group;
     int sg_id = 0; // stripe group id
-    for (size_t idx = 0; idx < num_stripes; idx++) {
+    for (int idx = 0; idx < num_stripes; idx++) {
 
         int stripe_id = sorted_stripe_ids[idx];
 
         // add the stripe into stripe group
         Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(stripe);
+        stripes_in_group.push_back(&stripe);
 
         if (stripes_in_group.size() == (size_t) code.lambda_i) {
             StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);

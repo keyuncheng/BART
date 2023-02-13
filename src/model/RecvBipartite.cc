@@ -68,12 +68,12 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
     ClusterSettings &cluster_settings = stripe_group.getClusterSettings();
     int num_nodes = cluster_settings.M;
 
-    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<Stripe *> &stripes = stripe_group.getStripes();
     vector<int> num_data_stored(num_nodes, 0);
 
      // check which node already stores at least one data block
     for (auto stripe : stripes) {
-        vector<int> &stripe_indices = stripe.getStripeIndices();
+        vector<int> &stripe_indices = stripe->getStripeIndices();
 
         for (int block_id = 0; block_id < code.k_i; block_id++) {
             num_data_stored[stripe_indices[block_id]] += 1;
@@ -99,7 +99,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
         if (num_data_stored[node_id] > 1) {
             bool block_overlapped = false;
             for (int stripe_id = 0; stripe_id < code.alpha; stripe_id++) {
-                vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
+                vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
                 for (int block_id = 0; block_id < code.k_i; block_id++) {
                     // add a relocation edge node for this data block
                     if (stripe_indices[block_id] != node_id) {
@@ -118,7 +118,7 @@ bool RecvBipartite::addStripeGroupWithData(StripeGroup &stripe_group) {
                         .type = DATA_BLK,
                         .stripe_batch_id = -1,
                         .stripe_group_id = stripe_group.getId(),
-                        .stripe_id_global = stripes[stripe_id].getId(),
+                        .stripe_id_global = stripes[stripe_id]->getId(),
                         .stripe_id = stripe_id,
                         .block_id = block_id,
                         .vtx_id = -1
@@ -171,12 +171,12 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
     ClusterSettings &cluster_settings = stripe_group.getClusterSettings();
     int num_nodes = cluster_settings.M;
 
-    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<Stripe *> &stripes = stripe_group.getStripes();
     vector<int> num_data_stored(num_nodes, 0);
 
      // check which node already stores at least one data block
     for (auto stripe : stripes) {
-        vector<int> &stripe_indices = stripe.getStripeIndices();
+        vector<int> &stripe_indices = stripe->getStripeIndices();
 
         for (int block_id = 0; block_id < code.k_i; block_id++) {
             num_data_stored[stripe_indices[block_id]] += 1;
@@ -222,7 +222,7 @@ bool RecvBipartite::addStripeGroupWithParityMerging(StripeGroup &stripe_group) {
             // calculate the number of parity blocks with the same parity_id at the candidate node
             int num_parity_blocks_required = code.alpha;
             for (int stripe_id = 0; stripe_id < code.alpha; stripe_id++) {
-                vector<int> &stripe_indices = stripes[stripe_id].getStripeIndices();
+                vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
                 if (stripe_indices[code.k_i + parity_id] == parity_relocation_candidate) {
                     num_parity_blocks_required -= 1;
                 }
@@ -271,12 +271,12 @@ bool RecvBipartite::addStripeGroupWithReEncoding(StripeGroup &stripe_group) {
     ClusterSettings &cluster_settings = stripe_group.getClusterSettings();
     int num_nodes = cluster_settings.M;
 
-    vector<Stripe> &stripes = stripe_group.getStripes();
+    vector<Stripe *> &stripes = stripe_group.getStripes();
     vector<int> num_data_stored(num_nodes, 0);
 
      // check which node already stores at least one data block
     for (auto stripe : stripes) {
-        vector<int> &stripe_indices = stripe.getStripeIndices();
+        vector<int> &stripe_indices = stripe->getStripeIndices();
 
         for (int block_id = 0; block_id < code.k_i; block_id++) {
             num_data_stored[stripe_indices[block_id]] += 1;

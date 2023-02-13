@@ -10,8 +10,8 @@
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 8) {
-        printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file");
+    if (argc != 9) {
+        printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file approach[BT/SM]");
         return -1;
     }
 
@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
     int N = atoi(argv[5]);
     int M = atoi(argv[6]);
     string placement_file = argv[7];
+    string approach = argv[8];
 
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
@@ -41,9 +42,6 @@ int main(int argc, char *argv[]) {
     // stripe generator
     StripeGenerator stripe_generator;
 
-    // // randomly generate stripes
-    // vector<Stripe> stripes = stripe_generator.generateStripes(code, settings);
-
     // load stripes from placement file
     vector<Stripe> stripes;
     stripe_generator.loadStripes(code, settings, stripes, placement_file);
@@ -53,72 +51,67 @@ int main(int argc, char *argv[]) {
         stripes[i].print();
     }
 
-    // put all the stripes into a batch
-    vector<Stripe> stripe_group_list;
-    vector<StripeGroup> stripe_batch_list;
+    if (approach == "SM") {
+        // stripe-merge-g
+        StripeBatch stripe_batch(code, settings, 0);
+        stripe_batch.constructByCost(stripes);
+        stripe_batch.print();
 
-    // divide stripes sequentially into stripe groups
-    for (size_t stripe_id = 0, stripe_group_id = 0; stripe_id < stripes.size(); stripe_id++) {
-        Stripe &stripe = stripes[stripe_id];
-        // add the stripe into stripe group
-        stripe_group_list.push_back(stripe);
+        // stripe-merge-g
+        StripeMergeG stripe_merge_g;
+        vector<vector<int> > smg_solutions;
+        vector<int> smg_load_dist;
+        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions);
+        stripe_merge_g.getLoadDist(code, settings, smg_solutions, smg_load_dist);
 
-        if (stripe_group_list.size() == (size_t) code.lambda_i) {
-            StripeGroup stripe_group(code, settings, stripe_group_id, stripe_group_list);
-            stripe_batch_list.push_back(stripe_group);
-            stripe_group_id++;
-            stripe_group_list.clear();
+        int bw_smg = 0;
+        for (auto item : smg_load_dist) {
+            bw_smg += item;
         }
-
-    }    
-
-    StripeBatch stripe_batch(code, settings, 0);
-    stripe_batch.getStripeGroups() = stripe_batch_list;
-
-    stripe_batch.print();
-
-    // construct recv bipartite graph
-    RecvBipartite recv_bipartite;
-    recv_bipartite.addStripeBatch(stripe_batch);
-
-    recv_bipartite.print_meta();
-    recv_bipartite.print();
-
-    int recv_max_flow = -1;
-
-    if (ENABLE_RE_ENCODING) {
-        recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_f);
-    } else {
-        recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_i);
+        printf("StripeMerge-G bandwidth: %d load_dist:\n", bw_smg);
+        Utils::printIntVector(smg_load_dist);
     }
+    // construct a stripe batch
+
+    // StripeBatch stripe_batch_seq(code, settings, 0);
+    // stripe_batch_seq.constructInSequence(stripes);
+    // stripe_batch_seq.print();
+
+    // StripeBatch stripe_batch_rand(code, settings, 0);
+    // stripe_batch_rand.constructByRandomPick(stripes, random_generator);
+    // stripe_batch_rand.print();
 
 
-    printf("maximum flow of recv graph: %d\n", recv_max_flow);
-
-    vector<int> load_dist(settings.M, 0);
-    recv_bipartite.getLoadDist(code, settings, load_dist);
-    int bw_bc = 0;
-    for (auto item : load_dist) {
-        bw_bc += item;
-    }
-
-    printf("Balanced Conversion bandwidth: %d, load_dist:\n", bw_bc);
-    Utils::printIntVector(load_dist);
 
 
-    // stripe-merge-g
-    StripeMergeG stripe_merge_g;
-    vector<vector<int> > smg_solutions;
-    vector<int> smg_load_dist;
-    stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions);
-    stripe_merge_g.getLoadDist(code, settings, smg_solutions, smg_load_dist);
 
-    int bw_smg = 0;
-    for (auto item : smg_load_dist) {
-        bw_smg += item;
-    }
-    printf("StripeMerge-G bandwidth: %d load_dist:\n", bw_smg);
-    Utils::printIntVector(smg_load_dist);
+    // // construct recv bipartite graph
+    // RecvBipartite recv_bipartite;
+    // recv_bipartite.addStripeBatch(stripe_batch);
+
+    // recv_bipartite.print_meta();
+    // recv_bipartite.print();
+
+    // int recv_max_flow = -1;
+
+    // if (ENABLE_RE_ENCODING) {
+    //     recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_f);
+    // } else {
+    //     recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_i);
+    // }
+
+
+    // printf("maximum flow of recv graph: %d\n", recv_max_flow);
+
+    // vector<int> load_dist(settings.M, 0);
+    // recv_bipartite.getLoadDist(code, settings, load_dist);
+    // int bw_bc = 0;
+    // for (auto item : load_dist) {
+    //     bw_bc += item;
+    // }
+
+    // printf("Balanced Conversion bandwidth: %d, load_dist:\n", bw_bc);
+    // Utils::printIntVector(load_dist);
 
 
     return 0;

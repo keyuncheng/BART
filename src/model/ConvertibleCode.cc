@@ -43,5 +43,5 @@ int ConvertibleCode::lcm(int a, int b) {
 }
 
 bool ConvertibleCode::isValidForPM() {
-    return (lambda_f == 1) && (m_f < m_i);
+    return (lambda_f == 1) && (m_f <= m_i);
 }

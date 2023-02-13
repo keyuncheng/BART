@@ -13,16 +13,16 @@ private:
 
     ConvertibleCode _code;
     ClusterSettings _settings;
-    vector<Stripe> _stripes; // TODO: convert to vector<Stripe *> for memory saving
+    vector<Stripe *> _stripes;
     int _id;
 
 public:
-    StripeGroup(ConvertibleCode &code, ClusterSettings &settings, int id, vector<Stripe> &stripes);
+    StripeGroup(ConvertibleCode &code, ClusterSettings &settings, int id, vector<Stripe *> &stripes);
     ~StripeGroup();
 
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
-    vector<Stripe> &getStripes();
+    vector<Stripe *> &getStripes();
     int getId();
 
     vector<int> getDataDistribution();

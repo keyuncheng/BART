@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cmath>
 // #include <bits/stdc++.h>
+#include <ctime>
+#include <climits>
 #include <cstring>
 #include <cstdlib>
 #include <string>
