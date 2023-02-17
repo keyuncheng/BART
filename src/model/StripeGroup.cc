@@ -1,10 +1,10 @@
 #include "StripeGroup.hh"
 
-StripeGroup::StripeGroup(ConvertibleCode &code, ClusterSettings &settings, int id, vector<Stripe *> &stripes)
+StripeGroup::StripeGroup(int id, ConvertibleCode &code, ClusterSettings &settings, vector<Stripe *> &stripes)
 {
+    _id = id;
     _code = code;
     _settings = settings;
-    _id = id;
     _stripes = stripes;
 }
 

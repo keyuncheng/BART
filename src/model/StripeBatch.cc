@@ -1,10 +1,10 @@
 #include "StripeBatch.hh"
 
-StripeBatch::StripeBatch(ConvertibleCode &code, ClusterSettings &settings, int id)
+StripeBatch::StripeBatch(int id, ConvertibleCode &code, ClusterSettings &settings)
 {
+    _id = id;
     _code = code;
     _settings = settings;
-    _id = id;
 }
 
 StripeBatch::~StripeBatch()
@@ -41,11 +41,8 @@ bool StripeBatch::constructInSequence(vector<Stripe> &stripes) {
         return false;
     }
 
-    ConvertibleCode &code = stripes[0].getCode();
-    ClusterSettings &settings = stripes[0].getClusterSettings();
-
     // check if the number of stripes is a multiple of lambda_i
-    if (stripes.size() % code.lambda_i != 0) {
+    if (stripes.size() % _code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;
     }
@@ -60,8 +57,8 @@ bool StripeBatch::constructInSequence(vector<Stripe> &stripes) {
         Stripe &stripe = stripes[stripe_id];
         stripes_in_group.push_back(&stripe);
 
-        if (stripes_in_group.size() == (size_t) code.lambda_i) {
-            StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);
+        if (stripes_in_group.size() == (size_t) _code.lambda_i) {
+            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
             _stripe_groups.push_back(stripe_group);
             sg_id++;
             stripes_in_group.clear();
@@ -78,13 +75,10 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
         return false;
     }
 
-    ConvertibleCode &code = stripes[0].getCode();
-    ClusterSettings &settings = stripes[0].getClusterSettings();
-
     int num_stripes = stripes.size();
 
     // check if the number of stripes is a multiple of lambda_i
-    if (num_stripes % code.lambda_i != 0) {
+    if (num_stripes % _code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;
     }
@@ -112,8 +106,8 @@ bool StripeBatch::constructByRandomPick(vector<Stripe> &stripes, mt19937 &random
         Stripe &stripe = stripes[stripe_id];
         stripes_in_group.push_back(&stripe);
 
-        if (stripes_in_group.size() == (size_t) code.lambda_i) {
-            StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);
+        if (stripes_in_group.size() == (size_t) _code.lambda_i) {
+            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
             _stripe_groups.push_back(stripe_group);
             sg_id++;
             stripes_in_group.clear();
@@ -130,19 +124,16 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
         return false;
     }
 
-    ConvertibleCode &code = stripes[0].getCode();
-    ClusterSettings &settings = stripes[0].getClusterSettings();
-
     int num_stripes = stripes.size();
 
     // check if the number of stripes is a multiple of lambda_i
-    if (num_stripes % code.lambda_i != 0) {
+    if (num_stripes % _code.lambda_i != 0) {
         printf("invalid parameters\n");
         return false;
     }
 
     // enumerate all possible stripe groups
-    vector<vector<int> > combinations = Utils::getCombinations(num_stripes, code.lambda_i);
+    vector<vector<int> > combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
     int num_candidate_sgs = combinations.size();
     vector<int> candidate_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
 
@@ -151,11 +142,11 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
         vector<int> &comb = combinations[cand_id];
 
         vector<Stripe *> stripes_in_group;
-        for (int sid = 0; sid < code.lambda_i; sid++) {
+        for (int sid = 0; sid < _code.lambda_i; sid++) {
             stripes_in_group.push_back(&stripes[comb[sid]]);
         }
 
-        StripeGroup candidate_sg(code, settings, -1, stripes_in_group);
+        StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
 
         // get transition cost
         int transition_cost = candidate_sg.getMinTransitionCost();
@@ -171,7 +162,7 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
     // initialize all combinations as valid
     vector<bool> is_comb_valid(num_candidate_sgs, true);
     
-    int num_sgs = num_stripes / code.lambda_i;
+    int num_sgs = num_stripes / _code.lambda_i;
     vector<int> sorted_stripe_ids; // sorted stripe ids
 
     for (int sg_id = 0; sg_id < num_sgs; sg_id++) {
@@ -230,8 +221,8 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
         Stripe &stripe = stripes[stripe_id];
         stripes_in_group.push_back(&stripe);
 
-        if (stripes_in_group.size() == (size_t) code.lambda_i) {
-            StripeGroup stripe_group(code, settings, sg_id, stripes_in_group);
+        if (stripes_in_group.size() == (size_t) _code.lambda_i) {
+            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
             _stripe_groups.push_back(stripe_group);
             sg_id++;
             stripes_in_group.clear();

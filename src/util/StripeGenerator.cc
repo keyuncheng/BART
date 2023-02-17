@@ -26,7 +26,7 @@ vector<Stripe> StripeGenerator::generateRandomStripes(ConvertibleCode &code, Clu
             }
         }
 
-        Stripe stripe(code, settings, stripe_id, stripe_indices);
+        Stripe stripe(stripe_id, stripe_indices);
         stripes.push_back(stripe);
     }
 
@@ -56,7 +56,7 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
     of.close();
 }
 
-bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, vector<Stripe> &stripes, string placement_file) {
+bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes) {
 
     ifstream ifs(placement_file.c_str());
 
@@ -77,7 +77,7 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
             iss >> idx;
             stripe_indices.push_back(idx);
         }
-        Stripe stripe(code, settings, stripe_id, stripe_indices);
+        Stripe stripe(stripe_id, stripe_indices);
         stripes.push_back(stripe);
         stripe_id++;
     }

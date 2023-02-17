@@ -22,13 +22,13 @@ private:
     int _id;
 
 public:
-    StripeGroup(ConvertibleCode &code, ClusterSettings &settings, int id, vector<Stripe *> &stripes);
+    StripeGroup(int id, ConvertibleCode &code, ClusterSettings &settings, vector<Stripe *> &stripes);
     ~StripeGroup();
 
+    int getId();
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
     vector<Stripe *> &getStripes();
-    int getId();
 
     vector<int> getDataDistribution();
     vector<vector<int> > getParityDistributions();

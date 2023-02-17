@@ -8,20 +8,16 @@
 class Stripe
 {
 private:
-    ConvertibleCode _code;
-    ClusterSettings _settings;
     vector<int> _stripe_indices; // stripe length: n
     int _id;
 
 public:
 
-    Stripe(ConvertibleCode &code, ClusterSettings &settings, int id, vector<int> &stripe_indices);
+    Stripe(int id, vector<int> &stripe_indices);
     ~Stripe();
 
-    ConvertibleCode &getCode();
-    ClusterSettings &getClusterSettings();
-    vector<int> &getStripeIndices();
     int getId();
+    vector<int> &getStripeIndices();
     void print();
 };
 

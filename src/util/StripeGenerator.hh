@@ -22,7 +22,7 @@ public:
     vector<Stripe> generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator);
 
     void storeStripes(vector<Stripe> &stripes, string placement_file);
-    bool loadStripes(ConvertibleCode &code, ClusterSettings &settings, vector<Stripe> &stripes, string placement_file);
+    bool loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes);
 };
 
 #endif // __STRIPE_GENERATOR_HH__

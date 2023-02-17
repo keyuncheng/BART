@@ -15,17 +15,17 @@ private:
     int _id;
 
 public:
-    StripeBatch(ConvertibleCode &code, ClusterSettings &settings, int id);
+    StripeBatch(int id, ConvertibleCode &code, ClusterSettings &settings);
     ~StripeBatch();
 
     bool constructInSequence(vector<Stripe> &stripes);
     bool constructByRandomPick(vector<Stripe> &stripes, mt19937 &random_generator);
     bool constructByCost(vector<Stripe> &stripes);
 
+    int getId();
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
     vector<StripeGroup> &getStripeGroups();
-    int getId();
 
     void print();
 };

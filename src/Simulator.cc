@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     // load stripes from placement file
     vector<Stripe> stripes;
-    stripe_generator.loadStripes(code, settings, stripes, placement_file);
+    stripe_generator.loadStripes(code, settings, placement_file, stripes);
 
     // printf("stripes:\n");
     // for (size_t i = 0; i < stripes.size(); i++) {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         // stripe-merge-g
 
         // Step 1: enumerate all possible stripe groups, and sort by cost; then filter out non-overlapped stripe groups with minimum cost
-        StripeBatch stripe_batch(code, settings, 0);
+        StripeBatch stripe_batch(0, code, settings);
         stripe_batch.constructByCost(stripes);
         stripe_batch.print();
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         // Step 1: construct a stripe batch
         
         // possible construction techniques: sequentially construct; randomly construct; construct by cost
-        StripeBatch stripe_batch(code, settings, 0);
+        StripeBatch stripe_batch(0, code, settings);
 
         // stripe_batch.constructInSequence(stripes);
         // stripe_batch.constructByRandomPick(stripes, random_generator);
