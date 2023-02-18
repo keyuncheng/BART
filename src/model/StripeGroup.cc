@@ -130,6 +130,8 @@ int StripeGroup::getMinParityMergingCost() {
     vector<vector<int> > parity_distributions = getParityDistributions();
     
     int total_pm_cost = 0;
+
+    vector<int> selected_nodes;
     
     for (int parity_id = 0; parity_id < _code.m_f; parity_id++) {
         // candidate nodes for parity merging
@@ -138,7 +140,7 @@ int StripeGroup::getMinParityMergingCost() {
 
         for (int node_id = 0; node_id < num_nodes; node_id++) {
             pm_costs[node_id] = _code.alpha - parity_distribution[node_id];
-            // the node already stores a data block, need to relocate to another node for merging
+            // the node already stores a data block, need to relocate either the data block or the computed parity block to another node
             if (data_distribution[node_id] > 0) {
                 pm_costs[node_id] += 1;
             }
