@@ -20,6 +20,8 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
     // initialize solutions
     solutions.clear();
 
+    // TODO: we don't need to generate real enumeration in vectors (can be represented by binary numbers)
+
     // Step 1: enumeration of approaches
     vector<vector<int> > approach_candidates = Utils::getEnumeration(num_stripe_groups, num_approaches);
 

@@ -52,39 +52,22 @@ int main(int argc, char *argv[]) {
     //     stripes[i].print();
     // }
 
+    // solutions and load distribution
+    vector<vector<int> > solutions;
+    vector<int> send_load_dist, recv_load_dist;
+
     if (approach == "SM") {
         // stripe-merge-g
 
-        // Step 1: enumerate all possible stripe groups, and sort by cost; then filter out non-overlapped stripe groups with minimum cost
+        // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
         StripeBatch stripe_batch(0, code, settings);
         stripe_batch.constructByCost(stripes);
         stripe_batch.print();
 
-        // Step 2: generate transition solutions from given stripe groups
+        // Step 2: generate transition solutions from all stripe groups
         StripeMergeG stripe_merge_g;
-        vector<vector<int> > smg_solutions;
-        vector<int> send_load_dist, recv_load_dist;
-        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, smg_solutions, random_generator);
+        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
 
-        // get load distribution
-        Utils::getLoadDist(code, settings, smg_solutions, send_load_dist, recv_load_dist);
-
-        // get bandwidth
-        int bw_smg = 0;
-        for (auto item : send_load_dist) {
-            bw_smg += item;
-        }
-
-        int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
-        int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
-        int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-        int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-
-        printf("StripeMerge-G send load distribution:, minimum_load: %d, maximum_load: %d\n", min_send_load, max_send_load);
-        Utils::printIntVector(send_load_dist);
-        printf("StripeMerge-G recv load distribution:, minimum_load: %d, maximum_load: %d\n", min_recv_load, max_recv_load);
-        Utils::printIntVector(recv_load_dist);
-        printf("StripeMerge-G bandwidth: %d\n", bw_smg);
     } else if (approach == "BT") {
         // balanced transition
 
@@ -93,37 +76,35 @@ int main(int argc, char *argv[]) {
         // possible construction techniques: sequentially construct; randomly construct; construct by cost
         StripeBatch stripe_batch(0, code, settings);
 
-        // stripe_batch.constructInSequence(stripes);
+        stripe_batch.constructInSequence(stripes);
         // stripe_batch.constructByRandomPick(stripes, random_generator);
-        stripe_batch.constructByCost(stripes);
+        // stripe_batch.constructByCost(stripes);
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
-        vector<vector<int> > bt_solutions;
-        balanced_conversion.getSolutionForStripeBatch(stripe_batch, bt_solutions, random_generator);
-
-        // load distribution
-        vector<int> send_load_dist, recv_load_dist;
-        Utils::getLoadDist(code, settings, bt_solutions, send_load_dist, recv_load_dist);
-
-        // get bandwidth
-        int bw_bt = 0;
-        for (auto item : send_load_dist) {
-            bw_bt += item;
-        }
-
-        int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
-        int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
-        int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-        int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-        
-        printf("Balanced Transition send load distribution:, minimum_load: %d, maximum_load: %d\n", min_send_load, max_send_load);
-        Utils::printIntVector(send_load_dist);
-        printf("Balanced Transition recv load distribution:, minimum_load: %d, maximum_load: %d\n", min_recv_load, max_recv_load);
-        Utils::printIntVector(recv_load_dist);
-        printf("Balanced Transition bandwidth: %d\n", bw_bt);
-
+        vector<vector<int> > solutions;
+        balanced_conversion.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
     }
+
+    // get load distribution
+    Utils::getLoadDist(code, settings, solutions, send_load_dist, recv_load_dist);
+
+    // get bandwidth
+    int bw = 0;
+    for (auto item : send_load_dist) {
+        bw += item;
+    }
+
+    int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
+    int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
+    int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+
+    printf("%s send load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_send_load, max_send_load);
+    Utils::printIntVector(send_load_dist);
+    printf("%s recv load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_recv_load, max_recv_load);
+    Utils::printIntVector(recv_load_dist);
+    printf("%s bandwidth: %d\n", approach.c_str(), bw);
 
 
 
