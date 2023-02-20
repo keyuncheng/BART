@@ -68,7 +68,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     vector<int> reloc_node_candidates;
 
     for (int node_id = 0; node_id < num_nodes; node_id++) {
-        // mark nodes with at least one data block as relocated with a data block
+        // mark nodes with at least one data block as relocated
         if (data_distribution[node_id] > 0) {
             relocated_blk_distribution[node_id] = true;
         } else {
@@ -82,14 +82,14 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
 
     // Step 1: parity relocation
 
-    // all nodes are candidates for parity block computation
+    // parity block computation node candidates: all nodes are candidates
     vector<int> parity_comp_candidates(num_nodes, 0);
     for (int node_id = 0; node_id < num_nodes; node_id++) {
         parity_comp_candidates[node_id] = node_id;
     }
 
-    /** 2.1 for each parity block, find the node with minimum merging cost to calculate new parity block
-     * if the node with min cost already stores a block (a data block or a parity block), then we need to relocate the parity block to another node
+    /** for each parity block, find the node with minimum merging cost to calculate new parity block
+     * if the node with min cost already stores a block (data or parity), then we need to relocate the newly computed parity block to another node
      */
     for (int parity_id = 0; parity_id < code.m_f; parity_id++) {
         // get parity distribution
@@ -117,15 +117,18 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
             }
         }
 
-        // randomly pick one node with minimum cost to compute
+        // Strategy 1: randomly pick a node
         int random_pos = Utils::randomInt(0, min_cost_nodes.size() - 1, random_generator);
         int parity_comp_node_id = min_cost_nodes[random_pos];
+
+        // // Strategy 2: pick the first node
+        // int parity_comp_node_id = min_cost_nodes[0];
 
         // create a parity relocation task (collect parity blocks for new parity computation)
         for (int stripe_id = 0; stripe_id < code.lambda_i; stripe_id++) {
             vector<int> &stripe_indices = stripes[stripe_id]->getStripeIndices();
 
-            // add a task if the parity block is not stored at the relocated node
+            // add a task for parity blocks not stored at the node
             if (stripe_indices[code.k_i + parity_id] != parity_comp_node_id) {
                 vector<int> solution;
                 solution.push_back(stripe_id); // stripe_id
@@ -150,10 +153,14 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
                 reloc_node_candidates.erase(it);
             }
         } else {
-            // if the node stores a parity block, then we need to relocate to another node
+            // if the node already stores a block, then we need to relocate the newly computed parity block to another node
 
-            // randomly pick one node with minimum cost to compute
+            // Strategy 1: randomly pick one node with minimum cost to compute
             int random_pos = Utils::randomInt(0, reloc_node_candidates.size() - 1, random_generator);
+
+            // // Strategy 2: pick the first node with minimum cost to compute
+            // int random_pos = 0;
+
             int parity_reloc_node_id = reloc_node_candidates[random_pos];
 
             // mark the node as relocated with a block
@@ -191,7 +198,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
             int node_id = stripe_indices[block_id];
             node_data_blk_dist[node_id]++;
 
-            // relocate data blocks start from lambda_f (= 1)
+            // if the node already stores more than lambda_f = 1 data blocks, we need to relocate data blocks (start from the 2nd one)
             if (node_data_blk_dist[node_id] > code.lambda_f) {
                 data_blocks_to_reloc.push_back(pair<int, int>(stripe_id, block_id));
             }
@@ -209,7 +216,9 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
         // Strategy 1: randomly pick a node from data relocation candidates
         int random_pos = Utils::randomInt(0, reloc_node_candidates.size() - 1, random_generator);
 
-        // relocate node id
+        // // Strategy 2: pick the first node from data relocation candidates
+        // int random_pos = 0;
+
         int reloc_node_id = reloc_node_candidates[random_pos];
 
         // mark the block as relocated
@@ -230,19 +239,4 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
 
     // printf("node candidates for block relocation (after PM + DM):\n");
     // Utils::printIntVector(reloc_node_candidates);
-
-    // printf("reloc_data_dist:\n");
-    // for (auto item : relocated_blk_distribution) {
-    //     printf("%d ", (item == true));
-    // }
-    // printf("\n");
-
-    // for (int node_id = 0; node_id < num_nodes; node_id++) {
-    //     printf("node: %d: ", node_id);
-    //     for (auto item : node_data_blk_dist[node_id]) {
-    //         printf("<%d, %d> ", item.first, item.second);
-    //     }
-    //     printf("\n");
-    // }
-    
 }

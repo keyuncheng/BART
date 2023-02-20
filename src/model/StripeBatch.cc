@@ -133,6 +133,7 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
     }
 
     // enumerate all possible stripe groups
+    vector<int> comb_ids;
     vector<vector<int> > combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
     int num_candidate_sgs = combinations.size();
     
@@ -141,6 +142,8 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
     vector<vector<int> > overlapped_cand_sgs(num_stripes, vector<int>()); // <stripe_id, overlapped_stripe_groups>
 
     for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
+        comb_ids.push_back(cand_id);
+
         // construct candidate stripe group
         vector<int> &comb = combinations[cand_id];
 
@@ -162,74 +165,60 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
     }
 
     printf("total number of candidate stripe groups: %d\n", num_candidate_sgs);
-    for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
-        printf("candidate_id: %d, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
-        Utils::printIntVector(combinations[cand_id]);
-    }
+    // for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
+    //     printf("candidate_id: %d, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
+    //     Utils::printIntVector(combinations[cand_id]);
+    // }
 
-    // initialize all combinations as valid
-    vector<bool> is_comb_valid(num_candidate_sgs, true);
-    
+    vector<int> sorted_stripe_ids; // store sorted stripe ids
+
+    // record currently valid candidates; initialize as all candidate sgs
+    vector<bool> is_cand_valid(num_candidate_sgs, true);
+    vector<int> cur_valid_cand_ids = comb_ids;
+    vector<int> cur_valid_cand_costs = candidate_sgs_costs;
+
     int num_sgs = num_stripes / _code.lambda_i;
-    vector<int> sorted_stripe_ids; // sorted stripe ids
-
-    // maintain currently valid combination ids; initialize as all candidate sgs
-    vector<int> cur_valid_comb_ids;
-    vector<int> cur_valid_comb_trans_costs;
-
-    for (int cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
-        cur_valid_comb_ids.push_back(cand_id);
-        cur_valid_comb_trans_costs.push_back(candidate_sgs_costs[cand_id]);
-    }
-
     for (int sg_id = 0; sg_id < num_sgs; sg_id++) {
         // get remaining valid combinations
-        vector<int> valid_comb_ids;
-        vector<int> valid_comb_trans_costs;
+        vector<int> valid_cand_ids;
+        vector<int> valid_cand_costs;
 
-        for (size_t idx = 0; idx < cur_valid_comb_ids.size(); idx++) {
-            int cand_id = cur_valid_comb_ids[idx];
-            if (is_comb_valid[cand_id] == true) { // skip invalid combinations
-                valid_comb_ids.push_back(cand_id);
-                valid_comb_trans_costs.push_back(candidate_sgs_costs[cand_id]);
+        // filter out invalid combinations
+        for (size_t idx = 0; idx < cur_valid_cand_ids.size(); idx++) {
+            int cand_id = cur_valid_cand_ids[idx];
+            if (is_cand_valid[cand_id] == true) {
+                valid_cand_ids.push_back(cand_id);
+                valid_cand_costs.push_back(candidate_sgs_costs[cand_id]);
             }
         }
 
-        // get candidate stripe group with minimum transition cost
-        int min_cost_id = distance(valid_comb_trans_costs.begin(), min_element(valid_comb_trans_costs.begin(), valid_comb_trans_costs.end()));
-        int min_cost_cand_id = valid_comb_ids[min_cost_id];
+        // get stripe group with minimum transition cost
+        int min_cost_id = distance(valid_cand_costs.begin(), min_element(valid_cand_costs.begin(), valid_cand_costs.end()));
+        int min_cost_cand_id = valid_cand_ids[min_cost_id];
         vector<int> &min_cost_comb = combinations[min_cost_cand_id];
 
-        // add stripes in the selected group
         for (auto stripe_id : min_cost_comb) {
+            // add stripes from the selected stripe group to sorted stripes
             sorted_stripe_ids.push_back(stripe_id);
-        }
 
-        // mark overlapped candidate stripe groups as invalid
-        for (auto stripe_id : min_cost_comb) {
+            // mark overlapped candidate stripe groups as invalid
             for (auto cand_sg_ids : overlapped_cand_sgs[stripe_id]) {
-                is_comb_valid[cand_sg_ids] = false;
+                is_cand_valid[cand_sg_ids] = false;
             }
         }
 
         // update currently valid combinations
-        cur_valid_comb_ids = valid_comb_ids;
-        cur_valid_comb_trans_costs = valid_comb_trans_costs;
-
+        cur_valid_cand_ids = valid_cand_ids;
+        cur_valid_cand_costs = valid_cand_costs;
 
         // summarize current pick
-        int num_remaining_candidates = 0;
-        for (auto item : is_comb_valid) {
-            num_remaining_candidates += (item == true ? 1 : 0);
-        }
-
-        printf("pick candidate_id: %d, cost: %d, remaining number of candidates: (%d / %d)\n", min_cost_cand_id, valid_comb_trans_costs[min_cost_id], num_remaining_candidates, num_candidate_sgs);
+        printf("pick candidate_id: %d, cost: %d, remaining number of candidates: (%ld / %d)\n", min_cost_cand_id, valid_cand_costs[min_cost_id], cur_valid_cand_ids.size(), num_candidate_sgs);
     }
         
-    if (sorted_stripe_ids.size() != (size_t) num_stripes) {
-        printf("error: invalid sorted_stripe_ids\n");
-        return false;
-    }
+    // if (sorted_stripe_ids.size() != (size_t) num_stripes) {
+    //     printf("error: invalid sorted_stripe_ids\n");
+    //     return false;
+    // }
 
     // 2. put stripes by sorted stripe ids (by cost) into stripe groups
     vector<Stripe *> stripes_in_group;
