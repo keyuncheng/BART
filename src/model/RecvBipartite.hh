@@ -37,7 +37,7 @@ public:
     bool constructSGWithReEncoding(StripeGroup &stripe_group);
 
     // find load-balanced solution greedily for each block in each stripe group
-    bool findSolutionWithApproachesGreedy(vector<vector<int> > &solutions, mt19937 random_generator);
+    bool findSolutionWithApproachesGreedy(ClusterSettings &settings, vector<vector<int> > &solutions, mt19937 random_generator);
 
     
 

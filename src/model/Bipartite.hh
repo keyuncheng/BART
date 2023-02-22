@@ -34,6 +34,9 @@ public:
     map<int, Vertex *> left_vertices_map; // left vertices map
     map<int, Vertex *> right_vertices_map; // right vertices map
 
+    map<int, vector<int> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
+    map<int, vector<int> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
+
     
     // max flow solution
     map<int, Edge> edges_max_flow_map; // edges of max flow solution

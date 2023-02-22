@@ -217,13 +217,21 @@ void SendBipartite::print() {
     // }
 }
 
-bool SendBipartite::constructSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions) {
+bool SendBipartite::constructSolutionWithApproachesFromRecvGraph(StripeBatch &stripe_batch, vector<int> &approaches, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions) {
     // construct solution <sg_id, block_type, stripe_id, block_id, from_node, to_node> from recv graph
     // input: in each of solution from recv graph, we set from_node to -1, then we make it initialized in send graph
     // output: <stripe_id, block_id, from_node, to_node>
 
     ConvertibleCode &code = stripe_batch.getCode();
+    ClusterSettings &settings = stripe_batch.getClusterSettings();
+    int num_nodes = settings.M;
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
+
+    // stripe group block distribution map (used to track the stripe group transition)
+    map<int, vector<int> > sg_block_dist_map;
+    for (auto &stripe_group : stripe_groups) {
+        sg_block_dist_map[stripe_group.getId()] = stripe_group.getDataDistribution();
+    }
 
     // initialize solutions
     solutions.clear();
@@ -235,14 +243,23 @@ bool SendBipartite::constructSolutionFromRecvGraph(StripeBatch &stripe_batch, ve
         int block_id = partial_solution[3];
         int from_node_id = partial_solution[4];
         int to_node_id = partial_solution[5];
+        int load = partial_solution[6];
 
         StripeGroup &stripe_group = stripe_groups[sg_id];
+
+
+        vector<int> &sg_block_dist = sg_block_dist_map[stripe_group.getId()];
 
         if (block_type == DATA_BLK) {
             Stripe &stripe = *stripe_group.getStripes()[stripe_id];
             vector<int> &stripe_indices = stripe.getStripeIndices();
             from_node_id = stripe_indices[block_id];
 
+            // update stripe group distribution
+            sg_block_dist[from_node_id]--;
+            sg_block_dist[to_node_id]++;
+
+            // add solution
             vector<int> solution;
             solution.push_back(stripe_id);
             solution.push_back(block_id);
@@ -254,15 +271,43 @@ bool SendBipartite::constructSolutionFromRecvGraph(StripeBatch &stripe_batch, ve
         } else if (block_type == PARITY_BLK) {
             int parity_id = block_id - code.k_f;
             vector<Stripe *> &stripes = stripe_group.getStripes();
-            for (int sid = 0; sid < code.lambda_i; sid++) {
-                vector<int> &stripe_indices = stripes[sid]->getStripeIndices();
-                if (stripe_indices[code.k_i + parity_id] != to_node_id) {
-                    stripe_id = sid;
-                    block_id = code.k_i + parity_id;
-                    from_node_id = stripe_indices[code.k_i + parity_id];
 
+            int approach = approaches[sg_id];
+            if (approach == TransApproach::RE_ENCODE) {
+                // update block distribution
+                sg_block_dist[to_node_id]++;
+
+                // only need to relocate the newly computed parity block
+                vector<int> solution;
+                solution.push_back(stripe_id);
+                solution.push_back(block_id);
+                solution.push_back(from_node_id);
+                solution.push_back(to_node_id);
+
+                solutions.push_back(solution);
+            } else if (approach == TransApproach::PARITY_MERGE) {
+                vector<int> &sg_data_dist = sg_block_dist_map[stripe_group.getId()];
+                for (int sid = 0; sid < code.lambda_i; sid++) {
+                    vector<int> &stripe_indices = stripes[sid]->getStripeIndices();
+                    if (stripe_indices[code.k_i + parity_id] != to_node_id) {
+                        stripe_id = sid;
+                        int old_parity_block_id = code.k_i + parity_id;
+                        int old_parity_from_node_id = stripe_indices[code.k_i + parity_id];
+
+                        vector<int> solution;
+                        solution.push_back(stripe_id);
+                        solution.push_back(old_parity_block_id);
+                        solution.push_back(old_parity_from_node_id);
+                        solution.push_back(to_node_id);
+
+                        solutions.push_back(solution);
+                    }
+                }
+
+                // relocate the newly computed parity block
+                if (sg_block_dist[to_node_id] > 0) {
                     vector<int> solution;
-                    solution.push_back(stripe_id);
+                    solution.push_back(-1);
                     solution.push_back(block_id);
                     solution.push_back(from_node_id);
                     solution.push_back(to_node_id);

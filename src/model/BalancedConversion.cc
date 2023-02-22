@@ -15,6 +15,7 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
     int num_stripe_groups = stripe_groups.size();
+
     int num_approaches = 2;
 
     // initialize solutions
@@ -23,6 +24,8 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
     // TODO: we don't need to generate real enumeration in vectors (can be represented by binary numbers)
 
     // Step 1: enumeration of approaches
+
+    // generate 2^num_sg enumerations
     vector<vector<int> > approach_candidates = Utils::getEnumeration(num_stripe_groups, num_approaches);
 
     int num_approach_candidates = approach_candidates.size();
@@ -52,7 +55,7 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
         // recv_bipartite.print();
 
         vector<vector<int> > cand_solutions_from_recv_graph;
-        recv_bipartite.findSolutionWithApproachesGreedy(cand_solutions_from_recv_graph, random_generator);
+        recv_bipartite.findSolutionWithApproachesGreedy(settings, cand_solutions_from_recv_graph, random_generator);
 
         vector<vector<int> > cand_solutions;
         SendBipartite send_bipartite;

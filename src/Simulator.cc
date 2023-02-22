@@ -76,13 +76,12 @@ int main(int argc, char *argv[]) {
         // possible construction techniques: sequentially construct; randomly construct; construct by cost
         StripeBatch stripe_batch(0, code, settings);
 
-        stripe_batch.constructInSequence(stripes);
+        // stripe_batch.constructInSequence(stripes);
         // stripe_batch.constructByRandomPick(stripes, random_generator);
-        // stripe_batch.constructByCost(stripes);
+        stripe_batch.constructByCost(stripes);
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
-        vector<vector<int> > solutions;
         balanced_conversion.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
     }
 

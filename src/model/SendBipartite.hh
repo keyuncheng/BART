@@ -19,8 +19,8 @@ public:
 
     void print();
 
-    // construct solution based on recv graph
-    bool constructSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions);
+    // construct solution based on recv graph with approaches
+    bool constructSolutionWithApproachesFromRecvGraph(StripeBatch &stripe_batch, vector<int> &approaches, vector<vector<int> > &solutions_from_recv_graph, vector<vector<int> > &solutions);
 
 private:
     bool addStripeGroupWithDataFromRecvGraph(StripeGroup &stripe_group, RecvBipartite &recv_bipartite);
