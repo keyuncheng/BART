@@ -28,27 +28,27 @@ class Bipartite
 private:
     
 public:
-    map<int, Vertex> vertices_map; // vertices map
-    map<int, Edge> edges_map; // block to node edges
+    unordered_map<int, Vertex> vertices_map; // vertices map
+    unordered_map<int, Edge> edges_map; // block to node edges
 
-    map<int, Vertex *> left_vertices_map; // left vertices map
-    map<int, Vertex *> right_vertices_map; // right vertices map
+    unordered_map<int, Vertex *> left_vertices_map; // left vertices map
+    unordered_map<int, Vertex *> right_vertices_map; // right vertices map
 
-    map<int, vector<int> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
-    map<int, vector<int> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
+    unordered_map<int, vector<int> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
+    unordered_map<int, vector<int> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
 
     
     // max flow solution
-    map<int, Edge> edges_max_flow_map; // edges of max flow solution
+    unordered_map<int, Edge> edges_max_flow_map; // edges of max flow solution
 
 
     Bipartite();
     ~Bipartite();
 
     void print();
-    void print_vertices(map<int, Vertex> &vmap);
-    void print_vertices(map<int, Vertex *> &vmap);
-    void print_edges(map<int, Edge> &emap);
+    void print_vertices(unordered_map<int, Vertex> &vmap);
+    void print_vertices(unordered_map<int, Vertex *> &vmap);
+    void print_edges(unordered_map<int, Edge> &emap);
 
     bool buildMaxFlowSolutionFromPaths(vector<vector<int> > &paths);
 

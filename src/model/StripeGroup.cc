@@ -29,24 +29,27 @@ vector<int> StripeGroup::getDataDistribution() {
 }
 
 vector<vector<int> > StripeGroup::getParityDistributions() {
-    int num_nodes = _settings.M;
-
     vector<vector<int> > parity_distributions;
 
     for (int parity_id = 0; parity_id < _code.m_i; parity_id++) {
-        vector<int> parity_distribution(num_nodes, 0);
-
-        // check which node already stores at least one data block
-        for (auto stripe : _stripes) {
-            vector<int> &stripe_indices = stripe->getStripeIndices();
-            int parity_node_id = stripe_indices[_code.k_i + parity_id];
-            parity_distribution[parity_node_id] += 1;
-        }
-
-        parity_distributions.push_back(parity_distribution);
+        parity_distributions.push_back(getParityDistribution(parity_id));
     }
 
     return parity_distributions;
+}
+
+vector<int> StripeGroup::getParityDistribution(int parity_id) {
+    int num_nodes = _settings.M;
+    vector<int> parity_distribution(num_nodes, 0);
+
+    // check which node already stores at least one data block
+    for (auto stripe : _stripes) {
+        vector<int> &stripe_indices = stripe->getStripeIndices();
+        int parity_node_id = stripe_indices[_code.k_i + parity_id];
+        parity_distribution[parity_node_id] += 1;
+    }
+
+    return parity_distribution;
 }
 
 ConvertibleCode &StripeGroup::getCode() {

@@ -14,5 +14,4 @@ Balanced Code Conversion
 * Reducing the search space
     * filter out the groups with min loads worse than current best group
 
-* (IMPORTANT!) wrong representation of parity merging of recv task
-    * need to represented by a compute + parity relocation task
+* BlockMeta and NodeMeta and vertex mapping

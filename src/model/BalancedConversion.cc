@@ -54,12 +54,17 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
         // recv_bipartite.print_meta();
         // recv_bipartite.print();
 
-        vector<vector<int> > cand_solutions_from_recv_graph;
-        recv_bipartite.findSolutionWithApproachesGreedy(settings, cand_solutions_from_recv_graph, random_generator);
+        // find edges
+        vector<int> edges;
+        recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, edges, random_generator);
+
+        // construct partial solutions from recv graph
+        vector<vector<int> > partial_solutions;
+        recv_bipartite.constructPartialSolutionFromEdges(stripe_batch, edges, partial_solutions);
 
         vector<vector<int> > cand_solutions;
         SendBipartite send_bipartite;
-        send_bipartite.constructSolutionFromRecvGraph(stripe_batch, cand_solutions_from_recv_graph, cand_solutions);
+        send_bipartite.updatePartialSolutionFromRecvGraph(stripe_batch, partial_solutions, cand_solutions);
 
         vector<int> send_load_dist, recv_load_dist;
         Utils::getLoadDist(code, settings, cand_solutions, send_load_dist, recv_load_dist);
@@ -97,4 +102,10 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
         Utils::printIntVector(approach_candidates[best_app_cand_id]);
         solutions = best_solutions;
     }
+
+    // // put it into the solution for the batch
+    // printf("solutions for stripe_batch (size: %ld): \n", solutions.size());
+    // for (auto solution : solutions) {
+    //     printf("stripe %d, block %d, from: %d, to: %d\n", solution[0], solution[1], solution[2], solution[3]);
+    // }
 }

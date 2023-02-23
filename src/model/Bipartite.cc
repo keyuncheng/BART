@@ -18,20 +18,20 @@ void Bipartite::clear() {
 void Bipartite::print() {
     
 }
-void Bipartite::print_vertices(map<int, Vertex> &vmap) {
+void Bipartite::print_vertices(unordered_map<int, Vertex> &vmap) {
     for (auto it = vmap.begin(); it != vmap.end(); it++) {
         Vertex &vtx = it->second;
         printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", vtx.id, vtx.in_degree, vtx.out_degree, vtx.weights, vtx.costs);
     }
 }
-void Bipartite::print_vertices(map<int, Vertex *> &vmap) {
+void Bipartite::print_vertices(unordered_map<int, Vertex *> &vmap) {
     for (auto it = vmap.begin(); it != vmap.end(); it++) {
         Vertex &vtx = *(it->second);
         printf("id: %d, in_degree: %d, out_degree: %d, weights: %d, costs: %d\n", vtx.id, vtx.in_degree, vtx.out_degree, vtx.weights, vtx.costs);
     }
 }
     
-void Bipartite::print_edges(map<int, Edge> &emap) {
+void Bipartite::print_edges(unordered_map<int, Edge> &emap) {
     for (auto it = emap.begin(); it != emap.end(); it++) {
         int edge_id = it->first;
         Edge &edge = it->second;

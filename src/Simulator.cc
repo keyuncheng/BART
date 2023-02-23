@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
     int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
     int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
 
+    printf("=====================================================\n");
     printf("%s send load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_send_load, max_send_load);
     Utils::printIntVector(send_load_dist);
     printf("%s recv load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_recv_load, max_recv_load);

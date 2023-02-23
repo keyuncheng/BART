@@ -19,7 +19,7 @@ public:
     void print();
     void print_meta();
 
-    bool BFSGraphForRecvGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, map<int, vector<int>> &cur_reloc_node_map);
+    bool BFSGraphForRecvGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, unordered_map<int, vector<int>> &cur_reloc_node_map);
     int findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_limit);
     bool findNegativeCycle(int **res_graph_weight_mtx, int **res_graph_cost_mtx, int num_vertices, int src_idx, int sink_idx, vector<int> &nccycle, int l_limit, int r_limit);
 
@@ -35,9 +35,13 @@ public:
     bool constructSGWithData(StripeGroup &stripe_group);
     bool constructSGWithParityMerging(StripeGroup &stripe_group);
     bool constructSGWithReEncoding(StripeGroup &stripe_group);
+    bool constructSGWithParityRelocation(StripeGroup &stripe_group);
 
     // find load-balanced solution greedily for each block in each stripe group
-    bool findSolutionWithApproachesGreedy(ClusterSettings &settings, vector<vector<int> > &solutions, mt19937 random_generator);
+    bool findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<int> &edges, mt19937 &random_generator);
+
+    // construct partial transition solution from edges
+    bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<int> &edges, vector<vector<int> > &partial_solutions);
 
     
 
@@ -53,15 +57,15 @@ private:
     BlockMeta *getBlockMeta(int vtx_id);
     NodeMeta *getNodeMeta(int vtx_id);
 
-    map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
+    unordered_map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
     
-    map<int, BlockMeta> block_meta_map; // block meta map
-    map<int, NodeMeta> node_meta_map; // node metadata
+    unordered_map<int, BlockMeta> block_meta_map; // block meta map
+    unordered_map<int, NodeMeta> node_meta_map; // node metadata
 
-    map<int, BlockMeta *> data_block_meta_map; // data block metadata
-    map<int, BlockMeta *> parity_block_meta_map; // parity block metadata
-    map<int, BlockMeta *> compute_block_meta_map; // compute block metadata
-    map<int, BlockMeta *> compute_node_meta_map; // compute node metadata
+    unordered_map<int, BlockMeta *> data_block_meta_map; // data block metadata
+    unordered_map<int, BlockMeta *> parity_block_meta_map; // parity block metadata
+    unordered_map<int, BlockMeta *> compute_block_meta_map; // compute block metadata
+    unordered_map<int, BlockMeta *> compute_node_meta_map; // compute node metadata
 
 };
 

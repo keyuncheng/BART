@@ -4,8 +4,10 @@
 enum BlockType {
     DATA_BLK,
     PARITY_BLK,
-    COMPUTE_BLK, // dummy block for re-encoding
-    COMPUTE_NODE // dummy node for re-encoding
+    COMPUTE_BLK, // dummy block for computation
+    COMPUTE_NODE, // dummy node for re-encoding
+    COMPUTE_BLK_RE, // compute block for re-encoding
+    COMPUTE_BLK_PM // compute block for parity merging
 };
 
 typedef struct BlockMeta {

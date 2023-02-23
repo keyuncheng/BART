@@ -32,6 +32,7 @@ public:
 
     vector<int> getDataDistribution();
     vector<vector<int> > getParityDistributions();
+    vector<int> getParityDistribution(int parity_id);
 
     int getMinTransitionCost();
     int getDataRelocationCost();
