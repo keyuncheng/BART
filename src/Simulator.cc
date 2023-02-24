@@ -106,38 +106,5 @@ int main(int argc, char *argv[]) {
     Utils::printIntVector(recv_load_dist);
     printf("%s bandwidth: %d\n", approach.c_str(), bw);
 
-
-
-    // prev: construct with min-cost max-flow
-
-    // // construct recv bipartite graph
-    // RecvBipartite recv_bipartite;
-    // recv_bipartite.addStripeBatch(stripe_batch);
-
-    // recv_bipartite.print_meta();
-    // recv_bipartite.print();
-
-    // int recv_max_flow = -1;
-
-    // if (ENABLE_RE_ENCODING) {
-    //     recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_f);
-    // } else {
-    //     recv_max_flow = recv_bipartite.findMaxflowByFordFulkersonForRecvGraph(1, code.k_i);
-    // }
-
-
-    // printf("maximum flow of recv graph: %d\n", recv_max_flow);
-
-    // vector<int> load_dist(settings.M, 0);
-    // recv_bipartite.getLoadDist(code, settings, load_dist);
-    // int bw_bc = 0;
-    // for (auto item : load_dist) {
-    //     bw_bc += item;
-    // }
-
-    // printf("Balanced Conversion bandwidth: %d, load_dist:\n", bw_bc);
-    // Utils::printIntVector(load_dist);
-
-
     return 0;
 }

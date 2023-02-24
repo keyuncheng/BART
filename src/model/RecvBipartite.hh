@@ -2,8 +2,30 @@
 #define __RECV_BIPARTITE_HH__
 
 #include "Bipartite.hh"
-#include "StripeMeta.hh"
 #include "../util/Utils.hh"
+
+
+enum BlockType {
+    DATA_BLK, // data block
+    PARITY_BLK, // parity block
+    COMPUTE_BLK_RE, // compute block for re-encoding
+    COMPUTE_BLK_PM, // compute block for parity merging
+    INVALID_BLK
+};
+
+typedef struct BlockMeta {
+    size_t id;
+    BlockType type; // block type
+    size_t stripe_batch_id; // stripe batch id
+    size_t stripe_group_id; // stripe group id
+    size_t stripe_id_global; // global stripe id (among all stripes)
+    size_t stripe_id; // stripe id in stripe_group_id [0, lambda_i)
+    size_t block_id; // block id in the stripe
+    size_t vtx_id; // Vertex id in RecvBipartite
+
+    BlockMeta() : id(INVALID_ID), vtx_id(INVALID_ID), type(BlockType::INVALID_BLK), stripe_batch_id(INVALID_ID), stripe_group_id(INVALID_ID), stripe_id_global(INVALID_ID), stripe_id(INVALID_ID), block_id(INVALID_ID) {};
+} BlockMeta;
+
 
 class RecvBipartite : public Bipartite
 {
@@ -13,25 +35,21 @@ public:
     RecvBipartite();
     ~RecvBipartite();
 
-    bool addStripeBatch(StripeBatch &stripe_batch);
-    bool addStripeGroup(StripeGroup &stripe_group);
 
-    void print();
-    void print_meta();
+    // block metadata
+    void print_block_metastore();
+    size_t createBlockMeta(BlockMeta &in_block_meta);
+    size_t findBlockMeta(BlockMeta &in_block_meta);
 
-    bool BFSGraphForRecvGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent, unordered_map<int, vector<int>> &cur_reloc_node_map);
-    int findMaxflowByFordFulkersonForRecvGraph(int l_limit, int r_limit);
-    bool findNegativeCycle(int **res_graph_weight_mtx, int **res_graph_cost_mtx, int num_vertices, int src_idx, int sink_idx, vector<int> &nccycle, int l_limit, int r_limit);
-
-    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<int> &load_dist);
+    size_t createBlockVtx(BlockMeta &in_block_meta);
+    size_t createNodeVtx(int node_id);
 
 
-    // construct stripe batch with approaches
+    // construct stripe batch with the given approaches
     bool constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<int> &approaches);
-
-    // construct stripe group with approaches
+    // construct stripe group with a given approach
     bool constructStripeGroupWithApproach(StripeGroup &stripe_group, int approach);
-
+    // construct stripe group
     bool constructSGWithData(StripeGroup &stripe_group);
     bool constructSGWithParityMerging(StripeGroup &stripe_group);
     bool constructSGWithReEncoding(StripeGroup &stripe_group);
@@ -43,29 +61,21 @@ public:
     // construct partial transition solution from edges
     bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<int> &edges, vector<vector<int> > &partial_solutions);
 
+    // construct solution based on recv graph with approaches
+    bool updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &partial_solutions, vector<vector<int> > &solutions);
     
 
 private:
-    bool addStripeGroupWithData(StripeGroup &stripe_group);
-    bool addStripeGroupWithParityMerging(StripeGroup &stripe_group);
-    bool addStripeGroupWithReEncoding(StripeGroup &stripe_group);
-    bool addStripeGroupWithPartialParityMerging(StripeGroup &stripe_group);
 
-    Vertex *getBlockVtx(BlockMeta &in_block_meta);
-    Vertex *getNodeVtx(NodeMeta &in_node_meta);
+    // block metadata
+    vector<BlockMeta> block_metastore;
+    unordered_map<size_t, vector<BlockMeta *> > sg_block_meta_map;
 
-    BlockMeta *getBlockMeta(int vtx_id);
-    NodeMeta *getNodeMeta(int vtx_id);
+    unordered_map<size_t, size_t> block_meta_to_vtx_map;
+    unordered_map<size_t, size_t> vtx_to_block_meta_map;
 
-    unordered_map<int, Vertex *> internal_vertices_map; // internal vertices map (for re-encoding only)
-    
-    unordered_map<int, BlockMeta> block_meta_map; // block meta map
-    unordered_map<int, NodeMeta> node_meta_map; // node metadata
-
-    unordered_map<int, BlockMeta *> data_block_meta_map; // data block metadata
-    unordered_map<int, BlockMeta *> parity_block_meta_map; // parity block metadata
-    unordered_map<int, BlockMeta *> compute_block_meta_map; // compute block metadata
-    unordered_map<int, BlockMeta *> compute_node_meta_map; // compute node metadata
+    unordered_map<size_t, size_t> node_to_vtx_map;
+    unordered_map<size_t, size_t> vtx_to_node_map;
 
 };
 

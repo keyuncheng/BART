@@ -16,17 +16,23 @@ void BalancdConversion::getSolutionForStripeBatch(StripeBatch &stripe_batch, vec
 
     int num_stripe_groups = stripe_groups.size();
 
-    int num_approaches = 2;
-
     // initialize solutions
     solutions.clear();
 
     // TODO: we don't need to generate real enumeration in vectors (can be represented by binary numbers)
 
     // Step 1: enumeration of approaches
+    vector<vector<int> > approach_candidates;
+    if (code.isValidForPM() == false) {
+        // re-encoding only
+        approach_candidates.push_back(vector<int>(num_stripe_groups, TransApproach::RE_ENCODE));
+    } else {
+        // parity merging only
+        approach_candidates.push_back(vector<int>(num_stripe_groups, TransApproach::PARITY_MERGE));
 
-    // generate 2^num_sg enumerations
-    vector<vector<int> > approach_candidates = Utils::getEnumeration(num_stripe_groups, num_approaches);
+        // re-encoding + parity merging (generate 2^num_sg enumerations)
+        approach_candidates = Utils::getEnumeration(num_stripe_groups, 2);
+    }
 
     int num_approach_candidates = approach_candidates.size();
 

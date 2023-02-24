@@ -18,10 +18,7 @@
 
 using namespace std;
 
-
-#define ENABLE_PARITY_MERGING true
-#define ENABLE_RE_ENCODING false
-#define ENABLE_PARTIAL_PARITY_MERGING false
+#define INVALID_ID SIZE_MAX
 
 
 #endif // __INCLUDE_HH__

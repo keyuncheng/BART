@@ -15,3 +15,5 @@ Balanced Code Conversion
     * filter out the groups with min loads worse than current best group
 
 * BlockMeta and NodeMeta and vertex mapping
+
+* Handle re-encoding only coding schemes: lambda_f > 1

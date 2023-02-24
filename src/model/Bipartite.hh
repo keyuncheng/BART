@@ -7,20 +7,30 @@
 #include "StripeBatch.hh"
 #include "../util/Utils.hh"
 
+enum VertexType {
+    LEFT,
+    RIGHT,
+    INVALID
+};
+
 typedef struct Vertex {
-    int id; // vertex id
+    size_t id;
     int in_degree; // sum of in-degree
     int out_degree; // sum of out-degree
     int weights; // sum of weights
     int costs; // sum of costs
+
+    Vertex() : id(INVALID_ID), in_degree(0), out_degree(0), weights(0), costs(0) {};
 } Vertex;
 
 typedef struct Edge { // block to block edge
-    int id;
+    size_t id;
     Vertex *lvtx; // left vertex
     Vertex *rvtx; // right vertex
     int weight; // weight of the edge
     int cost; // cost of the edge
+
+    Edge() : id(INVALID_ID), lvtx(NULL), rvtx(NULL), weight(0), cost(0) {};
 } Edge;
 
 class Bipartite
@@ -28,8 +38,20 @@ class Bipartite
 private:
     
 public:
-    unordered_map<int, Vertex> vertices_map; // vertices map
-    unordered_map<int, Edge> edges_map; // block to node edges
+    Bipartite();
+    ~Bipartite();
+    size_t addVertex(VertexType type); // 0: left_vertex; 1: right vertex; return:  new vertex id
+    size_t addEdge(Vertex *lvtx, Vertex *rvtx, int weight, int cost);
+
+    void clear();
+    void print();
+    void print_vertices();
+    void print_vertices(unordered_map<int, Vertex *> &vertex_map);
+    void print_edges();
+
+
+    vector<Vertex> vertices;
+    vector<Edge> edges;
 
     unordered_map<int, Vertex *> left_vertices_map; // left vertices map
     unordered_map<int, Vertex *> right_vertices_map; // right vertices map
@@ -37,25 +59,6 @@ public:
     unordered_map<int, vector<int> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
     unordered_map<int, vector<int> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
 
-    
-    // max flow solution
-    unordered_map<int, Edge> edges_max_flow_map; // edges of max flow solution
-
-
-    Bipartite();
-    ~Bipartite();
-
-    void print();
-    void print_vertices(unordered_map<int, Vertex> &vmap);
-    void print_vertices(unordered_map<int, Vertex *> &vmap);
-    void print_edges(unordered_map<int, Edge> &emap);
-
-    bool buildMaxFlowSolutionFromPaths(vector<vector<int> > &paths);
-
-    static bool BFSGraph(int sid, int tid, int num_vertices, int **graph, int **res_graph, vector<int> &parent);
-    static int findMaxflowByFordFulkerson(Bipartite &in_bipartite, vector<vector<int> > &paths, int l_limit, int r_limit);
-
-    void clear();
 };
 
 
