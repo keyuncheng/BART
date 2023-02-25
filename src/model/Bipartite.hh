@@ -46,18 +46,18 @@ public:
     void clear();
     void print();
     void print_vertices();
-    void print_vertices(unordered_map<int, Vertex *> &vertex_map);
+    void print_vertices(unordered_map<size_t, Vertex *> &vertex_map);
     void print_edges();
 
 
-    vector<Vertex> vertices;
-    vector<Edge> edges;
+    unordered_map<size_t, Vertex> vertices_map;
+    unordered_map<size_t, Edge> edges_map;
 
-    unordered_map<int, Vertex *> left_vertices_map; // left vertices map
-    unordered_map<int, Vertex *> right_vertices_map; // right vertices map
+    unordered_map<size_t, Vertex *> left_vertices_map; // left vertices map
+    unordered_map<size_t, Vertex *> right_vertices_map; // right vertices map
 
-    unordered_map<int, vector<int> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
-    unordered_map<int, vector<int> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
+    unordered_map<size_t, vector<size_t> > lvtx_edges_map; // edges connected to left vertices <lvtx, <edges>>
+    unordered_map<size_t, vector<size_t> > rvtx_edges_map; // edges connected to right vertices <rvtx, <edges>>
 
 };
 

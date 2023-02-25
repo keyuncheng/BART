@@ -4,7 +4,6 @@
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
 #include "RecvBipartite.hh"
-#include "SendBipartite.hh"
 
 
 class BalancdConversion
@@ -15,9 +14,9 @@ public:
     BalancdConversion(/* args */);
     ~BalancdConversion();
 
-    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions, mt19937 random_generator);
+    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator);
 
-    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist);
+    void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t> > &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
 };
 
 

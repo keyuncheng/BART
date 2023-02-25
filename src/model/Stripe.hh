@@ -8,16 +8,16 @@
 class Stripe
 {
 private:
-    vector<int> _stripe_indices; // stripe length: n
-    int _id;
+    vector<size_t> _stripe_indices; // stripe length: n
+    size_t _id;
 
 public:
 
-    Stripe(int id, vector<int> &stripe_indices);
+    Stripe(size_t id, vector<size_t> &stripe_indices);
     ~Stripe();
 
-    int getId();
-    vector<int> &getStripeIndices();
+    size_t getId();
+    vector<size_t> &getStripeIndices();
     void print();
 };
 

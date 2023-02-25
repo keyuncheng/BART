@@ -10,12 +10,12 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    int k_i = atoi(argv[1]);
-    int m_i = atoi(argv[2]);
-    int k_f = atoi(argv[3]);
-    int m_f = atoi(argv[4]);
-    int N = atoi(argv[5]);
-    int M = atoi(argv[6]);
+    size_t k_i = atoi(argv[1]);
+    size_t m_i = atoi(argv[2]);
+    size_t k_f = atoi(argv[3]);
+    size_t m_f = atoi(argv[4]);
+    size_t N = atoi(argv[5]);
+    size_t M = atoi(argv[6]);
     string placement_file = argv[7];
 
     StripeGenerator stripe_generator;
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     vector<Stripe> stripes = stripe_generator.generateRandomStripes(code, settings, random_generator);
     stripe_generator.storeStripes(stripes, placement_file);
 
-    printf("finished generating %d (%d, %d) stripes in %d storage nodes", settings.N, code.k_i, code.m_i, settings.M);
+    printf("finished generating %ld (%ld, %ld) stripes in %ld storage nodes", settings.N, code.k_i, code.m_i, settings.M);
 
     return 0;
 }

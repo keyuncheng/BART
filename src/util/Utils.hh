@@ -17,26 +17,28 @@ public:
     static bool isParamValid(const ConvertibleCode &code, const ClusterSettings &settings);
 
     static mt19937 createRandomGenerator();
-    static int randomInt(int l, int r, mt19937 &random_generator);
+    static size_t randomUInt(size_t l, size_t r, mt19937 &random_generator);
 
-    static void printIntVector(vector<int> &vec);
-    static void printIntArray(int *arr, int len);
-    static void printIntMatrix(int **matrix, int r, int c);
+    static void printVector(vector<size_t> &vec);
+    static void printUIntVector(vector<size_t> &vec);
+    static void printUIntArray(size_t *arr, size_t len);
+    static void printUIntMatrix(size_t **matrix, size_t r, size_t c);
 
-    static int **initIntMatrix(int r, int c);
-    static void destroyIntMatrix(int **matrix, int r, int c);
+    static size_t **initUIntMatrix(size_t r, size_t c);
+    static void destroyUIntMatrix(size_t **matrix, size_t r, size_t c);
 
-    static vector<int> argsortIntVector(vector<int> &vec);
+    static vector<size_t> argsortIntVector(vector<int> &vec);
+    static vector<size_t> argsortUIntVector(vector<size_t> &vec);
 
-    static void makeCombUtil(vector<vector<int> >& ans,
-    vector<int>& tmp, int n, int left, int k);
-    static vector<vector<int> > getCombinations(int n, int k);
+    static void makeCombUtil(vector<vector<size_t> >& ans,
+    vector<size_t>& tmp, size_t n, size_t left, size_t k);
+    static vector<vector<size_t> > getCombinations(size_t n, size_t k);
 
-    static void makeEnumUtil(vector<vector<int> >& ans,
-    vector<int> tmp, int left, int right, int k);
-    static vector<vector<int> > getEnumeration(int n, int k);
+    static void makeEnumUtil(vector<vector<size_t> >& ans,
+    vector<size_t> tmp, size_t left, size_t right, size_t k);
+    static vector<vector<size_t> > getEnumeration(size_t n, size_t k);
 
-    static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<int> > &solutions, vector<int> &send_load_dist, vector<int> &recv_load_dist);
+    static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t> > &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
 };
 
 

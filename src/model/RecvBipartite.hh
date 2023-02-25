@@ -23,7 +23,7 @@ typedef struct BlockMeta {
     size_t block_id; // block id in the stripe
     size_t vtx_id; // Vertex id in RecvBipartite
 
-    BlockMeta() : id(INVALID_ID), vtx_id(INVALID_ID), type(BlockType::INVALID_BLK), stripe_batch_id(INVALID_ID), stripe_group_id(INVALID_ID), stripe_id_global(INVALID_ID), stripe_id(INVALID_ID), block_id(INVALID_ID) {};
+    BlockMeta() : id(INVALID_ID), type(BlockType::INVALID_BLK), stripe_batch_id(INVALID_ID), stripe_group_id(INVALID_ID), stripe_id_global(INVALID_ID), stripe_id(INVALID_ID), block_id(INVALID_ID), vtx_id(INVALID_ID) {};
 } BlockMeta;
 
 
@@ -42,13 +42,13 @@ public:
     size_t findBlockMeta(BlockMeta &in_block_meta);
 
     size_t createBlockVtx(BlockMeta &in_block_meta);
-    size_t createNodeVtx(int node_id);
+    size_t createNodeVtx(size_t node_id);
 
 
     // construct stripe batch with the given approaches
-    bool constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<int> &approaches);
+    bool constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<size_t> &approaches);
     // construct stripe group with a given approach
-    bool constructStripeGroupWithApproach(StripeGroup &stripe_group, int approach);
+    bool constructStripeGroupWithApproach(StripeGroup &stripe_group, size_t approach);
     // construct stripe group
     bool constructSGWithData(StripeGroup &stripe_group);
     bool constructSGWithParityMerging(StripeGroup &stripe_group);
@@ -56,26 +56,26 @@ public:
     bool constructSGWithParityRelocation(StripeGroup &stripe_group);
 
     // find load-balanced solution greedily for each block in each stripe group
-    bool findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<int> &edges, mt19937 &random_generator);
+    bool findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator);
 
     // construct partial transition solution from edges
-    bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<int> &edges, vector<vector<int> > &partial_solutions);
+    bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t> > &partial_solutions);
 
     // construct solution based on recv graph with approaches
-    bool updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<int> > &partial_solutions, vector<vector<int> > &solutions);
+    bool updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<size_t> > &partial_solutions, vector<vector<size_t> > &solutions);
     
 
 private:
 
     // block metadata
-    vector<BlockMeta> block_metastore;
-    unordered_map<size_t, vector<BlockMeta *> > sg_block_meta_map;
+    unordered_map<size_t, BlockMeta> block_metastore;
+    unordered_map<size_t, vector<BlockMeta *> > sg_block_meta_map; // <stripe_group_id, <block metadata> >
 
-    unordered_map<size_t, size_t> block_meta_to_vtx_map;
-    unordered_map<size_t, size_t> vtx_to_block_meta_map;
+    unordered_map<size_t, size_t> block_meta_to_vtx_map; // <block metadata, vertex>
+    unordered_map<size_t, size_t> vtx_to_block_meta_map; // <vertex, block metadata>
 
-    unordered_map<size_t, size_t> node_to_vtx_map;
-    unordered_map<size_t, size_t> vtx_to_node_map;
+    unordered_map<size_t, size_t> node_to_vtx_map;  // <node_id, vertex>
+    unordered_map<size_t, size_t> vtx_to_node_map; // <vertex, node_id>
 
 };
 

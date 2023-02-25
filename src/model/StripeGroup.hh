@@ -19,20 +19,20 @@ private:
     ConvertibleCode _code;
     ClusterSettings _settings;
     vector<Stripe *> _stripes;
-    int _id;
+    size_t _id;
 
 public:
-    StripeGroup(int id, ConvertibleCode &code, ClusterSettings &settings, vector<Stripe *> &stripes);
+    StripeGroup(size_t id, ConvertibleCode &code, ClusterSettings &settings, vector<Stripe *> &stripes);
     ~StripeGroup();
 
-    int getId();
+    size_t getId();
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
     vector<Stripe *> &getStripes();
 
-    vector<int> getDataDistribution();
-    vector<vector<int> > getParityDistributions();
-    vector<int> getParityDistribution(int parity_id);
+    vector<size_t> getDataDistribution();
+    vector<vector<size_t> > getParityDistributions();
+    vector<size_t> getParityDistribution(size_t parity_id);
 
     int getMinTransitionCost();
     int getDataRelocationCost();

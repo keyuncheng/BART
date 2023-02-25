@@ -16,12 +16,12 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    int k_i = atoi(argv[1]);
-    int m_i = atoi(argv[2]);
-    int k_f = atoi(argv[3]);
-    int m_f = atoi(argv[4]);
-    int N = atoi(argv[5]);
-    int M = atoi(argv[6]);
+    size_t k_i = atoi(argv[1]);
+    size_t m_i = atoi(argv[2]);
+    size_t k_f = atoi(argv[3]);
+    size_t m_f = atoi(argv[4]);
+    size_t N = atoi(argv[5]);
+    size_t M = atoi(argv[6]);
     string placement_file = argv[7];
     string approach = argv[8];
 
@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
     // }
 
     // solutions and load distribution
-    vector<vector<int> > solutions;
-    vector<int> send_load_dist, recv_load_dist;
+    vector<vector<size_t> > solutions;
+    vector<size_t> send_load_dist, recv_load_dist;
 
     if (approach == "SM") {
         // stripe-merge-g
@@ -89,22 +89,22 @@ int main(int argc, char *argv[]) {
     Utils::getLoadDist(code, settings, solutions, send_load_dist, recv_load_dist);
 
     // get bandwidth
-    int bw = 0;
+    size_t bw = 0;
     for (auto item : send_load_dist) {
         bw += item;
     }
 
-    int min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
-    int max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
-    int min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-    int max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    size_t min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
+    size_t max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
+    size_t min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    size_t max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
 
     printf("=====================================================\n");
-    printf("%s send load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_send_load, max_send_load);
-    Utils::printIntVector(send_load_dist);
-    printf("%s recv load distribution:, minimum_load: %d, maximum_load: %d\n", approach.c_str(), min_recv_load, max_recv_load);
-    Utils::printIntVector(recv_load_dist);
-    printf("%s bandwidth: %d\n", approach.c_str(), bw);
+    printf("%s send load distribution:, minimum_load: %ld, maximum_load: %ld\n", approach.c_str(), min_send_load, max_send_load);
+    Utils::printUIntVector(send_load_dist);
+    printf("%s recv load distribution:, minimum_load: %ld, maximum_load: %ld\n", approach.c_str(), min_recv_load, max_recv_load);
+    Utils::printUIntVector(recv_load_dist);
+    printf("%s bandwidth: %ld\n", approach.c_str(), bw);
 
     return 0;
 }

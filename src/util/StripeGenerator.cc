@@ -9,17 +9,17 @@ StripeGenerator::~StripeGenerator()
 }
 
 vector<Stripe> StripeGenerator::generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator) {
-    int num_stripes = settings.N;
-    int num_nodes = settings.M;
+    size_t num_stripes = settings.N;
+    size_t num_nodes = settings.M;
 
     vector<Stripe> stripes;
 
-    for (int stripe_id = 0; stripe_id < num_stripes; stripe_id++) {
-        vector<int> stripe_indices;
+    for (size_t stripe_id = 0; stripe_id < num_stripes; stripe_id++) {
+        vector<size_t> stripe_indices;
         
         // generate indices of stripe
         while (stripe_indices.size() < (size_t) code.n_i) {
-            int random_node = Utils::randomInt(0, num_nodes - 1, random_generator);
+            size_t random_node = Utils::randomUInt(0, num_nodes - 1, random_generator);
 
             if (find(stripe_indices.begin(), stripe_indices.end(), random_node) == stripe_indices.end()) {
                 stripe_indices.push_back(random_node);
@@ -44,7 +44,7 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
     of.open(placement_file, ios::out);
 
     for (auto stripe : stripes) {
-        vector<int> &stripe_indices = stripe.getStripeIndices();
+        vector<size_t> &stripe_indices = stripe.getStripeIndices();
 
         for (auto idx : stripe_indices) {
             of << idx << " ";
@@ -68,12 +68,12 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
     stripes.clear();
 
     string line;
-    int stripe_id = 0;
+    size_t stripe_id = 0;
     while (getline(ifs, line)) {
         istringstream iss(line);
-        vector<int> stripe_indices;
-        for (int block_id = 0; block_id < code.n_i; block_id++) {
-            int idx;
+        vector<size_t> stripe_indices;
+        for (size_t block_id = 0; block_id < code.n_i; block_id++) {
+            size_t idx;
             iss >> idx;
             stripe_indices.push_back(idx);
         }

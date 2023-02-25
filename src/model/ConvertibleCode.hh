@@ -10,32 +10,32 @@ private:
 public:
 
         // input ec parameters (k, m)
-    int k_i;
-    int m_i;
-    int n_i;
+    size_t k_i;
+    size_t m_i;
+    size_t n_i;
 
     // output ec paramters (k', m')
-    int k_f;
-    int m_f;
-    int n_f;
+    size_t k_f;
+    size_t m_f;
+    size_t n_f;
 
     // k' = alpha k + beta
-    int alpha;
-    int beta;
+    size_t alpha;
+    size_t beta;
     
     // theta = lcm(k, k')
-    int theta;
-    int lambda_i;
-    int lambda_f;
+    size_t theta;
+    size_t lambda_i;
+    size_t lambda_f;
 
     ConvertibleCode(/* args */);
-    ConvertibleCode(int k_in, int m_in, int k_out, int m_out);
+    ConvertibleCode(size_t k_in, size_t m_in, size_t k_out, size_t m_out);
     ~ConvertibleCode();
 
     bool isValidForPM();
 
 private:
-    int lcm(int a, int b);
+    size_t lcm(size_t a, size_t b);
 };
 
 #endif // __CONVERTIBLE_CODE_HH__

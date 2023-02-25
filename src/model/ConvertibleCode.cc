@@ -4,7 +4,7 @@ ConvertibleCode::ConvertibleCode(/* args */)
 {
 }
 
-ConvertibleCode::ConvertibleCode(int k_in, int m_in, int k_out, int m_out) {
+ConvertibleCode::ConvertibleCode(size_t k_in, size_t m_in, size_t k_out, size_t m_out) {
     k_i = k_in;
     m_i = m_in;
 
@@ -20,7 +20,7 @@ ConvertibleCode::ConvertibleCode(int k_in, int m_in, int k_out, int m_out) {
     lambda_i = theta / k_i;
     lambda_f = theta / k_f;
 
-    printf("Convertible Code (%d, %d) -> (%d, %d), alpha: %d, beta: %d, theta: %d, lambda_i: %d, lambda_f: %d\n", k_i, m_i, k_f, m_f, alpha, beta, theta, lambda_i, lambda_f);
+    printf("Convertible Code (%ld, %ld) -> (%ld, %ld), alpha: %ld, beta: %ld, theta: %ld, lambda_i: %ld, lambda_f: %ld\n", k_i, m_i, k_f, m_f, alpha, beta, theta, lambda_i, lambda_f);
 
 }
 
@@ -28,9 +28,9 @@ ConvertibleCode::~ConvertibleCode()
 {
 }
 
-int ConvertibleCode::lcm(int a, int b) {
+size_t ConvertibleCode::lcm(size_t a, size_t b) {
 
-    int max_num = max(a, b);
+    size_t max_num = max(a, b);
 
     while (1) {
         if (max_num % a == 0 && max_num % b == 0) {

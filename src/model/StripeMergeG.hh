@@ -15,8 +15,8 @@ public:
     StripeMergeG();
     ~StripeMergeG();
 
-    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<int> > &solutions, mt19937 random_generator);
-    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<int> > &solutions, mt19937 random_generator);
+    void getSolutionForStripeBatch(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator);
+    void getSolutionForStripeGroup(StripeGroup &stripe_group, vector<vector<size_t> > &solutions, mt19937 random_generator);
 };
 
 
