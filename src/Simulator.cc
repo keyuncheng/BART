@@ -82,7 +82,13 @@ int main(int argc, char *argv[]) {
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
-        balanced_conversion.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
+
+        // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
+
+        // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
+
+        balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
+
     }
 
     // get load distribution

@@ -209,7 +209,7 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
             Vertex &node_vtx = vertices_map[node_vtx_id];
 
             // add edge (cost: # of required parity blocks)
-            addEdge(&pcb_vtx, &node_vtx, 1, code.k_f - code.alpha - parity_distribution[cand_node_id]);
+            addEdge(&pcb_vtx, &node_vtx, 1, code.alpha - parity_distribution[cand_node_id]);
         }
     }
 
@@ -318,7 +318,6 @@ bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group) {
     return true;
 }
 
-
 bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator) {
     // key idea: for each block, find a node with **minimum load after connection** among all possible candidates; if more than one node have the same minimum load, randomly pick one
 
@@ -364,6 +363,7 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
             cand_edges.push_back(edge.id);
             cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
         }
+
 
         // find all min_load_edge candidates (with the same recv load)
         vector<size_t> sorted_idxes = Utils::argsortIntVector(cand_costs);

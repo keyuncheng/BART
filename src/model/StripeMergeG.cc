@@ -80,7 +80,7 @@ void StripeMergeG::getSolutionForStripeGroup(StripeGroup &stripe_group, vector<v
     // Utils::printUIntVector(reloc_node_candidates);
 
 
-    // Step 1: parity relocation
+    // Step 1: parity computation and relocation
 
     // parity block computation node candidates: all nodes are candidates
     vector<size_t> parity_comp_candidates(num_nodes, 0);
