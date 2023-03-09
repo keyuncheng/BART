@@ -83,11 +83,11 @@ int main(int argc, char *argv[]) {
 
         BalancdConversion balanced_conversion;
 
-        // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
+        balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
 
         // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
 
-        balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
+        // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
 
     }
 

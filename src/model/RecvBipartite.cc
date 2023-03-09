@@ -71,6 +71,9 @@ size_t RecvBipartite::createBlockVtx(BlockMeta &in_block_meta) {
     // add vertex of the block 
     size_t block_vtx_id = addVertex(VertexType::LEFT);
 
+    BlockMeta &block_meta = block_metastore[block_meta_id];
+    block_meta.vtx_id = block_vtx_id;
+
     // create mapping
     block_meta_to_vtx_map[block_meta_id] = block_vtx_id;
     vtx_to_block_meta_map[block_vtx_id] = block_meta_id;
@@ -182,6 +185,9 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
     ClusterSettings &settings = stripe_group.getClusterSettings();
     size_t num_nodes = settings.M;
 
+    // get data block distributions
+    vector<size_t> data_distribution = stripe_group.getDataDistribution();
+
     // get parity block distributions
     vector<vector<size_t> > parity_distributions = stripe_group.getParityDistributions();
 
@@ -208,8 +214,14 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
             size_t node_vtx_id = createNodeVtx(cand_node_id);
             Vertex &node_vtx = vertices_map[node_vtx_id];
 
+            // manual tune cost (if there is a data block at the node, need to relocate to another node, thus this node is with higher cost than the others)
+            int edge_cost = code.alpha - parity_distribution[cand_node_id];
+            if (data_distribution[cand_node_id] > 0) {
+                edge_cost += 1;
+            }
+
             // add edge (cost: # of required parity blocks)
-            addEdge(&pcb_vtx, &node_vtx, 1, code.alpha - parity_distribution[cand_node_id]);
+            addEdge(&pcb_vtx, &node_vtx, 1, edge_cost);
         }
     }
 
@@ -434,6 +446,9 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         }
     }
 
+    sort(compute_lvtx_ids.begin(), compute_lvtx_ids.end());
+    sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
+
     // first add compute vertex
     for (auto vtx_id : compute_lvtx_ids) {
         sorted_lvtx_ids.push_back(vtx_id);
@@ -466,6 +481,12 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
             cand_edges.push_back(edge.id);
             cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
         }
+
+        // printf("block vtx_id: %ld, sg_id: %ld\n", block_meta.vtx_id, block_meta.stripe_group_id);
+        // for (auto edge_id : cand_edges) {
+        //     Edge &edge = edges_map[edge_id];
+        //     printf("edge_id: %ld, rvtx_id: %ld, node_id: %ld, cost: %d\n", edge.id, edge.rvtx->id, vtx_to_node_map[edge.rvtx->id], edge.cost);
+        // }
 
 
         // find all min_load_edge candidates (with the same recv load)
@@ -507,6 +528,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     // for (auto edge_id : sol_edges) {
     //     Edge &edge = edges_map[edge_id];
     //     sum_costs += edge.cost;
+
+    //     printf("edge_id: %ld, cost: %d\n", edge.id, edge.cost);
     // }
     // printf("\n\nnum_edges: %ld, costs: %d\n\n\n\n", sol_edges.size(), sum_costs);
 

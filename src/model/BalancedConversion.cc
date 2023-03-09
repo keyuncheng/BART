@@ -29,10 +29,10 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         // approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::RE_ENCODE));
 
         // parity merging only
-        // approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::PARITY_MERGE));
+        approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::PARITY_MERGE));
 
-        // re-encoding + parity merging (generate 2^num_sg enumerations)
-        approach_candidates = Utils::getEnumeration(num_stripe_groups, 2);
+        // // // re-encoding + parity merging (generate 2^num_sg enumerations)
+        // approach_candidates = Utils::getEnumeration(num_stripe_groups, 2);
     }
 
     size_t num_approach_candidates = approach_candidates.size();
@@ -63,9 +63,9 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
 
         // find edges
         vector<size_t> sol_edges;
-        recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, sol_edges, random_generator);
+        // recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, sol_edges, random_generator);
 
-        // recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
+        recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
 
         // construct partial solutions from recv graph
         vector<vector<size_t> > partial_solutions, solutions;
@@ -109,11 +109,11 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         solutions = best_solutions;
     }
 
-    // // put it into the solution for the batch
-    // printf("solutions for stripe_batch (size: %ld): \n", solutions.size());
-    // for (auto solution : solutions) {
-    //     printf("stripe %ld, block %ld, from: %ld, to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
-    // }
+    // put it into the solution for the batch
+    printf("solutions for stripe_batch (size: %ld): \n", solutions.size());
+    for (auto solution : solutions) {
+        printf("stripe %ld, block %ld, from: %ld, to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
+    }
 }
 
 void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator) {
@@ -193,7 +193,7 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
     // // put it into the solution for the batch
     // printf("solutions for stripe_batch (size: %ld): \n", solutions.size());
     // for (auto solution : solutions) {
-    //     printf("stripe %ld, block %ld, from: %ld, to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
+    //     printf("stripe %ld, block %ld, from: %ld,proachesGreedySorted(stripe_batch, cand_sol_edges, ran to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
     // }
 }
 
@@ -221,9 +221,9 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
             // loop over all approaches
             for (size_t cand_approach_id = 0; cand_approach_id < 2; cand_approach_id++) {
 
-                if (best_approaches[sg_id] == cand_approach_id) {
-                    continue;
-                }
+                // if (best_approaches[sg_id] == cand_approach_id) {
+                //     continue;
+                // }
 
                 vector<size_t> cand_approaches = best_approaches;
 
