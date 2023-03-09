@@ -382,6 +382,119 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
         size_t min_load_edge_id = cand_min_load_edges[rand_pos];
         sol_edges.push_back(min_load_edge_id); // add edge id
 
+        // update load on both vertex
+        Edge &min_load_edge = edges_map[min_load_edge_id];
+        Vertex &lvtx = vertices_map[lvtx_id];
+        Vertex &rvtx = vertices_map[min_load_edge.rvtx->id];
+        lvtx.out_degree += min_load_edge.weight;
+        lvtx.costs += min_load_edge.cost;
+        rvtx.out_degree += min_load_edge.weight;
+        rvtx.costs += min_load_edge.cost;
+
+        
+        // if the block is a data / parity block, mark the node as relocated
+        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
+            size_t min_load_node_id = vtx_to_node_map[min_load_edge.rvtx->id];
+            sg_relocated_nodes[min_load_node_id] = true;
+        }
+    }
+
+    return true;
+}
+
+bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator) {
+    // key idea: in addition to findEdgesWithApproachesGreedy, sort the block types as: compute blocks first; then relocation blocks
+
+    ClusterSettings &settings = stripe_batch.getClusterSettings();
+    size_t num_nodes = settings.M;
+
+    // initialize the solution edges
+    sol_edges.clear();
+
+    // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
+    unordered_map<size_t, vector<bool> > sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
+
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+        sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
+    }
+
+    // find solution for each block on the left
+    vector<size_t> sorted_lvtx_ids;
+    vector<size_t> compute_lvtx_ids; // compute lvtx
+    vector<size_t> reloc_lvtx_ids; // relocate lvtx (data and parity)
+    
+    for (auto lvit : left_vertices_map) {
+        Vertex &vtx = *lvit.second;
+        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
+
+        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM) {
+            compute_lvtx_ids.push_back(vtx.id);
+        } else {
+            reloc_lvtx_ids.push_back(vtx.id);
+        }
+    }
+
+    // first add compute vertex
+    for (auto vtx_id : compute_lvtx_ids) {
+        sorted_lvtx_ids.push_back(vtx_id);
+    }
+
+    // // next add relocate vertex
+    // for (auto vtx_id : reloc_lvtx_ids) {
+    //     sorted_lvtx_ids.push_back(vtx_id);
+    // }
+
+    for (auto lvtx_id : sorted_lvtx_ids) {
+        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
+        vector<bool> &sg_relocated_nodes = sg_reloc_nodes_map[block_meta.stripe_group_id];
+
+        // find candidate edges from adjacent edges
+        vector<size_t> cand_edges;
+        vector<int> cand_costs;
+
+        // if the block is a data / parity block (for relocation), filter out edges that connect to a node relocated with a data / parity block
+        vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
+        for (auto edge_id : adjacent_edges) {
+            Edge &edge = edges_map[edge_id];
+            size_t node_id = vtx_to_node_map[edge.rvtx->id];
+            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
+                if (sg_relocated_nodes[node_id] == true) {
+                    continue;
+                }
+            }
+
+            cand_edges.push_back(edge.id);
+            cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
+        }
+
+
+        // find all min_load_edge candidates (with the same recv load)
+        vector<size_t> sorted_idxes = Utils::argsortIntVector(cand_costs);
+        int min_load = cand_costs[sorted_idxes[0]];
+        vector<size_t> cand_min_load_edges;
+        for (auto idx : sorted_idxes) {
+            if (cand_costs[idx] == min_load) {
+                cand_min_load_edges.push_back(cand_edges[idx]);
+            } else {
+                break;
+            }
+        }
+
+        // randomly pick one min-load edge
+        size_t rand_pos = Utils::randomUInt(0, cand_min_load_edges.size() - 1, random_generator);
+        size_t min_load_edge_id = cand_min_load_edges[rand_pos];
+        sol_edges.push_back(min_load_edge_id); // add edge id
+
+        // update load on both vertex
+        Edge &min_load_edge = edges_map[min_load_edge_id];
+        Vertex &lvtx = vertices_map[lvtx_id];
+        Vertex &rvtx = vertices_map[min_load_edge.rvtx->id];
+        lvtx.out_degree += min_load_edge.weight;
+        lvtx.costs += min_load_edge.cost;
+        rvtx.in_degree += min_load_edge.weight;
+        rvtx.costs += min_load_edge.cost;
+
+
         // if the block is a data / parity block, mark the node as relocated
         if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
             Edge &min_load_edge = edges_map[min_load_edge_id];
@@ -390,8 +503,29 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
         }
     }
 
+    // int sum_costs = 0;
+    // for (auto edge_id : sol_edges) {
+    //     Edge &edge = edges_map[edge_id];
+    //     sum_costs += edge.cost;
+    // }
+    // printf("\n\nnum_edges: %ld, costs: %d\n\n\n\n", sol_edges.size(), sum_costs);
+
     return true;
 }
+
+
+bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<size_t> &sol_edges) {
+    // follow the structure of scheduling jobs for m-processor problem in JACM'1976
+
+    ClusterSettings &settings = stripe_batch.getClusterSettings();
+    size_t num_nodes = settings.M;
+
+    // initialize the solution edges
+    sol_edges.clear();
+    
+    return true;
+}
+
 
 bool RecvBipartite::constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t> > &partial_solutions) {
     /** construct partial solutions from recv graph

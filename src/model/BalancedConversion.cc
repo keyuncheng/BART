@@ -25,6 +25,9 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         // re-encoding only
         approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::RE_ENCODE));
     } else {
+        // re-encoding only
+        // approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::RE_ENCODE));
+
         // parity merging only
         // approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::PARITY_MERGE));
 
@@ -61,6 +64,8 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         // find edges
         vector<size_t> sol_edges;
         recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, sol_edges, random_generator);
+
+        // recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
 
         // construct partial solutions from recv graph
         vector<vector<size_t> > partial_solutions, solutions;
@@ -150,6 +155,8 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
             vector<size_t> cand_sol_edges;
             cur_recv_bipartite.findEdgesWithApproachesGreedy(cur_stripe_batch, cand_sol_edges, random_generator);
 
+            // cur_recv_bipartite.findEdgesWithApproachesGreedySorted(cur_stripe_batch, cand_sol_edges, random_generator);
+
             // construct partial solutions from recv graph
             vector<vector<size_t> > cand_partial_solutions, cand_solutions;
             cur_recv_bipartite.constructPartialSolutionFromEdges(cur_stripe_batch, cand_sol_edges, cand_partial_solutions);
@@ -229,7 +236,10 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
 
                 // find edges
                 vector<size_t> cand_sol_edges;
-                cur_recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, cand_sol_edges, random_generator);
+                // cur_recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, cand_sol_edges, random_generator);
+
+                cur_recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, cand_sol_edges, random_generator);
+
 
                 // construct partial solutions from recv graph
                 vector<vector<size_t> > cand_partial_solutions, cand_solutions;
@@ -247,12 +257,12 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
 
                 // check if the current load out-performs previous best load
                 if (cand_max_load < best_max_load) {
-                    printf("found better approaches, previous_load: %ld, best_max_load: %ld, approaches:\n", best_max_load, cand_max_load);
-                    Utils::printUIntVector(best_approaches);
-
                     best_max_load = cand_max_load;
                     best_approaches = cand_approaches;
                     best_solutions = cand_solutions;
+
+                    printf("found better approaches, previous_load: %ld, best_max_load: %ld, approaches:\n", best_max_load, cand_max_load);
+                    Utils::printUIntVector(best_approaches);
                 }
             }
         }

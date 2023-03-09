@@ -58,6 +58,11 @@ public:
     // find load-balanced solution greedily for each block in each stripe group
     bool findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator);
 
+    bool findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator);
+
+    // find load-balanced solution by dynamic programming
+    bool findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<size_t> &sol_edges);
+
     // construct partial transition solution from edges
     bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t> > &partial_solutions);
 
