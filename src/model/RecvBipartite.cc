@@ -430,6 +430,14 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
     }
 
+
+    // // data block distributions
+    // vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
+    // unordered_map<size_t, vector<size_t> > data_distribution_map;
+    // for (auto &stripe_group : stripe_groups) {
+    //     data_distribution_map[stripe_group.getId()] = stripe_group.getDataDistribution();
+    // }
+
     // find solution for each block on the left
     vector<size_t> sorted_lvtx_ids;
     vector<size_t> compute_lvtx_ids; // compute lvtx
@@ -478,8 +486,16 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
                 }
             }
 
+            int cost_after_connection = edge.rvtx->costs + edge.cost;
+
+            // // add cost to edges where the node have data blocks
+            // vector<size_t> &data_distribution = data_distribution_map[block_meta.stripe_group_id];
+            // if (data_distribution[node_id] > 0) {
+            //     cost_after_connection += 1;
+            // }
+
             cand_edges.push_back(edge.id);
-            cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
+            cand_costs.push_back(cost_after_connection); // cost after edge connection
         }
 
         // find all min_load_edge candidates (with the same recv load)
