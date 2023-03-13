@@ -454,10 +454,10 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         sorted_lvtx_ids.push_back(vtx_id);
     }
 
-    // // next add relocate vertex
-    // for (auto vtx_id : reloc_lvtx_ids) {
-    //     sorted_lvtx_ids.push_back(vtx_id);
-    // }
+    // next add relocate vertex
+    for (auto vtx_id : reloc_lvtx_ids) {
+        sorted_lvtx_ids.push_back(vtx_id);
+    }
 
     for (auto lvtx_id : sorted_lvtx_ids) {
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
@@ -482,32 +482,44 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
             cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
         }
 
-        // printf("block vtx_id: %ld, sg_id: %ld\n", block_meta.vtx_id, block_meta.stripe_group_id);
-        // for (auto edge_id : cand_edges) {
-        //     Edge &edge = edges_map[edge_id];
-        //     printf("edge_id: %ld, rvtx_id: %ld, node_id: %ld, cost: %d\n", edge.id, edge.rvtx->id, vtx_to_node_map[edge.rvtx->id], edge.cost);
-        // }
-
-
         // find all min_load_edge candidates (with the same recv load)
         vector<size_t> sorted_idxes = Utils::argsortIntVector(cand_costs);
         int min_load = cand_costs[sorted_idxes[0]];
         vector<size_t> cand_min_load_edges;
+        vector<int> cand_min_load_edge_costs;
         for (auto idx : sorted_idxes) {
             if (cand_costs[idx] == min_load) {
-                cand_min_load_edges.push_back(cand_edges[idx]);
+                Edge &cand_edge = edges_map[cand_edges[idx]];
+                cand_min_load_edges.push_back(cand_edge.id);
+                cand_min_load_edge_costs.push_back(cand_edge.cost);
             } else {
                 break;
             }
         }
 
+        // for (size_t idx = 0; idx < cand_min_load_edges.size(); idx++) {
+        //     printf("edge: %ld, cost: %d\n", cand_min_load_edges[idx], cand_min_load_edge_costs[idx]);
+        // }
+
+        // find the edge with minimum cost among all min-load edges
+        vector<size_t> sorted_min_load_edge_idxs = Utils::argsortIntVector(cand_min_load_edge_costs);
+        int min_load_min_cost = cand_min_load_edge_costs[sorted_min_load_edge_idxs[0]];
+
+        vector<size_t> cand_min_load_min_cost_edges;
+        for (auto edge_id : cand_min_load_edges) {
+            Edge &cand_edge = edges_map[edge_id];
+            if (cand_edge.cost == min_load_min_cost) {
+                cand_min_load_min_cost_edges.push_back(edge_id);
+            }
+        }
+
         // randomly pick one min-load edge
-        size_t rand_pos = Utils::randomUInt(0, cand_min_load_edges.size() - 1, random_generator);
-        size_t min_load_edge_id = cand_min_load_edges[rand_pos];
-        sol_edges.push_back(min_load_edge_id); // add edge id
+        size_t rand_pos = Utils::randomUInt(0, cand_min_load_min_cost_edges.size() - 1, random_generator);
+        size_t min_load_min_cost_edge_id = cand_min_load_min_cost_edges[rand_pos];
+        sol_edges.push_back(min_load_min_cost_edge_id); // add edge id
 
         // update load on both vertex
-        Edge &min_load_edge = edges_map[min_load_edge_id];
+        Edge &min_load_edge = edges_map[min_load_min_cost_edge_id];
         Vertex &lvtx = vertices_map[lvtx_id];
         Vertex &rvtx = vertices_map[min_load_edge.rvtx->id];
         lvtx.out_degree += min_load_edge.weight;
@@ -515,10 +527,9 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         rvtx.in_degree += min_load_edge.weight;
         rvtx.costs += min_load_edge.cost;
 
-
         // if the block is a data / parity block, mark the node as relocated
         if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
-            Edge &min_load_edge = edges_map[min_load_edge_id];
+            Edge &min_load_edge = edges_map[min_load_min_cost_edge_id];
             size_t min_load_node_id = vtx_to_node_map[min_load_edge.rvtx->id];
             sg_relocated_nodes[min_load_node_id] = true;
         }
@@ -545,6 +556,43 @@ bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<
 
     // initialize the solution edges
     sol_edges.clear();
+
+    // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
+    unordered_map<size_t, vector<bool> > sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
+
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+        sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
+    }
+
+    // find solution for each block on the left
+    vector<size_t> sorted_lvtx_ids;
+    vector<size_t> compute_lvtx_ids; // compute lvtx
+    vector<size_t> reloc_lvtx_ids; // relocate lvtx (data and parity)
+    
+    for (auto lvit : left_vertices_map) {
+        Vertex &vtx = *lvit.second;
+        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
+
+        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM) {
+            compute_lvtx_ids.push_back(vtx.id);
+        } else {
+            reloc_lvtx_ids.push_back(vtx.id);
+        }
+    }
+
+    sort(compute_lvtx_ids.begin(), compute_lvtx_ids.end());
+    sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
+
+    // first add compute vertex
+    for (auto vtx_id : compute_lvtx_ids) {
+        sorted_lvtx_ids.push_back(vtx_id);
+    }
+
+    // // next add relocate vertex
+    // for (auto vtx_id : reloc_lvtx_ids) {
+    //     sorted_lvtx_ids.push_back(vtx_id);
+    // }
+
     
     return true;
 }
