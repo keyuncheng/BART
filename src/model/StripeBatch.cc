@@ -235,6 +235,10 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes) {
         return false;
     }
 
+    // send load table
+    size_t num_nodes = _settings.M;
+    vector<size_t> send_load_table(num_nodes, 0);
+
     // enumerate all possible stripe groups
     vector<size_t> comb_ids;
     vector<vector<size_t> > combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
@@ -294,6 +298,11 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes) {
                 valid_cand_costs.push_back(candidate_sgs_costs[cand_id]);
             }
         }
+
+        // TODO: find the minimum cost
+        // filter out all stripe groups with minimum transition cost
+        // find the one with minimum load
+        // update table
 
         // get stripe group with minimum transition cost
         size_t min_cost_id = distance(valid_cand_costs.begin(), min_element(valid_cand_costs.begin(), valid_cand_costs.end()));
