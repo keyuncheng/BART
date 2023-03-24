@@ -225,7 +225,6 @@ bool StripeBatch::constructByCost(vector<Stripe> &stripes) {
 }
 
 bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes) {
-    // maintain a send load table
 
     size_t num_stripes = stripes.size();
 
@@ -403,4 +402,62 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes) {
     }
 
     return true;
+}
+
+
+bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes) {
+
+    size_t num_stripes = stripes.size();
+
+    // check if the number of stripes is a multiple of lambda_i
+    if (num_stripes % _code.lambda_i != 0) {
+        printf("invalid parameters\n");
+        return false;
+    }
+
+    // maintain a send load table
+    size_t num_nodes = _settings.M;
+    vector<size_t> cur_send_load_table(num_nodes, 0);
+
+    // enumerate all possible stripe groups
+    vector<size_t> comb_ids;
+    vector<vector<size_t> > combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
+    size_t num_candidate_sgs = combinations.size();
+
+    // mark down best send load table for each stripe group
+    vector<vector<vector<size_t> > > cand_sgs_slt(num_candidate_sgs, vector<vector<size_t> >());
+    vector<int> cand_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
+
+    vector<vector<size_t> > overlapped_cand_sgs(num_stripes, vector<size_t>()); // <stripe_id, overlapped_stripe_groups>
+
+    // enumerate transition costs for all candidate stripe groups
+    for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
+        comb_ids.push_back(cand_id);
+
+        // construct candidate stripe group
+        vector<size_t> &comb = combinations[cand_id];
+
+        // record overlapped candidate stripe_groups
+        for (auto stripe_id : comb) {
+            overlapped_cand_sgs[stripe_id].push_back(cand_id);
+        }
+
+        vector<Stripe *> stripes_in_group;
+        for (size_t sid = 0; sid < _code.lambda_i; sid++) {
+            stripes_in_group.push_back(&stripes[comb[sid]]);
+        }
+
+        StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
+
+        // get transition cost
+        int transition_cost = candidate_sg.getMinTransitionCost();
+        cand_sgs_costs[cand_id] = transition_cost;
+        cand_sgs_slt[cand_id] = candidate_sg.getCandSendLoadTablesForMinTransCost(transition_cost);
+    }
+
+    printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
+    // for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++) {
+    //     printf("candidate_id: %ld, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
+    //     Utils::printUIntVector(combinations[cand_id]);
+    // }
 }

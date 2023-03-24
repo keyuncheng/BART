@@ -24,6 +24,8 @@ public:
 
     bool constructByCostAndSendLoad(vector<Stripe> &stripes);
 
+    bool constructBySendLoadAndCost(vector<Stripe> &stripes);
+
     size_t getId();
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
