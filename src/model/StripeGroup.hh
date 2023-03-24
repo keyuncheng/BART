@@ -39,6 +39,12 @@ public:
     int getMinParityMergingCost();
     int getMinReEncodingCost();
 
+    vector<vector<size_t> > getCandSendLoadTablesForMinTransCost(int min_cost);
+    int constructSendLoadTableWithDataRelocation(vector<size_t> &send_load_table);
+    int appendSendLoadTableWithParityMerging(vector<size_t> &send_load_table, vector<vector<size_t> > &cand_send_load_tables, int min_cost);
+    int appendSendLoadTableWithReEncoding(vector<size_t> &init_send_load_table, vector<vector<size_t> > &cand_send_load_tables, int min_cost);
+    
+
     void print();
 };
 

@@ -78,7 +78,8 @@ int main(int argc, char *argv[]) {
 
         // stripe_batch.constructInSequence(stripes);
         // stripe_batch.constructByRandomPick(stripes, random_generator);
-        stripe_batch.constructByCost(stripes);
+        // stripe_batch.constructByCost(stripes);
+        stripe_batch.constructByCostAndSendLoad(stripes);
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
