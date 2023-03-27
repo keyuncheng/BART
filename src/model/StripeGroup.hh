@@ -7,7 +7,8 @@
 #include "ClusterSettings.hh"
 #include "Stripe.hh"
 
-enum TransApproach {
+enum TransApproach
+{
     RE_ENCODE,
     PARITY_MERGE
 };
@@ -15,7 +16,6 @@ enum TransApproach {
 class StripeGroup
 {
 private:
-
     ConvertibleCode _code;
     ClusterSettings _settings;
     vector<Stripe *> _stripes;
@@ -31,7 +31,7 @@ public:
     vector<Stripe *> &getStripes();
 
     vector<size_t> getDataDistribution();
-    vector<vector<size_t> > getParityDistributions();
+    vector<vector<size_t>> getParityDistributions();
     vector<size_t> getParityDistribution(size_t parity_id);
 
     int getMinTransitionCost();
@@ -39,14 +39,16 @@ public:
     int getMinParityMergingCost();
     int getMinReEncodingCost();
 
-    vector<vector<size_t> > getCandSendLoadTablesForMinTransCost(int min_cost);
+    vector<vector<size_t>> getCandSendLoadTablesForMinTransCost(int min_cost);
     int constructSendLoadTableWithDataRelocation(vector<size_t> &send_load_table);
-    int appendSendLoadTableWithParityMerging(vector<size_t> &send_load_table, vector<vector<size_t> > &cand_send_load_tables, int min_cost);
-    int appendSendLoadTableWithReEncoding(vector<size_t> &init_send_load_table, vector<vector<size_t> > &cand_send_load_tables, int min_cost);
-    
+    int appendSendLoadTableWithParityMerging(vector<size_t> &send_load_table, vector<vector<size_t>> &cand_send_load_tables, int min_cost);
+    int appendSendLoadTableWithReEncoding(vector<size_t> &init_send_load_table, vector<vector<size_t>> &cand_send_load_tables, int min_cost);
+
+    vector<vector<size_t>> getCandSendLoadTables();
+    int appendSendLoadTableWithParityMerging(vector<size_t> &send_load_table, vector<vector<size_t>> &cand_send_load_tables);
+    int appendSendLoadTableWithReEncoding(vector<size_t> &init_send_load_table, vector<vector<size_t>> &cand_send_load_tables);
 
     void print();
 };
-
 
 #endif // __STRIPE_GROUP_HH__
