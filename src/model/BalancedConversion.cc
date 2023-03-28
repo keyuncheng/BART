@@ -8,7 +8,8 @@ BalancdConversion::~BalancdConversion()
 {
 }
 
-void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator) {
+void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+{
     ConvertibleCode &code = stripe_batch.getCode();
     ClusterSettings &settings = stripe_batch.getClusterSettings();
 
@@ -20,19 +21,22 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
     solutions.clear();
 
     // Step 1: enumeration of approaches
-    vector<vector<size_t> > approach_candidates;
-    if (code.isValidForPM() == false) {
+    vector<vector<size_t>> approach_candidates;
+    if (code.isValidForPM() == false)
+    {
         // re-encoding only
-        approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::RE_ENCODE));
-    } else {
+        approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t)TransApproach::RE_ENCODE));
+    }
+    else
+    {
         // re-encoding only
         // approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::RE_ENCODE));
 
         // parity merging only
-        approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t) TransApproach::PARITY_MERGE));
+        approach_candidates.push_back(vector<size_t>(num_stripe_groups, (size_t)TransApproach::PARITY_MERGE));
 
         // // // re-encoding + parity merging (generate 2^num_sg enumerations)
-        // approach_candidates = Utils::getEnumeration(num_stripe_groups, 2);
+        // approach_candidates = Utils::getPermutations(num_stripe_groups, 2);
     }
 
     size_t num_approach_candidates = approach_candidates.size();
@@ -46,9 +50,10 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
     // Step 2: construct model for each approach candidate, and find the one with minimum max-load
     size_t best_app_cand_id = INVALID_ID;
     size_t best_max_load = SIZE_MAX;
-    vector<vector<size_t> > best_solutions;
+    vector<vector<size_t>> best_solutions;
 
-    for (size_t app_cand_id = 0; app_cand_id < num_approach_candidates; app_cand_id++) {
+    for (size_t app_cand_id = 0; app_cand_id < num_approach_candidates; app_cand_id++)
+    {
         vector<size_t> approach_candidate = approach_candidates[app_cand_id];
 
         printf("approach %ld:\n", app_cand_id);
@@ -68,7 +73,7 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
 
         // construct partial solutions from recv graph
-        vector<vector<size_t> > partial_solutions, solutions;
+        vector<vector<size_t>> partial_solutions, solutions;
         recv_bipartite.constructPartialSolutionFromEdges(stripe_batch, sol_edges, partial_solutions);
         recv_bipartite.updatePartialSolutionFromRecvGraph(stripe_batch, partial_solutions, solutions);
 
@@ -77,7 +82,8 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
 
         // get bandwidth
         size_t bw_bt = 0;
-        for (auto item : send_load_dist) {
+        for (auto item : send_load_dist)
+        {
             bw_bt += item;
         }
 
@@ -85,25 +91,26 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         size_t max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
         size_t min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
         size_t max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-        
 
         printf("Balanced Transition (approach %ld) send load distribution:, minimum_load: %ld, maximum_load: %ld\n", app_cand_id,
-            min_send_load, max_send_load);
+               min_send_load, max_send_load);
         Utils::printUIntVector(send_load_dist);
         printf("Balanced Transition (approach %ld) recv load distribution:, minimum_load: %ld, maximum_load: %ld\n", app_cand_id,
-            min_recv_load, max_recv_load);
+               min_recv_load, max_recv_load);
         Utils::printUIntVector(recv_load_dist);
         printf("Balanced Transition (approach %ld) bandwidth: %ld\n", app_cand_id, bw_bt);
 
         size_t cand_max_load = max(max_send_load, max_recv_load);
-        if (cand_max_load < best_max_load) {
+        if (cand_max_load < best_max_load)
+        {
             best_max_load = cand_max_load;
             best_app_cand_id = app_cand_id;
             best_solutions = solutions;
         }
     }
 
-    if (best_app_cand_id != INVALID_ID) {
+    if (best_app_cand_id != INVALID_ID)
+    {
         printf("found best candidate id: %ld, best_max_load: %ld, approaches:\n", best_app_cand_id, best_max_load);
         Utils::printUIntVector(approach_candidates[best_app_cand_id]);
         solutions = best_solutions;
@@ -111,12 +118,14 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
 
     // put it into the solution for the batch
     printf("solutions for stripe_batch (size: %ld): \n", solutions.size());
-    for (auto solution : solutions) {
+    for (auto solution : solutions)
+    {
         printf("stripe %ld, block %ld, from: %ld, to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
     }
 }
 
-void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator) {
+void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+{
     ConvertibleCode &code = stripe_batch.getCode();
     ClusterSettings &settings = stripe_batch.getClusterSettings();
 
@@ -131,19 +140,21 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
     vector<StripeGroup> &cur_stripe_group = cur_stripe_batch.getStripeGroups();
     cur_stripe_group.clear();
     vector<size_t> cur_approaches;
-    vector<vector<size_t> > cur_solutions;
+    vector<vector<size_t>> cur_solutions;
 
     // Step 1: for each stripe group, greedily finds the most load-balanced approach
-    for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++) {
+    for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++)
+    {
         // add group sg_id to current stripe batch
         cur_stripe_group.push_back(stripe_groups[sg_id]);
 
         // Step 2: construct model for each approach candidate, and find the one with minimum max-load
         size_t best_approach_id = INVALID_ID;
         size_t best_max_load = SIZE_MAX;
-        vector<vector<size_t> > best_solutions;
+        vector<vector<size_t>> best_solutions;
 
-        for (size_t cand_approach_id = 0; cand_approach_id < 2; cand_approach_id++) {
+        for (size_t cand_approach_id = 0; cand_approach_id < 2; cand_approach_id++)
+        {
             vector<size_t> cand_approaches = cur_approaches;
             cand_approaches.push_back(cand_approach_id);
 
@@ -158,7 +169,7 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
             // cur_recv_bipartite.findEdgesWithApproachesGreedySorted(cur_stripe_batch, cand_sol_edges, random_generator);
 
             // construct partial solutions from recv graph
-            vector<vector<size_t> > cand_partial_solutions, cand_solutions;
+            vector<vector<size_t>> cand_partial_solutions, cand_solutions;
             cur_recv_bipartite.constructPartialSolutionFromEdges(cur_stripe_batch, cand_sol_edges, cand_partial_solutions);
             cur_recv_bipartite.updatePartialSolutionFromRecvGraph(cur_stripe_batch, cand_partial_solutions, cand_solutions);
 
@@ -169,23 +180,23 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
             size_t max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
             // size_t min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
             size_t max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-        
 
             size_t cand_max_load = max(max_send_load, max_recv_load);
-            if (cand_max_load < best_max_load) {
+            if (cand_max_load < best_max_load)
+            {
                 best_max_load = cand_max_load;
                 best_approach_id = cand_approach_id;
                 best_solutions = cand_solutions;
             }
         }
 
-        if (best_approach_id != INVALID_ID) {
+        if (best_approach_id != INVALID_ID)
+        {
             printf("stripe_group %ld, best approach: %ld, best_max_load: %ld, approaches:\n", sg_id, best_approach_id, best_max_load);
             cur_approaches.push_back(best_approach_id);
             cur_solutions = best_solutions;
             Utils::printUIntVector(cur_approaches);
         }
-
     }
     // update the best solution
     solutions = cur_solutions;
@@ -197,7 +208,8 @@ void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batc
     // }
 }
 
-void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch, vector<vector<size_t> > &solutions, mt19937 random_generator) {
+void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+{
     ConvertibleCode &code = stripe_batch.getCode();
     ClusterSettings &settings = stripe_batch.getClusterSettings();
 
@@ -209,17 +221,20 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
     solutions.clear();
 
     // best approaches (start from all parity merging)
-    vector<size_t> best_approaches(num_stripe_groups, (size_t) TransApproach::PARITY_MERGE);
-    vector<vector<size_t> > best_solutions;
+    vector<size_t> best_approaches(num_stripe_groups, (size_t)TransApproach::PARITY_MERGE);
+    vector<vector<size_t>> best_solutions;
     size_t best_max_load = SIZE_MAX;
 
-    for (size_t iter = 0; iter < num_stripe_groups; iter++) {
+    for (size_t iter = 0; iter < num_stripe_groups; iter++)
+    {
         printf("iter %ld\n", iter);
         // Step 2: construct model for each approach candidate, and find the one with minimum max-load
         // Step 1: for each stripe group, find the best approach
-        for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++) {
+        for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++)
+        {
             // loop over all approaches
-            for (size_t cand_approach_id = 0; cand_approach_id < 2; cand_approach_id++) {
+            for (size_t cand_approach_id = 0; cand_approach_id < 2; cand_approach_id++)
+            {
 
                 // if (best_approaches[sg_id] == cand_approach_id) {
                 //     continue;
@@ -240,9 +255,8 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
 
                 cur_recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, cand_sol_edges, random_generator);
 
-
                 // construct partial solutions from recv graph
-                vector<vector<size_t> > cand_partial_solutions, cand_solutions;
+                vector<vector<size_t>> cand_partial_solutions, cand_solutions;
                 cur_recv_bipartite.constructPartialSolutionFromEdges(stripe_batch, cand_sol_edges, cand_partial_solutions);
                 cur_recv_bipartite.updatePartialSolutionFromRecvGraph(stripe_batch, cand_partial_solutions, cand_solutions);
 
@@ -256,7 +270,8 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
                 size_t cand_max_load = max(max_send_load, max_recv_load);
 
                 // check if the current load out-performs previous best load
-                if (cand_max_load < best_max_load) {
+                if (cand_max_load < best_max_load)
+                {
                     best_max_load = cand_max_load;
                     best_approaches = cand_approaches;
                     best_solutions = cand_solutions;
@@ -269,7 +284,6 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
 
         // update solutions
         solutions = best_solutions;
-
     }
 
     // // put it into the solution for the batch

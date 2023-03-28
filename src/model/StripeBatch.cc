@@ -499,7 +499,7 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
         StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
 
         // get all possible transition send load table and their corresponding costs
-        cand_sgs_slt[cand_id] = candidate_sg.getCandSendLoadTablesForMinTransCost(transition_cost);
+        cand_sgs_slt[cand_id] = candidate_sg.getCandSendLoadTables();
         cand_sgs_costs[cand_id] = vector<int>(cand_sgs_slt[cand_id].size(), -1);
         for (size_t slt_idx = 0; slt_idx < cand_sgs_slt[cand_id].size(); slt_idx++)
         {
@@ -509,14 +509,13 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
             {
                 slt_cost += slt[node_id];
             }
-            cand_sgs_costs[slt_idx] = slt_cost;
+            cand_sgs_costs[cand_id][slt_idx] = slt_cost;
         }
     }
 
     printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
 
     // maintain a send load table
-    size_t num_nodes = _settings.M;
     vector<size_t> cur_send_load_table(num_nodes, 0);
 
     vector<size_t> sorted_stripe_ids; // store sorted stripe ids
@@ -544,16 +543,20 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
         // for each stripe group, record the maximum send load after connection
         vector<size_t> valid_cand_max_load_after_conn(valid_cand_ids.size(), 0);
         vector<vector<size_t>> valid_cand_max_load_slt(valid_cand_ids.size(), vector<size_t>());
+        vector<int> valid_cand_max_load_costs(valid_cand_ids.size(), -1);
 
         for (size_t idx = 0; idx < valid_cand_ids.size(); idx++)
         {
             size_t cand_id = valid_cand_ids[idx];
             vector<vector<size_t>> &cand_slts = cand_sgs_slt[cand_id];
+            vector<int> cand_slt_costs = cand_sgs_costs[cand_id];
 
             size_t best_min_max_load = SIZE_MAX;
             vector<size_t> best_min_max_load_slt;
-            for (auto &slt : cand_slts)
+            int best_mml_cost = -1;
+            for (size_t slt_idx = 0; slt_idx < cand_slts.size(); slt_idx++)
             {
+                vector<size_t> &slt = cand_slts[slt_idx];
                 vector<size_t> cur_slt_after_conn = cur_send_load_table;
                 for (size_t node_id = 0; node_id < num_nodes; node_id++)
                 {
@@ -566,11 +569,13 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
                 {
                     best_min_max_load = cur_min_max_load;
                     best_min_max_load_slt = slt;
+                    best_mml_cost = cand_slt_costs[slt_idx];
                 }
             }
 
             valid_cand_max_load_after_conn[idx] = best_min_max_load;
             valid_cand_max_load_slt[idx] = best_min_max_load_slt;
+            valid_cand_max_load_costs[idx] = best_mml_cost;
         }
 
         // filter out stripe groups with minimum send load after connection
@@ -586,7 +591,7 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
                 size_t cand_id = valid_cand_ids[idx];
                 mml_cand_ids.push_back(cand_id);
                 mml_slts.push_back(valid_cand_max_load_slt[idx]);
-                mml_costs.push_back(cand_sgs_costs[cand_id]);
+                mml_costs.push_back(valid_cand_max_load_costs[idx]);
             }
         }
         // find stripe groups with <minimum costs> among all min cost candidates

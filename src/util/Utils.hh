@@ -5,7 +5,6 @@
 #include "../model/ConvertibleCode.hh"
 #include "../model/ClusterSettings.hh"
 
-
 class Utils
 {
 private:
@@ -30,18 +29,15 @@ public:
     static vector<size_t> argsortIntVector(vector<int> &vec);
     static vector<size_t> argsortUIntVector(vector<size_t> &vec);
 
-    static void makeCombUtil(vector<vector<size_t> >& ans,
-    vector<size_t>& tmp, size_t n, size_t left, size_t k);
-    static vector<vector<size_t> > getCombinations(size_t n, size_t k);
+    static void makeCombUtil(vector<vector<size_t>> &ans,
+                             vector<size_t> &tmp, size_t n, size_t left, size_t k);
+    static vector<vector<size_t>> getCombinations(size_t n, size_t k);
 
-    static void makeEnumUtil(vector<vector<size_t> >& ans,
-    vector<size_t> tmp, size_t left, size_t right, size_t k);
-    static vector<vector<size_t> > getEnumeration(size_t n, size_t k);
+    static void makePermUtil(vector<vector<size_t>> &ans,
+                             vector<size_t> tmp, size_t left, size_t right, size_t k);
+    static vector<vector<size_t>> getPermutation(size_t n, size_t k);
 
-    static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t> > &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
+    static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
 };
-
-
-
 
 #endif // __UTILS_HH__
