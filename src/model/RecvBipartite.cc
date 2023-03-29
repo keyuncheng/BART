@@ -523,6 +523,9 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         sorted_lvtx_ids.push_back(vtx_id);
     }
 
+    // maintain a recv load table for selected stripe groups
+    vector<size_t> cur_rlt(num_nodes, 0);
+
     // greedy assign each vtx by minimum load; then minimum cost
     // TODO here
     for (auto lvtx_id : sorted_lvtx_ids)
@@ -531,8 +534,9 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         vector<bool> &sg_relocated_nodes = sg_reloc_nodes_map[block_meta.stripe_group_id];
 
         // find candidate edges from adjacent edges
-        vector<size_t> cand_edges;
-        vector<int> cand_costs;
+        size_t best_mml = SIZE_MAX;
+        int best_mml_edge_cost = INT_MAX;
+        vector<size_t> best_mml_edge_cost_cand_edges;
 
         vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
         for (auto edge_id : adjacent_edges)
@@ -548,65 +552,57 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
                 }
             }
 
-            int cost_after_connection = edge.rvtx->costs + edge.cost;
+            // recv load table after edge connection
+            vector<size_t> cur_rlt_after_conn = cur_rlt;
+            cur_rlt_after_conn[node_id] += edge.cost;
+            size_t cur_rlt_mml = *max_element(cur_rlt_after_conn.begin(), cur_rlt_after_conn.end());
 
-            cand_edges.push_back(edge.id);
-            cand_costs.push_back(cost_after_connection); // cost after edge connection
-        }
-
-        // find all min_load_edge candidates (with the same recv load)
-
-        int min_load = *min_element(cand_costs.begin(), cand_costs.end());
-        vector<size_t> cand_min_load_edges;
-        vector<int> cand_min_load_edge_costs;
-        for (size_t idx = 0; idx < cand_edges.size(); idx++)
-        {
-            if (cand_costs[idx] == min_load)
+            // it's an edge with lower min-max recv load; or equal mml but with better cost
+            if (cur_rlt_mml < best_mml || (cur_rlt_mml == best_mml && edge.cost < best_mml_edge_cost))
             {
-                cand_min_load_edges.push_back(cand_edges[idx]);
+                // update mml and cost
+                best_mml = cur_rlt_mml;
+                best_mml_edge_cost = edge.cost;
 
-                // TODO: manually modify the cost for nodes with a data block
-                cand_min_load_edge_costs.push_back(cand_costs[idx]);
+                // re-init the candidate lists
+                best_mml_edge_cost_cand_edges.clear();
+                best_mml_edge_cost_cand_edges.push_back(edge.id);
             }
-        }
-
-        // for (size_t idx = 0; idx < cand_min_load_edges.size(); idx++) {
-        //     printf("edge: %ld, cost: %d\n", cand_min_load_edges[idx], cand_min_load_edge_costs[idx]);
-        // }
-
-        // find the edge with minimum cost among all min-load edges
-        int min_load_min_cost = *min_element(cand_min_load_edge_costs.begin(), cand_min_load_edge_costs.end());
-
-        vector<size_t>
-            cand_min_load_min_cost_edges;
-        for (size_t idx = 0; idx < cand_min_load_edges.size(); idx++)
-        {
-            if (cand_min_load_edge_costs[idx] == min_load_min_cost)
+            else if (cur_rlt_mml == best_mml && edge.cost == best_mml_edge_cost)
             {
-                cand_min_load_min_cost_edges.push_back(cand_min_load_edges[idx]);
+                best_mml_edge_cost_cand_edges.push_back(edge.id);
             }
         }
 
         // randomly pick one min-load edge
-        size_t rand_pos = Utils::randomUInt(0, cand_min_load_min_cost_edges.size() - 1, random_generator);
-        size_t min_load_min_cost_edge_id = cand_min_load_min_cost_edges[rand_pos];
-        sol_edges.push_back(min_load_min_cost_edge_id); // add edge id
+        size_t rand_pos = Utils::randomUInt(0, best_mml_edge_cost_cand_edges.size() - 1, random_generator);
+        size_t mml_min_cost_edge_id = best_mml_edge_cost_cand_edges[rand_pos];
+        Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
 
-        // update load on both vertex
-        Edge &min_load_edge = edges_map[min_load_min_cost_edge_id];
-        Vertex &lvtx = vertices_map[lvtx_id];
-        Vertex &rvtx = vertices_map[min_load_edge.rvtx->id];
-        lvtx.out_degree += min_load_edge.weight;
-        lvtx.costs += min_load_edge.cost;
-        rvtx.in_degree += min_load_edge.weight;
-        rvtx.costs += min_load_edge.cost;
+        // // update load on both vertex
+        // Vertex &lvtx = vertices_map[lvtx_id];
+        // Vertex &rvtx = vertices_map[mml_min_cost_edge.rvtx->id];
+        // lvtx.out_degree += mml_min_cost_edge.weight;
+        // lvtx.costs += mml_min_cost_edge.cost;
+        // rvtx.in_degree += mml_min_cost_edge.weight;
+        // rvtx.costs += mml_min_cost_edge.cost;
+
+        // update recv load table
+        size_t mml_min_cost_edge_node_id = vtx_to_node_map[mml_min_cost_edge.rvtx->id];
+        cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+
+        // add edge to solutions
+        sol_edges.push_back(mml_min_cost_edge_id);
+
+        printf("cur_rlt:\n");
+        Utils::printUIntVector(cur_rlt);
 
         // if the block is a data / parity block, mark the node as relocated
         if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
         {
-            Edge &min_load_edge = edges_map[min_load_min_cost_edge_id];
-            size_t min_load_node_id = vtx_to_node_map[min_load_edge.rvtx->id];
-            sg_relocated_nodes[min_load_node_id] = true;
+            Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
+            size_t mml_min_cost_edge_node_id = vtx_to_node_map[mml_min_cost_edge.rvtx->id];
+            sg_relocated_nodes[mml_min_cost_edge_node_id] = true;
         }
     }
 
