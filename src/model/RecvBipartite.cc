@@ -8,24 +8,29 @@ RecvBipartite::~RecvBipartite()
 {
 }
 
-void RecvBipartite::print_block_metastore() {
+void RecvBipartite::print_block_metastore()
+{
     printf("Block Metastore:\n");
-    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
+    {
         size_t stripe_group_id = it->first;
         vector<BlockMeta *> &sg_block_meta = it->second;
 
         printf("stripe_group: %ld\n", stripe_group_id);
-        for (auto block_meta_ptr : sg_block_meta) {
+        for (auto block_meta_ptr : sg_block_meta)
+        {
             BlockMeta &block_meta = *block_meta_ptr;
             printf("id: %ld, type: %d, vtx_id: %ld, stripe_batch_id: %ld, stripe_group_id: %ld, stripe_id: %ld, stripe_id (global): %ld, block_id: %ld\n", block_meta.id, block_meta.type, block_meta.vtx_id, block_meta.stripe_batch_id, block_meta.stripe_group_id, block_meta.stripe_id, block_meta.stripe_id_global, block_meta.block_id);
         }
     }
 }
 
-size_t RecvBipartite::createBlockMeta(BlockMeta &in_block_meta) {
+size_t RecvBipartite::createBlockMeta(BlockMeta &in_block_meta)
+{
 
     // stripe group id must be valid
-    if (in_block_meta.stripe_group_id == INVALID_ID) {
+    if (in_block_meta.stripe_group_id == INVALID_ID)
+    {
         printf("invalid stripe_group %ld\n", in_block_meta.stripe_group_id);
         return INVALID_ID;
     }
@@ -36,7 +41,7 @@ size_t RecvBipartite::createBlockMeta(BlockMeta &in_block_meta) {
     BlockMeta &block_meta = block_metastore[new_block_meta_id];
     // update id
     block_meta.id = new_block_meta_id;
-    
+
     // create records in stripe group for quicker search
     vector<BlockMeta *> &sg_block_metas = sg_block_meta_map[in_block_meta.stripe_group_id];
     sg_block_metas.push_back(&block_meta);
@@ -44,17 +49,21 @@ size_t RecvBipartite::createBlockMeta(BlockMeta &in_block_meta) {
     return block_meta.id;
 }
 
-size_t RecvBipartite::findBlockMeta(BlockMeta &in_block_meta) {
+size_t RecvBipartite::findBlockMeta(BlockMeta &in_block_meta)
+{
     // stripe group id must be valid
-    if (in_block_meta.stripe_group_id == INVALID_ID) {
+    if (in_block_meta.stripe_group_id == INVALID_ID)
+    {
         printf("invalid stripe_group %ld\n", in_block_meta.stripe_group_id);
         return INVALID_ID;
     }
 
     // find the block in the stripe group with the same block_id and type
     vector<BlockMeta *> &sg_block_metas = sg_block_meta_map[in_block_meta.stripe_group_id];
-    for (auto &block_meta_ptr : sg_block_metas) {
-        if (block_meta_ptr->block_id == in_block_meta.block_id && block_meta_ptr->type == in_block_meta.type) {
+    for (auto &block_meta_ptr : sg_block_metas)
+    {
+        if (block_meta_ptr->block_id == in_block_meta.block_id && block_meta_ptr->type == in_block_meta.type)
+        {
             return block_meta_ptr->id;
         }
     }
@@ -62,13 +71,14 @@ size_t RecvBipartite::findBlockMeta(BlockMeta &in_block_meta) {
     return INVALID_ID;
 }
 
-size_t RecvBipartite::createBlockVtx(BlockMeta &in_block_meta) {
+size_t RecvBipartite::createBlockVtx(BlockMeta &in_block_meta)
+{
     // all blocks (and metadata) are newly created, no need to call findBlockMeta()
-    
+
     // create block meta
     size_t block_meta_id = createBlockMeta(in_block_meta);
 
-    // add vertex of the block 
+    // add vertex of the block
     size_t block_vtx_id = addVertex(VertexType::LEFT);
 
     BlockMeta &block_meta = block_metastore[block_meta_id];
@@ -81,14 +91,18 @@ size_t RecvBipartite::createBlockVtx(BlockMeta &in_block_meta) {
     return block_vtx_id;
 }
 
-size_t RecvBipartite::createNodeVtx(size_t node_id) {
-    if (node_to_vtx_map.find(node_id) != node_to_vtx_map.end()) {
+size_t RecvBipartite::createNodeVtx(size_t node_id)
+{
+    if (node_to_vtx_map.find(node_id) != node_to_vtx_map.end())
+    {
         return node_to_vtx_map[node_id];
-    } else {
+    }
+    else
+    {
 
-        // add vertex of the parity compute block 
+        // add vertex of the parity compute block
         size_t node_vtx_id = addVertex(VertexType::RIGHT);
-        
+
         node_to_vtx_map[node_id] = node_vtx_id;
         vtx_to_node_map[node_vtx_id] = node_id;
 
@@ -96,19 +110,23 @@ size_t RecvBipartite::createNodeVtx(size_t node_id) {
     }
 }
 
-bool RecvBipartite::constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<size_t> &approaches) {
+bool RecvBipartite::constructStripeBatchWithApproaches(StripeBatch &stripe_batch, vector<size_t> &approaches)
+{
 
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
     size_t num_stripe_groups = stripe_groups.size();
-    if (num_stripe_groups != approaches.size()) {
+    if (num_stripe_groups != approaches.size())
+    {
         printf("invalid parameters\n");
         return false;
     }
 
     // construct stripe group with approach
-    for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++) {
-        if (constructStripeGroupWithApproach(stripe_groups[sg_id], approaches[sg_id]) == false) {
+    for (size_t sg_id = 0; sg_id < num_stripe_groups; sg_id++)
+    {
+        if (constructStripeGroupWithApproach(stripe_groups[sg_id], approaches[sg_id]) == false)
+        {
             return false;
         }
     }
@@ -116,36 +134,44 @@ bool RecvBipartite::constructStripeBatchWithApproaches(StripeBatch &stripe_batch
     return true;
 }
 
-bool RecvBipartite::constructStripeGroupWithApproach(StripeGroup &stripe_group, size_t approach) {
+bool RecvBipartite::constructStripeGroupWithApproach(StripeGroup &stripe_group, size_t approach)
+{
 
     // construct bipartite graph with compute blocks (re-encoding / parity merging) and data / parity blocks for relocation
-    if (approach == (size_t) TransApproach::RE_ENCODE) {
-        if (constructSGWithReEncoding(stripe_group) == false) {
+    if (approach == (size_t)TransApproach::RE_ENCODE)
+    {
+        if (constructSGWithReEncoding(stripe_group) == false)
+        {
             return false;
         }
-    } else if (approach == (size_t) TransApproach::PARITY_MERGE) {
-        if (constructSGWithParityMerging(stripe_group) == false) {
+    }
+    else if (approach == (size_t)TransApproach::PARITY_MERGE)
+    {
+        if (constructSGWithParityMerging(stripe_group) == false)
+        {
             return false;
         }
     }
 
-
     // construct with parity block
-    if (constructSGWithParityRelocation(stripe_group) == false) {
+    if (constructSGWithParityRelocation(stripe_group) == false)
+    {
         return false;
     }
 
     // construct with data block
-    if (constructSGWithData(stripe_group) == false) {
+    if (constructSGWithData(stripe_group) == false)
+    {
         return false;
     }
 
     return true;
 }
 
-bool RecvBipartite::constructSGWithReEncoding(StripeGroup &stripe_group) {
+bool RecvBipartite::constructSGWithReEncoding(StripeGroup &stripe_group)
+{
     // create a compute block (on left) to represent the dummy block for re-encoding computation
-    
+
     ConvertibleCode &code = stripe_group.getCode();
     ClusterSettings &settings = stripe_group.getClusterSettings();
     size_t num_nodes = settings.M;
@@ -153,7 +179,8 @@ bool RecvBipartite::constructSGWithReEncoding(StripeGroup &stripe_group) {
 
     // candidate nodes for parity blocks computation, where we need to collect k_f data blocks (all nodes are candidates)
     vector<size_t> parity_comp_candidates;
-    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
+    for (size_t node_id = 0; node_id < num_nodes; node_id++)
+    {
         parity_comp_candidates.push_back(node_id);
     }
 
@@ -162,9 +189,10 @@ bool RecvBipartite::constructSGWithReEncoding(StripeGroup &stripe_group) {
     in_block_meta.type = COMPUTE_BLK_RE;
     in_block_meta.stripe_group_id = stripe_group.getId();
     size_t pcb_vtx_id = createBlockVtx(in_block_meta);
-    
+
     // create edges to all candidate nodes for re-encoding computation. On a node with x data blocks, the edge is with cost (k_f - x)
-    for (auto cand_node_id : parity_comp_candidates) {
+    for (auto cand_node_id : parity_comp_candidates)
+    {
         Vertex &pcb_vtx = vertices_map[pcb_vtx_id];
 
         // get node vertex
@@ -178,7 +206,8 @@ bool RecvBipartite::constructSGWithReEncoding(StripeGroup &stripe_group) {
     return true;
 }
 
-bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
+bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group)
+{
     // create m_f compute blocks (on left) to represent the dummy blocks for parity merging computation
 
     ConvertibleCode &code = stripe_group.getCode();
@@ -189,16 +218,18 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
     vector<size_t> data_distribution = stripe_group.getDataDistribution();
 
     // get parity block distributions
-    vector<vector<size_t> > parity_distributions = stripe_group.getParityDistributions();
+    vector<vector<size_t>> parity_distributions = stripe_group.getParityDistributions();
 
     // candidate nodes for parity blocks computation, where we need to collect alpha parity blocks with the same offset (all nodes are candidates)
     vector<size_t> parity_comp_candidates;
-    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
+    for (size_t node_id = 0; node_id < num_nodes; node_id++)
+    {
         parity_comp_candidates.push_back(node_id);
     }
 
     // for each parity block, generate edges to all candidate nodes
-    for (size_t parity_id = 0; parity_id < code.m_f; parity_id++) {
+    for (size_t parity_id = 0; parity_id < code.m_f; parity_id++)
+    {
         vector<size_t> &parity_distribution = parity_distributions[parity_id];
 
         // create parity compute block vertex
@@ -209,14 +240,16 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
         size_t pcb_vtx_id = createBlockVtx(in_block_meta);
         Vertex &pcb_vtx = vertices_map[pcb_vtx_id];
 
-        for (auto cand_node_id : parity_comp_candidates) {
+        for (auto cand_node_id : parity_comp_candidates)
+        {
             // get node vertex
             size_t node_vtx_id = createNodeVtx(cand_node_id);
             Vertex &node_vtx = vertices_map[node_vtx_id];
 
             // manual tune cost (if there is a data block at the node, need to relocate to another node, thus this node is with higher cost than the others)
             int edge_cost = code.alpha - parity_distribution[cand_node_id];
-            if (data_distribution[cand_node_id] > 0) {
+            if (data_distribution[cand_node_id] > 0)
+            {
                 edge_cost += 1;
             }
 
@@ -228,7 +261,8 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group) {
     return true;
 }
 
-bool RecvBipartite::constructSGWithParityRelocation(StripeGroup &stripe_group) {
+bool RecvBipartite::constructSGWithParityRelocation(StripeGroup &stripe_group)
+{
     // create m_f parity blocks (on left) to represent newly computed parity block relocation
 
     ConvertibleCode &code = stripe_group.getCode();
@@ -239,13 +273,16 @@ bool RecvBipartite::constructSGWithParityRelocation(StripeGroup &stripe_group) {
 
     // candidate nodes for m_f new parity blocks relocation (requirement: no data block stored on the node)
     vector<size_t> parity_reloc_candidates;
-    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
-        if (data_distribution[node_id] == 0) {
+    for (size_t node_id = 0; node_id < num_nodes; node_id++)
+    {
+        if (data_distribution[node_id] == 0)
+        {
             parity_reloc_candidates.push_back(node_id);
         }
     }
 
-    for (size_t parity_id = 0; parity_id < code.m_f; parity_id++) {
+    for (size_t parity_id = 0; parity_id < code.m_f; parity_id++)
+    {
         // create parity compute block vertex
         BlockMeta in_block_meta;
         in_block_meta.type = PARITY_BLK;
@@ -254,7 +291,8 @@ bool RecvBipartite::constructSGWithParityRelocation(StripeGroup &stripe_group) {
         size_t prb_vtx_id = createBlockVtx(in_block_meta);
         Vertex &prb_vtx = vertices_map[prb_vtx_id];
 
-        for (auto cand_node_id : parity_reloc_candidates) {
+        for (auto cand_node_id : parity_reloc_candidates)
+        {
             // get node vertex
             size_t node_vtx_id = createNodeVtx(cand_node_id);
             Vertex &node_vtx = vertices_map[node_vtx_id];
@@ -267,7 +305,8 @@ bool RecvBipartite::constructSGWithParityRelocation(StripeGroup &stripe_group) {
     return true;
 }
 
-bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group) {
+bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group)
+{
 
     ConvertibleCode &code = stripe_group.getCode();
     ClusterSettings &settings = stripe_group.getClusterSettings();
@@ -279,31 +318,37 @@ bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group) {
 
     // candidate nodes for data relocation (requirement: data block stored on the node is less than lambda_f)
     vector<size_t> data_reloc_candidates;
-    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
-        if (data_distribution[node_id] < code.lambda_f) {
+    for (size_t node_id = 0; node_id < num_nodes; node_id++)
+    {
+        if (data_distribution[node_id] < code.lambda_f)
+        {
             data_reloc_candidates.push_back(node_id);
         }
     }
 
     // get data blocks to relocate
-    vector<pair<size_t, size_t> > data_blocks_to_reloc;
+    vector<pair<size_t, size_t>> data_blocks_to_reloc;
 
     // if a node already stores more than lambda_f data blocks, relocate those data blocks
     vector<size_t> node_data_blk_dist(num_nodes, 0);
-    for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++) {
+    for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+    {
         vector<size_t> &stripe_indices = stripes[stripe_id]->getStripeIndices();
-        for (size_t block_id = 0; block_id < code.k_i; block_id++) {
+        for (size_t block_id = 0; block_id < code.k_i; block_id++)
+        {
             size_t node_id = stripe_indices[block_id];
             node_data_blk_dist[node_id]++;
 
-            if (node_data_blk_dist[node_id] > code.lambda_f) {
+            if (node_data_blk_dist[node_id] > code.lambda_f)
+            {
                 data_blocks_to_reloc.push_back(pair<size_t, size_t>(stripe_id, block_id));
             }
         }
     }
 
     // create vertices and edges for the data blocks to be relocated
-    for (auto &item : data_blocks_to_reloc) {
+    for (auto &item : data_blocks_to_reloc)
+    {
         size_t stripe_id = item.first;
         size_t block_id = item.second;
 
@@ -317,7 +362,8 @@ bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group) {
         size_t db_vtx_id = createBlockVtx(in_block_meta);
         Vertex &db_vtx = vertices_map[db_vtx_id];
 
-        for (auto cand_node_id : data_reloc_candidates) {
+        for (auto cand_node_id : data_reloc_candidates)
+        {
             // get node vertex
             size_t node_vtx_id = createNodeVtx(cand_node_id);
             Vertex &node_vtx = vertices_map[node_vtx_id];
@@ -330,7 +376,8 @@ bool RecvBipartite::constructSGWithData(StripeGroup &stripe_group) {
     return true;
 }
 
-bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator) {
+bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator)
+{
     // key idea: for each block, find a node with **minimum load after connection** among all possible candidates; if more than one node have the same minimum load, randomly pick one
 
     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -340,20 +387,23 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
     sol_edges.clear();
 
     // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
-    unordered_map<size_t, vector<bool> > sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
+    unordered_map<size_t, vector<bool>> sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
 
-    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
+    {
         sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
     }
 
     // find solution for each block on the left
     vector<size_t> lvtx_ids;
-    for (auto lvit : left_vertices_map) {
+    for (auto lvit : left_vertices_map)
+    {
         lvtx_ids.push_back(lvit.first);
     }
     sort(lvtx_ids.begin(), lvtx_ids.end());
 
-    for (auto lvtx_id : lvtx_ids) {
+    for (auto lvtx_id : lvtx_ids)
+    {
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
         vector<bool> &sg_relocated_nodes = sg_reloc_nodes_map[block_meta.stripe_group_id];
 
@@ -363,11 +413,14 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
 
         // if the block is a data / parity block (for relocation), filter out edges that connect to a node relocated with a data / parity block
         vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
-        for (auto edge_id : adjacent_edges) {
+        for (auto edge_id : adjacent_edges)
+        {
             Edge &edge = edges_map[edge_id];
             size_t node_id = vtx_to_node_map[edge.rvtx->id];
-            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
-                if (sg_relocated_nodes[node_id] == true) {
+            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+            {
+                if (sg_relocated_nodes[node_id] == true)
+                {
                     continue;
                 }
             }
@@ -376,15 +429,18 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
             cand_costs.push_back(edge.rvtx->costs + edge.cost); // cost after edge connection
         }
 
-
         // find all min_load_edge candidates (with the same recv load)
         vector<size_t> sorted_idxes = Utils::argsortIntVector(cand_costs);
         int min_load = cand_costs[sorted_idxes[0]];
         vector<size_t> cand_min_load_edges;
-        for (auto idx : sorted_idxes) {
-            if (cand_costs[idx] == min_load) {
+        for (auto idx : sorted_idxes)
+        {
+            if (cand_costs[idx] == min_load)
+            {
                 cand_min_load_edges.push_back(cand_edges[idx]);
-            } else {
+            }
+            else
+            {
                 break;
             }
         }
@@ -403,9 +459,9 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
         rvtx.out_degree += min_load_edge.weight;
         rvtx.costs += min_load_edge.cost;
 
-        
         // if the block is a data / parity block, mark the node as relocated
-        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
+        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+        {
             size_t min_load_node_id = vtx_to_node_map[min_load_edge.rvtx->id];
             sg_relocated_nodes[min_load_node_id] = true;
         }
@@ -414,7 +470,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedy(StripeBatch &stripe_batch, vec
     return true;
 }
 
-bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator) {
+bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator)
+{
     // key idea: in addition to findEdgesWithApproachesGreedy, sort the block types as: compute blocks first; then relocation blocks
 
     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -424,32 +481,29 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     sol_edges.clear();
 
     // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
-    unordered_map<size_t, vector<bool> > sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
-
-    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+    // format: <stripe_group_id, <node_ids relocated with blocks> >
+    unordered_map<size_t, vector<bool>> sg_reloc_nodes_map;
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
+    {
         sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
     }
 
-
-    // // data block distributions
-    // vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
-    // unordered_map<size_t, vector<size_t> > data_distribution_map;
-    // for (auto &stripe_group : stripe_groups) {
-    //     data_distribution_map[stripe_group.getId()] = stripe_group.getDataDistribution();
-    // }
-
-    // find solution for each block on the left
+    // classify vtx as compute and relocation
     vector<size_t> sorted_lvtx_ids;
     vector<size_t> compute_lvtx_ids; // compute lvtx
-    vector<size_t> reloc_lvtx_ids; // relocate lvtx (data and parity)
-    
-    for (auto lvit : left_vertices_map) {
+    vector<size_t> reloc_lvtx_ids;   // relocate lvtx (data and parity)
+
+    for (auto lvit : left_vertices_map)
+    {
         Vertex &vtx = *lvit.second;
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
 
-        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM) {
+        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM)
+        {
             compute_lvtx_ids.push_back(vtx.id);
-        } else {
+        }
+        else
+        {
             reloc_lvtx_ids.push_back(vtx.id);
         }
     }
@@ -457,17 +511,22 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     sort(compute_lvtx_ids.begin(), compute_lvtx_ids.end());
     sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
 
-    // first add compute vertex
-    for (auto vtx_id : compute_lvtx_ids) {
+    // first add compute vtx
+    for (auto vtx_id : compute_lvtx_ids)
+    {
         sorted_lvtx_ids.push_back(vtx_id);
     }
 
-    // next add relocate vertex
-    for (auto vtx_id : reloc_lvtx_ids) {
+    // next add relocation vtx
+    for (auto vtx_id : reloc_lvtx_ids)
+    {
         sorted_lvtx_ids.push_back(vtx_id);
     }
 
-    for (auto lvtx_id : sorted_lvtx_ids) {
+    // greedy assign each vtx by minimum load; then minimum cost
+    // TODO here
+    for (auto lvtx_id : sorted_lvtx_ids)
+    {
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
         vector<bool> &sg_relocated_nodes = sg_reloc_nodes_map[block_meta.stripe_group_id];
 
@@ -475,41 +534,39 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         vector<size_t> cand_edges;
         vector<int> cand_costs;
 
-        // if the block is a data / parity block (for relocation), filter out edges that connect to a node relocated with a data / parity block
         vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
-        for (auto edge_id : adjacent_edges) {
+        for (auto edge_id : adjacent_edges)
+        {
+            // if the block is a data / parity block (for relocation), filter out edges that connect to a node relocated with a data / parity block
             Edge &edge = edges_map[edge_id];
             size_t node_id = vtx_to_node_map[edge.rvtx->id];
-            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
-                if (sg_relocated_nodes[node_id] == true) {
+            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+            {
+                if (sg_relocated_nodes[node_id] == true)
+                {
                     continue;
                 }
             }
 
             int cost_after_connection = edge.rvtx->costs + edge.cost;
 
-            // // add cost to edges where the node have data blocks
-            // vector<size_t> &data_distribution = data_distribution_map[block_meta.stripe_group_id];
-            // if (data_distribution[node_id] > 0) {
-            //     cost_after_connection += 1;
-            // }
-
             cand_edges.push_back(edge.id);
             cand_costs.push_back(cost_after_connection); // cost after edge connection
         }
 
         // find all min_load_edge candidates (with the same recv load)
-        vector<size_t> sorted_idxes = Utils::argsortIntVector(cand_costs);
-        int min_load = cand_costs[sorted_idxes[0]];
+
+        int min_load = *min_element(cand_costs.begin(), cand_costs.end());
         vector<size_t> cand_min_load_edges;
         vector<int> cand_min_load_edge_costs;
-        for (auto idx : sorted_idxes) {
-            if (cand_costs[idx] == min_load) {
-                Edge &cand_edge = edges_map[cand_edges[idx]];
-                cand_min_load_edges.push_back(cand_edge.id);
-                cand_min_load_edge_costs.push_back(cand_edge.cost);
-            } else {
-                break;
+        for (size_t idx = 0; idx < cand_edges.size(); idx++)
+        {
+            if (cand_costs[idx] == min_load)
+            {
+                cand_min_load_edges.push_back(cand_edges[idx]);
+
+                // TODO: manually modify the cost for nodes with a data block
+                cand_min_load_edge_costs.push_back(cand_costs[idx]);
             }
         }
 
@@ -518,14 +575,15 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         // }
 
         // find the edge with minimum cost among all min-load edges
-        vector<size_t> sorted_min_load_edge_idxs = Utils::argsortIntVector(cand_min_load_edge_costs);
-        int min_load_min_cost = cand_min_load_edge_costs[sorted_min_load_edge_idxs[0]];
+        int min_load_min_cost = *min_element(cand_min_load_edge_costs.begin(), cand_min_load_edge_costs.end());
 
-        vector<size_t> cand_min_load_min_cost_edges;
-        for (auto edge_id : cand_min_load_edges) {
-            Edge &cand_edge = edges_map[edge_id];
-            if (cand_edge.cost == min_load_min_cost) {
-                cand_min_load_min_cost_edges.push_back(edge_id);
+        vector<size_t>
+            cand_min_load_min_cost_edges;
+        for (size_t idx = 0; idx < cand_min_load_edges.size(); idx++)
+        {
+            if (cand_min_load_edge_costs[idx] == min_load_min_cost)
+            {
+                cand_min_load_min_cost_edges.push_back(cand_min_load_edges[idx]);
             }
         }
 
@@ -544,7 +602,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         rvtx.costs += min_load_edge.cost;
 
         // if the block is a data / parity block, mark the node as relocated
-        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK) {
+        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+        {
             Edge &min_load_edge = edges_map[min_load_min_cost_edge_id];
             size_t min_load_node_id = vtx_to_node_map[min_load_edge.rvtx->id];
             sg_relocated_nodes[min_load_node_id] = true;
@@ -563,8 +622,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     return true;
 }
 
-
-bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<size_t> &sol_edges) {
+bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<size_t> &sol_edges)
+{
     // follow the structure of scheduling jobs for m-processor problem in JACM'1976
 
     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -574,24 +633,29 @@ bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<
     sol_edges.clear();
 
     // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
-    unordered_map<size_t, vector<bool> > sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
+    unordered_map<size_t, vector<bool>> sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
 
-    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++) {
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
+    {
         sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
     }
 
     // find solution for each block on the left
     vector<size_t> sorted_lvtx_ids;
     vector<size_t> compute_lvtx_ids; // compute lvtx
-    vector<size_t> reloc_lvtx_ids; // relocate lvtx (data and parity)
-    
-    for (auto lvit : left_vertices_map) {
+    vector<size_t> reloc_lvtx_ids;   // relocate lvtx (data and parity)
+
+    for (auto lvit : left_vertices_map)
+    {
         Vertex &vtx = *lvit.second;
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
 
-        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM) {
+        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM)
+        {
             compute_lvtx_ids.push_back(vtx.id);
-        } else {
+        }
+        else
+        {
             reloc_lvtx_ids.push_back(vtx.id);
         }
     }
@@ -600,7 +664,8 @@ bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<
     sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
 
     // first add compute vertex
-    for (auto vtx_id : compute_lvtx_ids) {
+    for (auto vtx_id : compute_lvtx_ids)
+    {
         sorted_lvtx_ids.push_back(vtx_id);
     }
 
@@ -609,19 +674,19 @@ bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<
     //     sorted_lvtx_ids.push_back(vtx_id);
     // }
 
-    
     return true;
 }
 
-
-bool RecvBipartite::constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t> > &partial_solutions) {
+bool RecvBipartite::constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t>> &partial_solutions)
+{
     /** construct partial solutions from recv graph
-     * Currently, we have no information about send load distribution; 
+     * Currently, we have no information about send load distribution;
      * thus, we first construct partial solutions from recv graph with edges, set from_node to invalid;
      * In send graph, we finalize the send distribution
-    **/
+     **/
 
-    for (auto edge_id : sol_edges) {
+    for (auto edge_id : sol_edges)
+    {
         Edge &edge = edges_map[edge_id];
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[edge.lvtx->id]];
         size_t node_id = vtx_to_node_map[edge.rvtx->id];
@@ -641,7 +706,8 @@ bool RecvBipartite::constructPartialSolutionFromEdges(StripeBatch &stripe_batch,
     return true;
 }
 
-bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<size_t> > &partial_solutions, vector<vector<size_t> > &solutions) {
+bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch, vector<vector<size_t>> &partial_solutions, vector<vector<size_t>> &solutions)
+{
     // construct solution <sg_id, block_type, stripe_id, block_id, from_node, to_node> from recv graph
     // input: in each of solution from recv graph, we set from_node to invalid, then we make it initialized in send graph
     // output: <stripe_id, block_id, from_node, to_node>
@@ -650,20 +716,21 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
     vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
 
     // stripe group parity block compute map
-    unordered_map<size_t, vector<size_t> > sg_data_distribution_map;
-    unordered_map<size_t, vector<size_t> > sg_parity_comp_node_map;
-    unordered_map<size_t, vector<pair<size_t, size_t> > > sg_block_swap_map; // <stripe group id, <from_node, to_node> >
-    for (auto &stripe_group : stripe_groups) {
+    unordered_map<size_t, vector<size_t>> sg_data_distribution_map;
+    unordered_map<size_t, vector<size_t>> sg_parity_comp_node_map;
+    unordered_map<size_t, vector<pair<size_t, size_t>>> sg_block_swap_map; // <stripe group id, <from_node, to_node> >
+    for (auto &stripe_group : stripe_groups)
+    {
         sg_data_distribution_map[stripe_group.getId()] = stripe_group.getDataDistribution();
         sg_parity_comp_node_map[stripe_group.getId()] = vector<size_t>(code.m_f, INVALID_ID); // for each parity block, mark from_node as invalid
         sg_block_swap_map[stripe_group.getId()].clear();
     }
 
-
     // initialize solutions
     solutions.clear();
 
-    for (auto &partial_solution : partial_solutions) {
+    for (auto &partial_solution : partial_solutions)
+    {
         // construct solution <sg_id, block_type, stripe_id, block_id, from_node, to_node, load>
         size_t sg_id = partial_solution[0];
         size_t block_type = partial_solution[1];
@@ -677,15 +744,19 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
         // get parity block compute
         vector<size_t> &sg_parity_comp_nodes = sg_parity_comp_node_map[sg_id];
 
-        if (block_type == COMPUTE_BLK_RE) {
+        if (block_type == COMPUTE_BLK_RE)
+        {
             // for each data block not stored at to_node_id, create a data block relocation task
-            for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++) {
+            for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            {
                 Stripe &stripe = *stripe_group.getStripes()[stripe_id];
                 vector<size_t> &stripe_indices = stripe.getStripeIndices();
 
-                for (size_t db_blk_id = 0; db_blk_id < code.k_i; db_blk_id++) {
+                for (size_t db_blk_id = 0; db_blk_id < code.k_i; db_blk_id++)
+                {
                     size_t data_blk_from_node_id = stripe_indices[db_blk_id];
-                    if (data_blk_from_node_id != to_node_id) {
+                    if (data_blk_from_node_id != to_node_id)
+                    {
                         // add solution
                         vector<size_t> solution;
                         solution.push_back(stripe_id);
@@ -699,20 +770,24 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
             }
 
             // mark in parity block compute map (parity computation is at to_node_id)
-            for (size_t parity_id = 0; parity_id < code.m_f; parity_id++) {
+            for (size_t parity_id = 0; parity_id < code.m_f; parity_id++)
+            {
                 sg_parity_comp_nodes[parity_id] = to_node_id;
             }
-
-        } else if (block_type == COMPUTE_BLK_PM) {
+        }
+        else if (block_type == COMPUTE_BLK_PM)
+        {
             // for each parity block parity_id not stored at to_node_id, create a parity block relocation task
-            
+
             size_t parity_id = block_id - code.k_f;
-            for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++) {
+            for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            {
                 Stripe &stripe = *stripe_group.getStripes()[stripe_id];
                 vector<size_t> &stripe_indices = stripe.getStripeIndices();
                 size_t parity_blk_from_node_id = stripe_indices[code.k_i + parity_id];
 
-                if (parity_blk_from_node_id != to_node_id) {
+                if (parity_blk_from_node_id != to_node_id)
+                {
                     // add solution
                     vector<size_t> solution;
                     solution.push_back(stripe_id);
@@ -726,21 +801,27 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
 
             // mark in parity block compute map (parity computation is at to_node_id)
             sg_parity_comp_nodes[parity_id] = to_node_id;
-        } else if (block_type == PARITY_BLK) {
+        }
+        else if (block_type == PARITY_BLK)
+        {
             size_t parity_id = block_id - code.k_f;
             size_t parity_from_node_id = sg_parity_comp_nodes[parity_id];
 
-            if (parity_from_node_id == INVALID_ID) {
+            if (parity_from_node_id == INVALID_ID)
+            {
                 printf("error: invalid from_id %ld for parity_id: %ld\n", parity_from_node_id, parity_id);
             }
 
             // optimization: if the parity compute node does not store a data block, we can relocate the parity block at the compute node, thus no need to add a relocation task
             // we create a block swap task
             vector<size_t> &data_distribution = sg_data_distribution_map[sg_id];
-            if (data_distribution[parity_from_node_id] == 0) {
-                vector<pair<size_t, size_t> > &sg_block_swap_tasks = sg_block_swap_map[sg_id];
+            if (data_distribution[parity_from_node_id] == 0)
+            {
+                vector<pair<size_t, size_t>> &sg_block_swap_tasks = sg_block_swap_map[sg_id];
                 sg_block_swap_tasks.push_back(pair<size_t, size_t>(parity_from_node_id, to_node_id));
-            } else {
+            }
+            else
+            {
                 // add solution
                 vector<size_t> solution;
                 solution.push_back(stripe_id);
@@ -750,18 +831,22 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
 
                 solutions.push_back(solution);
             }
-        } else if (block_type == DATA_BLK) {
+        }
+        else if (block_type == DATA_BLK)
+        {
             Stripe &stripe = *stripe_group.getStripes()[stripe_id];
             vector<size_t> &stripe_indices = stripe.getStripeIndices();
             from_node_id = stripe_indices[block_id];
 
             // first check if there is a block swap task
-            vector<pair<size_t, size_t> > &sg_block_swap_tasks = sg_block_swap_map[sg_id];
-            for (auto it = sg_block_swap_tasks.begin(); it != sg_block_swap_tasks.end(); it++) {
+            vector<pair<size_t, size_t>> &sg_block_swap_tasks = sg_block_swap_map[sg_id];
+            for (auto it = sg_block_swap_tasks.begin(); it != sg_block_swap_tasks.end(); it++)
+            {
                 // change the to_node_id to from_node_id in block swap task, then remove the block swap task
                 size_t task_from_node = it->first;
                 size_t task_to_node = it->second;
-                if (task_to_node == to_node_id) {
+                if (task_to_node == to_node_id)
+                {
                     to_node_id = task_from_node;
                     sg_block_swap_tasks.erase(it);
                     break;
@@ -776,8 +861,9 @@ bool RecvBipartite::updatePartialSolutionFromRecvGraph(StripeBatch &stripe_batch
             solution.push_back(to_node_id);
 
             solutions.push_back(solution);
-
-        } else {
+        }
+        else
+        {
             printf("error: invalid block type\n");
             return false;
         }
