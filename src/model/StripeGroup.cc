@@ -209,27 +209,30 @@ int StripeGroup::getMinReEncodingCost()
     return total_re_cost;
 }
 
-vector<vector<size_t>> StripeGroup::getCandSendLoadTablesForMinTransCost(int min_cost)
+vector<vector<size_t>> StripeGroup::getCandSendLoadTables()
 {
-
-    vector<vector<size_t>> cand_send_load_tables;
-
     size_t num_nodes = _settings.M;
-    vector<size_t> init_send_load_table(num_nodes, 0);
 
-    // data relocation cost
-    int data_reloc_cost = constructInitSLTWithDataRelocation(init_send_load_table);
+    // candidate send load tables
+    vector<vector<size_t>> cand_slts;
 
-    // approach 1: re-encoding cost (baseline)
-    appendMinCostSLTWithReEncoding(init_send_load_table, cand_send_load_tables, min_cost - data_reloc_cost);
+    // construct initial send load table with data relocation
+    vector<size_t> init_slt(num_nodes, 0); // initial send load table
+    constructInitSLTWithDataRelocation(init_slt);
+
+    // printf("stripe group: %ld, initial send load table:\n", _id);
+    // Utils::printUIntVector(init_slt);
+
+    // approach 1: re-encoding
+    appendCandSLTsWithReEncoding(init_slt, cand_slts);
 
     if (_code.isValidForPM() == true)
     {
         // approach 2: parity merging
-        appendMinCostSLTWithParityMerging(init_send_load_table, cand_send_load_tables, min_cost - data_reloc_cost);
+        appendCandSLTsWithParityMerging(init_slt, cand_slts);
     }
 
-    return cand_send_load_tables;
+    return cand_slts;
 }
 
 int StripeGroup::constructInitSLTWithDataRelocation(vector<size_t> &send_load_table)
@@ -257,6 +260,149 @@ int StripeGroup::constructInitSLTWithDataRelocation(vector<size_t> &send_load_ta
     }
 
     return data_relocation_cost;
+}
+
+void StripeGroup::appendCandSLTsWithParityMerging(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts)
+{
+    /**
+     * for parity merging, lambda_f = 1;
+     * select distinct m_f nodes to do parity merging; there are comb(num_nodes, m_f) such cases
+     * the send load distribution for each stripe:
+     * (1) parity block collection: for each of m_f parity blocks, collect lambda_i parity blocks with the corresponding index to the selected node
+     * (2) new parity block relocation: if there is a data block on the selected node, need to send the newly computed block to other node
+     *
+     **/
+
+    // check parameter for parity merging
+    if (_code.isValidForPM() == false)
+    {
+        printf("invalid code for parity merging\n");
+        return;
+    }
+
+    size_t num_nodes = _settings.M;
+
+    vector<size_t> data_distribution = getDataDistribution();
+    vector<vector<size_t>> parity_distributions = getParityDistributions();
+
+    vector<vector<size_t>> combs = Utils::getCombinations(num_nodes, _code.m_f);
+
+    for (size_t comb_id = 0; comb_id < combs.size(); comb_id++)
+    {
+        // list the selected m_f nodes to do parity computation
+        vector<size_t> &comb = combs[comb_id];
+
+        // there are m_f! possible choices to do computation
+        do
+        {
+            // create a copy of candidate send load table
+            vector<size_t> cand_slt = init_slt;
+            for (size_t parity_id = 0; parity_id < _code.m_f; parity_id++)
+            {
+                vector<size_t> &parity_distribution = parity_distributions[parity_id];
+                size_t parity_comp_node = comb[parity_id];
+
+                // (1) parity block collection
+                for (size_t node_id = 0; node_id < num_nodes; node_id++)
+                {
+                    // send the parity block
+                    if (node_id != parity_comp_node)
+                    {
+                        cand_slt[node_id] += parity_distribution[node_id];
+                    }
+                }
+                // (2) new parity block relocation
+                if (data_distribution[parity_comp_node] > 0)
+                {
+                    cand_slt[parity_comp_node] += 1;
+                }
+            }
+
+            // add candidate send load table
+            cand_slts.push_back(cand_slt);
+
+        } while (next_permutation(comb.begin(), comb.end()));
+    }
+
+    return;
+}
+
+void StripeGroup::appendCandSLTsWithReEncoding(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts)
+{
+    /**
+     * for each of lambda_f stripes, find the node to do re-encoding, and relocate the m_f new parity blocks to other nodes. There are perm(num_nodes, lambda_f) such cases.
+     * the send load distribution for each stripe:
+     * (1) data block collection: all nodes except the selected nodes send all data blocks
+     * (2) parity block relocation: the selected lambda_f nodes each sends m_f parity blocks
+     *
+     **/
+
+    size_t num_nodes = _settings.M;
+    vector<size_t> data_distribution = getDataDistribution();
+
+    // first, get all permutations of (M, lambda_f) selected nodes to do re-encoding
+    vector<vector<size_t>> perms = Utils::getPermutation(_code.lambda_f, num_nodes);
+
+    for (size_t perm_id = 0; perm_id < perms.size(); perm_id++)
+    {
+        // create a copy of init send load table
+        vector<size_t> cand_slt = init_slt;
+
+        vector<size_t> &perm = perms[perm_id];
+
+        // mark the nodes for parity computation
+        vector<bool> is_parity_comp_node(num_nodes, false);
+        for (size_t final_sid = 0; final_sid < _code.lambda_f; final_sid++)
+        {
+            is_parity_comp_node[perm[final_sid]] = true;
+        }
+
+        // send load type 1: data block collection
+        for (size_t node_id = 0; node_id < num_nodes; node_id++)
+        {
+            // send all data blocks in the node
+            if (is_parity_comp_node[node_id] == false)
+            {
+                cand_slt[node_id] += data_distribution[node_id];
+            }
+        }
+
+        // send load type 2: parity distribution
+        for (size_t final_sid = 0; final_sid < _code.lambda_f; final_sid++)
+        {
+            // send m_f parity blocks from the node
+            size_t parity_comp_node_id = perm[final_sid];
+            cand_slt[parity_comp_node_id] += _code.m_f;
+        }
+
+        // append the candidate send load table to list
+        cand_slts.push_back(cand_slt);
+    }
+
+    return;
+}
+
+vector<vector<size_t>> StripeGroup::getCandSendLoadTablesForMinTransCost(int min_cost)
+{
+
+    vector<vector<size_t>> cand_send_load_tables;
+
+    size_t num_nodes = _settings.M;
+    vector<size_t> init_send_load_table(num_nodes, 0);
+
+    // data relocation cost
+    int data_reloc_cost = constructInitSLTWithDataRelocation(init_send_load_table);
+
+    // approach 1: re-encoding cost (baseline)
+    appendMinCostSLTWithReEncoding(init_send_load_table, cand_send_load_tables, min_cost - data_reloc_cost);
+
+    if (_code.isValidForPM() == true)
+    {
+        // approach 2: parity merging
+        appendMinCostSLTWithParityMerging(init_send_load_table, cand_send_load_tables, min_cost - data_reloc_cost);
+    }
+
+    return cand_send_load_tables;
 }
 
 int StripeGroup::appendMinCostSLTWithParityMerging(vector<size_t> &init_send_load_table, vector<vector<size_t>> &cand_send_load_tables, int min_cost)
@@ -375,141 +521,4 @@ int StripeGroup::appendMinCostSLTWithReEncoding(vector<size_t> &init_send_load_t
     }
 
     return total_re_cost;
-}
-
-vector<vector<size_t>> StripeGroup::getCandSendLoadTables()
-{
-    size_t num_nodes = _settings.M;
-
-    // candidate send load tables
-    vector<vector<size_t>> cand_slts;
-
-    // construct initial send load table with data relocation
-    vector<size_t> init_slt(num_nodes, 0); // initial send load table
-    constructInitSLTWithDataRelocation(init_slt);
-
-    // approach 1: re-encoding
-    appendCandSLTsWithReEncoding(init_slt, cand_slts);
-
-    if (_code.isValidForPM() == true)
-    {
-        // approach 2: parity merging
-        appendCandSLTsWithParityMerging(init_slt, cand_slts);
-    }
-
-    return cand_slts;
-}
-
-void StripeGroup::appendCandSLTsWithParityMerging(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts)
-{
-    /**
-     * for parity merging, lambda_f = 1;
-     * select distinct m_f nodes to do parity merging; there are comb(num_nodes, m_f) such cases
-     * the send load distribution for each stripe:
-     * (1) parity block collection: for each of m_f parity blocks, collect lambda_i parity blocks with the corresponding index to the selected node
-     * (2) new parity block relocation: if there is a data block on the selected node, need to send the newly computed block to other node
-     *
-     **/
-
-    // check parameter for parity merging
-    if (_code.isValidForPM() == false)
-    {
-        printf("invalid code for parity merging\n");
-        return;
-    }
-
-    size_t num_nodes = _settings.M;
-
-    vector<size_t> data_distribution = getDataDistribution();
-    vector<vector<size_t>> parity_distributions = getParityDistributions();
-
-    vector<vector<size_t>> combs = Utils::getCombinations(num_nodes, _code.m_f);
-
-    for (size_t comb_id = 0; comb_id < combs.size(); comb_id++)
-    {
-        // list the selected m_f nodes to do parity computation
-        vector<size_t> &comb = combs[comb_id];
-        // there are m_f! possible choices to do computation
-        do
-        {
-            // create a copy of candidate send load table
-            vector<size_t> cand_slt = init_slt;
-            for (size_t parity_id = 0; parity_id < _code.m_f; parity_id++)
-            {
-                vector<size_t> &parity_distribution = parity_distributions[parity_id];
-                size_t parity_comp_node = comb[parity_id];
-
-                // (1) parity block collection
-                for (size_t node_id = 0; node_id < num_nodes; node_id++)
-                {
-                    // send the parity block
-                    if (node_id != parity_comp_node)
-                    {
-                        cand_slt[node_id] += parity_distribution[node_id];
-                    }
-                }
-                // (2) new parity block relocation
-                if (data_distribution[parity_comp_node] > 0)
-                {
-                    cand_slt[parity_comp_node] += 1;
-                }
-
-                cand_slts.push_back(cand_slt);
-            }
-        } while (next_permutation(comb.begin(), comb.end()));
-    }
-
-    return;
-}
-
-void StripeGroup::appendCandSLTsWithReEncoding(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts)
-{
-    /**
-     * for each of lambda_f stripes, find the node to do re-encoding, and relocate the m_f new parity blocks to other nodes. There are perm(num_nodes, lambda_f) such cases.
-     * the send load distribution for each stripe:
-     * (1) data block collection: all nodes except the selected nodes send all data blocks
-     * (2) parity block relocation: the selected lambda_f nodes each sends m_f parity blocks
-     *
-     **/
-
-    size_t num_nodes = _settings.M;
-    vector<size_t> data_distribution = getDataDistribution();
-
-    // first, get all permutations of (M, lambda_f) selected nodes to do re-encoding
-    vector<vector<size_t>> perms = Utils::getPermutation(num_nodes, _code.lambda_f);
-
-    for (size_t perm_id = 0; perm_id < perms.size(); perm_id++)
-    {
-        // create a copy of init send load table
-        vector<size_t> cand_slt = init_slt;
-
-        vector<size_t> &perm = perms[perm_id];
-        // mark the nodes for parity computation
-        vector<bool> is_parity_comp_node(num_nodes, false);
-        for (size_t final_sid = 0; final_sid < _code.lambda_f; final_sid++)
-        {
-            is_parity_comp_node[perm[final_sid]] = true;
-        }
-
-        // send load type 1: data block collection
-        for (size_t node_id = 0; node_id < num_nodes; node_id++)
-        {
-            // send all data blocks in the node
-            if (is_parity_comp_node[node_id] == false)
-            {
-                cand_slt[node_id] += data_distribution[node_id];
-            }
-        }
-
-        // send load type 2: parity distribution
-        for (size_t final_sid = 0; final_sid < _code.lambda_f; final_sid++)
-        {
-            // send m_f parity blocks from the node
-            size_t parity_comp_node_id = perm[final_sid];
-            cand_slt[parity_comp_node_id] += _code.m_f;
-        }
-
-        // append the candidate send load table to list
-        cand_slts.push_back(cand_slt);
-    }
 }

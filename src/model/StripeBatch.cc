@@ -266,7 +266,7 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes)
 
     // maintain a send load table
     size_t num_nodes = _settings.M;
-    vector<size_t> cur_send_load_table(num_nodes, 0);
+    vector<size_t> cur_slt(num_nodes, 0);
 
     // enumerate all possible stripe groups
     vector<size_t> comb_ids;
@@ -370,17 +370,17 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes)
             vector<size_t> best_min_max_load_slt;
             for (auto &send_load_table : cand_send_load_tables)
             {
-                vector<size_t> send_load_table_after_connection = cur_send_load_table;
+                vector<size_t> send_load_table_after_connection = cur_slt;
                 for (size_t node_id = 0; node_id < num_nodes; node_id++)
                 {
                     send_load_table_after_connection[node_id] += send_load_table[node_id];
                 }
 
-                size_t cur_min_max_load = *max_element(send_load_table_after_connection.begin(), send_load_table_after_connection.end());
+                size_t slt_mml_after_conn = *max_element(send_load_table_after_connection.begin(), send_load_table_after_connection.end());
 
-                if (cur_min_max_load < best_min_max_load)
+                if (slt_mml_after_conn < best_min_max_load)
                 {
-                    best_min_max_load = cur_min_max_load;
+                    best_min_max_load = slt_mml_after_conn;
                     best_min_max_load_slt = send_load_table;
                 }
             }
@@ -399,7 +399,7 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes)
         // update current load table
         for (size_t node_id = 0; node_id < num_nodes; node_id++)
         {
-            cur_send_load_table[node_id] += min_cost_min_max_load_slt[node_id];
+            cur_slt[node_id] += min_cost_min_max_load_slt[node_id];
         }
 
         for (auto stripe_id : min_cost_min_max_load_comb)
@@ -419,8 +419,8 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes)
         cur_valid_cand_costs = valid_cand_costs;
 
         // summarize current pick
-        printf("pick candidate_id: %ld, cost: %d, min_cost_min_load: %ld, remaining number of candidates: (%ld / %ld), cur_send_load_table:\n", min_cost_min_max_load_cand_id, min_cost, min_cost_min_load, cur_valid_cand_ids.size(), num_candidate_sgs);
-        Utils::printUIntVector(cur_send_load_table);
+        printf("pick candidate_id: %ld, cost: %d, min_cost_min_load: %ld, remaining number of candidates: (%ld / %ld), cur_slt:\n", min_cost_min_max_load_cand_id, min_cost, min_cost_min_load, cur_valid_cand_ids.size(), num_candidate_sgs);
+        Utils::printUIntVector(cur_slt);
     }
 
     // if (sorted_stripe_ids.size() != num_stripes) {
@@ -452,7 +452,7 @@ bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes)
     return true;
 }
 
-bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
+bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator)
 {
 
     size_t num_stripes = stripes.size();
@@ -471,7 +471,7 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
     size_t num_candidate_sgs = combinations.size();
 
     // record the candidate send load tables (and corresponding cost for each table) for each stripe group
-    vector<vector<vector<size_t>>> cand_sgs_slt(num_candidate_sgs, vector<vector<size_t>>());
+    vector<vector<vector<size_t>>> cand_sgs_slts(num_candidate_sgs, vector<vector<size_t>>());
     vector<vector<int>> cand_sgs_costs(num_candidate_sgs, vector<int>()); // mark down the minimum cost for each candidate stripe group
 
     vector<vector<size_t>> overlapped_cand_sgs(num_stripes, vector<size_t>()); // <stripe_id, overlapped_stripe_groups>
@@ -499,11 +499,11 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
         StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
 
         // get all possible transition send load table and their corresponding costs
-        cand_sgs_slt[cand_id] = candidate_sg.getCandSendLoadTables();
-        cand_sgs_costs[cand_id] = vector<int>(cand_sgs_slt[cand_id].size(), -1);
-        for (size_t slt_idx = 0; slt_idx < cand_sgs_slt[cand_id].size(); slt_idx++)
+        cand_sgs_slts[cand_id] = candidate_sg.getCandSendLoadTables();
+        cand_sgs_costs[cand_id] = vector<int>(cand_sgs_slts[cand_id].size(), -1);
+        for (size_t slt_idx = 0; slt_idx < cand_sgs_slts[cand_id].size(); slt_idx++)
         {
-            vector<size_t> &slt = cand_sgs_slt[cand_id][slt_idx];
+            vector<size_t> &slt = cand_sgs_slts[cand_id][slt_idx];
             int slt_cost = 0;
             for (size_t node_id = 0; node_id < num_nodes; node_id++)
             {
@@ -515,98 +515,106 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
 
     printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
 
-    // maintain a send load table
-    vector<size_t> cur_send_load_table(num_nodes, 0);
+    // for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
+    // {
+    //     printf("candidate_id: %ld\n", cand_id);
+    //     Utils::printUIntVector(combinations[cand_id]);
+    //     printf("candidate send load tables: %ld\n", cand_sgs_slts.size());
+    //     for (size_t cand_slt_id = 0; cand_slt_id < cand_sgs_slts[cand_id].size(); cand_slt_id++)
+    //     {
+    //         printf("slt: %ld, cost: %d\n", cand_slt_id, cand_sgs_costs[cand_id][cand_slt_id]);
+    //         Utils::printUIntVector(cand_sgs_slts[cand_id][cand_slt_id]);
+    //     }
+    // }
 
-    vector<size_t> sorted_stripe_ids; // store sorted stripe ids
+    // store stripe groups as sorted stripe ids
+    vector<size_t> sorted_stripe_ids;
 
-    // record currently valid candidates; initialize as all candidate sgs
+    // maintain a send load table for selected stripe groups
+    vector<size_t> cur_slt(num_nodes, 0);
+
+    // record currently valid candidate stripe groups; init as all valid
     vector<bool> is_cand_valid(num_candidate_sgs, true);
     vector<size_t> cur_valid_cand_ids = comb_ids;
 
     size_t num_sgs = num_stripes / _code.lambda_i;
     for (size_t sg_id = 0; sg_id < num_sgs; sg_id++)
     {
-        // get remaining valid combinations
+        // get remaining valid candidates
         vector<size_t> valid_cand_ids;
 
-        // filter out invalid combinations
-        for (size_t idx = 0; idx < cur_valid_cand_ids.size(); idx++)
+        // filter out invalid candidates
+        for (auto cand_id : cur_valid_cand_ids)
         {
-            size_t cand_id = cur_valid_cand_ids[idx];
             if (is_cand_valid[cand_id] == true)
             {
                 valid_cand_ids.push_back(cand_id);
             }
         }
 
-        // for each stripe group, record the maximum send load after connection
-        vector<size_t> valid_cand_max_load_after_conn(valid_cand_ids.size(), 0);
-        vector<vector<size_t>> valid_cand_max_load_slt(valid_cand_ids.size(), vector<size_t>());
-        vector<int> valid_cand_max_load_costs(valid_cand_ids.size(), -1);
+        // for all stripe groups, find the minimum of maximum send load by adding each of the candidate send load tables
 
+        size_t best_mml = SIZE_MAX;
+        int best_mml_cost = INT_MAX;
+        vector<size_t> best_mml_cand_ids;
+        vector<vector<size_t>> best_mml_slts;
         for (size_t idx = 0; idx < valid_cand_ids.size(); idx++)
         {
             size_t cand_id = valid_cand_ids[idx];
-            vector<vector<size_t>> &cand_slts = cand_sgs_slt[cand_id];
-            vector<int> cand_slt_costs = cand_sgs_costs[cand_id];
+            vector<vector<size_t>> &cand_slts = cand_sgs_slts[cand_id]; // send load tables
+            vector<int> cand_slt_costs = cand_sgs_costs[cand_id];       // corresponding costs
 
-            size_t best_min_max_load = SIZE_MAX;
-            vector<size_t> best_min_max_load_slt;
-            int best_mml_cost = -1;
             for (size_t slt_idx = 0; slt_idx < cand_slts.size(); slt_idx++)
             {
-                vector<size_t> &slt = cand_slts[slt_idx];
-                vector<size_t> cur_slt_after_conn = cur_send_load_table;
+                vector<size_t> slt_after_conn = cur_slt;
+
+                // get candidate send load table for the stripe group
+                vector<size_t> &cand_slt = cand_slts[slt_idx];
+                int cand_slt_cost = cand_slt_costs[slt_idx];
+                // compute send load table after connection
                 for (size_t node_id = 0; node_id < num_nodes; node_id++)
                 {
-                    cur_slt_after_conn[node_id] += slt[node_id];
+                    slt_after_conn[node_id] += cand_slt[node_id];
                 }
 
-                size_t cur_min_max_load = *max_element(cur_slt_after_conn.begin(), cur_slt_after_conn.end());
+                size_t slt_mml_after_conn = *max_element(slt_after_conn.begin(), slt_after_conn.end()); // get minimum of maximum load
 
-                if (cur_min_max_load < best_min_max_load)
+                if (slt_mml_after_conn < best_mml || (slt_mml_after_conn == best_mml && cand_slt_cost < best_mml_cost))
                 {
-                    best_min_max_load = cur_min_max_load;
-                    best_min_max_load_slt = slt;
-                    best_mml_cost = cand_slt_costs[slt_idx];
+                    // update mml and cost
+                    best_mml = slt_mml_after_conn;
+                    best_mml_cost = cand_slt_cost;
+
+                    // re-init the candidate lists
+                    best_mml_cand_ids.clear();
+                    best_mml_cand_ids.push_back(cand_id);
+                    best_mml_slts.clear();
+                    best_mml_slts.push_back(cand_slt);
+                }
+                else if (slt_mml_after_conn == best_mml && cand_slt_cost == best_mml_cost)
+                {
+                    // add as mml_min_cost candidates
+                    best_mml_cand_ids.push_back(cand_id);
+                    best_mml_slts.push_back(cand_slt);
                 }
             }
-
-            valid_cand_max_load_after_conn[idx] = best_min_max_load;
-            valid_cand_max_load_slt[idx] = best_min_max_load_slt;
-            valid_cand_max_load_costs[idx] = best_mml_cost;
         }
 
-        // filter out stripe groups with minimum send load after connection
-        size_t min_max_load = *min_element(valid_cand_max_load_after_conn.begin(), valid_cand_max_load_after_conn.end());
-
-        vector<size_t> mml_cand_ids;
-        vector<vector<size_t>> mml_slts;
-        vector<int> mml_costs;
-        for (size_t idx = 0; idx < valid_cand_ids.size(); idx++)
-        {
-            if (valid_cand_max_load_after_conn[idx] == min_max_load)
-            {
-                size_t cand_id = valid_cand_ids[idx];
-                mml_cand_ids.push_back(cand_id);
-                mml_slts.push_back(valid_cand_max_load_slt[idx]);
-                mml_costs.push_back(valid_cand_max_load_costs[idx]);
-            }
-        }
-        // find stripe groups with <minimum costs> among all min cost candidates
-        size_t mml_min_cost_idx = distance(mml_costs.begin(), min_element(mml_costs.begin(), mml_costs.end()));
-        int mml_min_cost = mml_costs[mml_min_cost_idx];
-        size_t mml_min_cost_cand_id = mml_cand_ids[mml_min_cost_idx];
-        vector<size_t> mml_min_cost_slt = mml_slts[mml_min_cost_idx];
+        // randomly find a mml_min_cost candidate and its send load table
+        size_t min_max_load = best_mml;
+        int mml_min_cost = best_mml_cost;
+        size_t rand_pos = Utils::randomUInt(0, best_mml_cand_ids.size() - 1, random_generator);
+        size_t mml_min_cost_cand_id = best_mml_cand_ids[rand_pos];
+        vector<size_t> &mml_min_cost_slt = best_mml_slts[rand_pos];
         vector<size_t> &mml_min_cost_comb = combinations[mml_min_cost_cand_id];
 
-        // update current load table
+        // update current send load table
         for (size_t node_id = 0; node_id < num_nodes; node_id++)
         {
-            cur_send_load_table[node_id] += mml_min_cost_slt[node_id];
+            cur_slt[node_id] += mml_min_cost_slt[node_id];
         }
 
+        // update stripes info
         for (auto stripe_id : mml_min_cost_comb)
         {
             // add stripes from the selected stripe group to sorted stripes
@@ -623,8 +631,8 @@ bool StripeBatch::constructBySendLoadAndCost(vector<Stripe> &stripes)
         cur_valid_cand_ids = valid_cand_ids;
 
         // summarize current pick
-        printf("pick candidate_id: %ld, min_max_load: %ld, mml_min_cost: %d, remaining number of candidates: (%ld / %ld), cur_send_load_table:\n", mml_min_cost_cand_id, min_max_load, mml_min_cost, cur_valid_cand_ids.size(), num_candidate_sgs);
-        Utils::printUIntVector(cur_send_load_table);
+        printf("pick candidate_id: %ld, min_max_load: %ld, mml_min_cost: %d, remaining number of candidates: (%ld / %ld), cur_slt:\n", mml_min_cost_cand_id, min_max_load, mml_min_cost, cur_valid_cand_ids.size(), num_candidate_sgs);
+        Utils::printUIntVector(cur_slt);
     }
 
     // if (sorted_stripe_ids.size() != num_stripes) {

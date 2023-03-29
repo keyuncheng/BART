@@ -9,9 +9,11 @@
 #include "model/StripeMergeG.hh"
 #include "model/BalancdConversion.hh"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
-    if (argc != 9) {
+    if (argc != 9)
+    {
         printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file approach[BT/SM]");
         return -1;
     }
@@ -35,7 +37,8 @@ int main(int argc, char *argv[]) {
     settings.M = M;
 
     // check the number of stripes are valid
-    if (Utils::isParamValid(code, settings) == false) {
+    if (Utils::isParamValid(code, settings) == false)
+    {
         printf("invalid parameters\n");
         return -1;
     }
@@ -53,10 +56,11 @@ int main(int argc, char *argv[]) {
     // }
 
     // solutions and load distribution
-    vector<vector<size_t> > solutions;
+    vector<vector<size_t>> solutions;
     vector<size_t> send_load_dist, recv_load_dist;
 
-    if (approach == "SM") {
+    if (approach == "SM")
+    {
         // stripe-merge-g
 
         // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
@@ -67,12 +71,13 @@ int main(int argc, char *argv[]) {
         // Step 2: generate transition solutions from all stripe groups
         StripeMergeG stripe_merge_g;
         stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
-
-    } else if (approach == "BT") {
+    }
+    else if (approach == "BT")
+    {
         // balanced transition
 
         // Step 1: construct a stripe batch
-        
+
         // possible construction techniques: sequentially construct; randomly construct; construct by cost
         StripeBatch stripe_batch(0, code, settings);
 
@@ -80,7 +85,7 @@ int main(int argc, char *argv[]) {
         // stripe_batch.constructByRandomPick(stripes, random_generator);
         // stripe_batch.constructByCost(stripes);
         // stripe_batch.constructByCostAndSendLoad(stripes);
-        stripe_batch.constructBySendLoadAndCost(stripes);
+        stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
@@ -90,7 +95,6 @@ int main(int argc, char *argv[]) {
         // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
 
         // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
-
     }
 
     // get load distribution
@@ -98,7 +102,8 @@ int main(int argc, char *argv[]) {
 
     // get bandwidth
     size_t bw = 0;
-    for (auto item : send_load_dist) {
+    for (auto item : send_load_dist)
+    {
         bw += item;
     }
 

@@ -8,7 +8,6 @@
 class StripeBatch
 {
 private:
-
     ConvertibleCode _code;
     ClusterSettings _settings;
     vector<StripeGroup> _stripe_groups;
@@ -24,7 +23,7 @@ public:
 
     bool constructByCostAndSendLoad(vector<Stripe> &stripes);
 
-    bool constructBySendLoadAndCost(vector<Stripe> &stripes);
+    bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
 
     size_t getId();
     ConvertibleCode &getCode();
@@ -33,6 +32,5 @@ public:
 
     void print();
 };
-
 
 #endif // __STRIPE_BATCH_HH__

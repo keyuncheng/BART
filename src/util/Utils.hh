@@ -18,7 +18,6 @@ public:
     static mt19937 createRandomGenerator();
     static size_t randomUInt(size_t l, size_t r, mt19937 &random_generator);
 
-    static void printUintVector(vector<size_t> &vec);
     static void printUIntVector(vector<size_t> &vec);
     static void printUIntArray(size_t *arr, size_t len);
     static void printUIntMatrix(size_t **matrix, size_t r, size_t c);
