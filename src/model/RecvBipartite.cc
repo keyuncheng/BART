@@ -246,12 +246,13 @@ bool RecvBipartite::constructSGWithParityMerging(StripeGroup &stripe_group)
             size_t node_vtx_id = createNodeVtx(cand_node_id);
             Vertex &node_vtx = vertices_map[node_vtx_id];
 
-            // manual tune cost (if there is a data block at the node, need to relocate to another node, thus this node is with higher cost than the others)
             int edge_cost = code.alpha - parity_distribution[cand_node_id];
-            if (data_distribution[cand_node_id] > 0)
-            {
-                edge_cost += 1;
-            }
+
+            // // manual tune cost (if there is a data block at the node, need to relocate to another node, thus this node is with higher cost than the others)
+            // if (data_distribution[cand_node_id] > 0)
+            // {
+            //     edge_cost += 1;
+            // }
 
             // add edge (cost: # of required parity blocks)
             addEdge(&pcb_vtx, &node_vtx, 1, edge_cost);
@@ -488,6 +489,14 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
     }
 
+    // data distribution map
+    vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
+    unordered_map<size_t, vector<size_t>> data_distributions;
+    for (auto &stripe_group : stripe_groups)
+    {
+        data_distributions[stripe_group.getId()] = stripe_group.getDataDistribution();
+    }
+
     // classify vtx as compute and relocation
     vector<size_t> sorted_lvtx_ids;
     vector<size_t> compute_lvtx_ids; // compute lvtx
@@ -536,7 +545,7 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         // find candidate edges from adjacent edges
         size_t best_mml = SIZE_MAX;
         int best_mml_edge_cost = INT_MAX;
-        vector<size_t> best_mml_edge_cost_cand_edges;
+        vector<size_t> best_mml_cost_cand_edges;
 
         vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
         for (auto edge_id : adjacent_edges)
@@ -551,32 +560,40 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
                     continue;
                 }
             }
+            vector<size_t> &data_distribution = data_distributions[block_meta.stripe_group_id];
 
             // recv load table after edge connection
-            vector<size_t> cur_rlt_after_conn = cur_rlt;
+            vector<size_t>
+                cur_rlt_after_conn = cur_rlt;
             cur_rlt_after_conn[node_id] += edge.cost;
-            size_t cur_rlt_mml = *max_element(cur_rlt_after_conn.begin(), cur_rlt_after_conn.end());
+            size_t cur_rlt_mml = *max_element(cur_rlt_after_conn.begin(), cur_rlt_after_conn.end()); // max load
 
             // it's an edge with lower min-max recv load; or equal mml but with better cost
             if (cur_rlt_mml < best_mml || (cur_rlt_mml == best_mml && edge.cost < best_mml_edge_cost))
             {
                 // update mml and cost
                 best_mml = cur_rlt_mml;
+
+                // manually tune the cost (if there is a data block resided in the block, add the cost by 1)
                 best_mml_edge_cost = edge.cost;
+                if (data_distribution[node_id] > 0)
+                {
+                    best_mml_edge_cost += 1;
+                }
 
                 // re-init the candidate lists
-                best_mml_edge_cost_cand_edges.clear();
-                best_mml_edge_cost_cand_edges.push_back(edge.id);
+                best_mml_cost_cand_edges.clear();
+                best_mml_cost_cand_edges.push_back(edge.id);
             }
             else if (cur_rlt_mml == best_mml && edge.cost == best_mml_edge_cost)
             {
-                best_mml_edge_cost_cand_edges.push_back(edge.id);
+                best_mml_cost_cand_edges.push_back(edge.id);
             }
         }
 
-        // randomly pick one min-load edge
-        size_t rand_pos = Utils::randomUInt(0, best_mml_edge_cost_cand_edges.size() - 1, random_generator);
-        size_t mml_min_cost_edge_id = best_mml_edge_cost_cand_edges[rand_pos];
+        // randomly pick one min-load min cost edge
+        size_t rand_pos = Utils::randomUInt(0, best_mml_cost_cand_edges.size() - 1, random_generator);
+        size_t mml_min_cost_edge_id = best_mml_cost_cand_edges[rand_pos];
         Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
 
         // // update load on both vertex
@@ -594,8 +611,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         // add edge to solutions
         sol_edges.push_back(mml_min_cost_edge_id);
 
-        printf("cur_rlt:\n");
-        Utils::printUIntVector(cur_rlt);
+        // printf("cur_rlt:\n");
+        // Utils::printUIntVector(cur_rlt);
 
         // if the block is a data / parity block, mark the node as relocated
         if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
