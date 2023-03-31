@@ -70,7 +70,8 @@ void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batc
         vector<size_t> sol_edges;
         // recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, sol_edges, random_generator);
 
-        recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
+        // recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
+        recv_bipartite.findEdgesWithApproachesGreedySortedSAR(stripe_batch, sol_edges, random_generator);
 
         // construct partial solutions from recv graph
         vector<vector<size_t>> partial_solutions, solutions;

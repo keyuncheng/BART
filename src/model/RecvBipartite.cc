@@ -536,7 +536,6 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     vector<size_t> cur_rlt(num_nodes, 0);
 
     // greedy assign each vtx by minimum load; then minimum cost
-    // TODO here
     for (auto lvtx_id : sorted_lvtx_ids)
     {
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
@@ -612,8 +611,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         // add edge to solutions
         sol_edges.push_back(mml_min_cost_edge_id);
 
-        // printf("cur_rlt:\n");
-        // Utils::printUIntVector(cur_rlt);
+        printf("cur_rlt:\n");
+        Utils::printUIntVector(cur_rlt);
 
         // if the block is a data / parity block, mark the node as relocated
         if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
@@ -621,6 +620,327 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
             Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
             size_t mml_min_cost_edge_node_id = vtx_to_node_map[mml_min_cost_edge.rvtx->id];
             sg_relocated_nodes[mml_min_cost_edge_node_id] = true;
+        }
+    }
+
+    // int sum_costs = 0;
+    // for (auto edge_id : sol_edges) {
+    //     Edge &edge = edges_map[edge_id];
+    //     sum_costs += edge.cost;
+
+    //     printf("edge_id: %ld, cost: %d\n", edge.id, edge.cost);
+    // }
+    // printf("\n\nnum_edges: %ld, costs: %d\n\n\n\n", sol_edges.size(), sum_costs);
+
+    return true;
+}
+
+bool RecvBipartite::findEdgesWithApproachesGreedySortedSAR(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator)
+{
+    // key idea: in addition to findEdgesWithApproachesGreedySorted, consider optimizing both the send and receive load together
+
+    ConvertibleCode &code = stripe_batch.getCode();
+    ClusterSettings &settings = stripe_batch.getClusterSettings();
+    size_t num_nodes = settings.M;
+
+    // initialize the solution edges
+    sol_edges.clear();
+
+    // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
+    // format: <stripe_group_id, <new stripe distribution> >
+    unordered_map<size_t, vector<pair<size_t, BlockType>>> sg_reloc_nodes_map;
+    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
+    {
+        sg_reloc_nodes_map[it->first] = vector<pair<size_t, BlockType>>(num_nodes, pair<size_t, BlockType>(INVALID_ID, INVALID_BLK)); // init all nodes are invalid
+    }
+
+    vector<StripeGroup> &stripe_groups = stripe_batch.getStripeGroups();
+    // data distribution map
+    unordered_map<size_t, vector<size_t>> data_distribution_map;
+    // parity distribution map
+    unordered_map<size_t, vector<vector<size_t>>> parity_distributions_map;
+    for (auto &stripe_group : stripe_groups)
+    {
+        data_distribution_map[stripe_group.getId()] = stripe_group.getDataDistribution();
+        parity_distributions_map[stripe_group.getId()] = stripe_group.getParityDistributions();
+    }
+
+    // classify vtx as compute and relocation
+    vector<size_t> sorted_lvtx_ids;
+    vector<size_t> compute_lvtx_ids; // compute lvtx
+    vector<size_t> reloc_lvtx_ids;   // relocate lvtx (data and parity)
+
+    for (auto lvit : left_vertices_map)
+    {
+        Vertex &vtx = *lvit.second;
+        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
+
+        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM)
+        {
+            compute_lvtx_ids.push_back(vtx.id);
+        }
+        else
+        {
+            reloc_lvtx_ids.push_back(vtx.id);
+        }
+    }
+
+    sort(compute_lvtx_ids.begin(), compute_lvtx_ids.end());
+    sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
+
+    // first add compute vtx
+    for (auto vtx_id : compute_lvtx_ids)
+    {
+        sorted_lvtx_ids.push_back(vtx_id);
+    }
+
+    // next add relocation vtx
+    for (auto vtx_id : reloc_lvtx_ids)
+    {
+        sorted_lvtx_ids.push_back(vtx_id);
+    }
+
+    // maintain a send and recv load table for selected stripe groups
+    vector<size_t> cur_slt(num_nodes, 0);
+    vector<size_t> cur_rlt(num_nodes, 0);
+
+    // greedy assign each vtx by minimum load; then minimum cost
+    for (auto lvtx_id : sorted_lvtx_ids)
+    {
+        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
+        size_t sg_id = block_meta.stripe_group_id;
+        StripeGroup &stripe_group = stripe_groups[sg_id];
+        vector<pair<size_t, BlockType>> &sg_relocated_nodes = sg_reloc_nodes_map[sg_id];
+
+        // get data and parity distribution
+        vector<size_t> &data_distribution = data_distribution_map[sg_id];
+        vector<vector<size_t>> &parity_distributions = parity_distributions_map[sg_id];
+
+        // find candidate edges from adjacent edges
+        size_t best_mml = SIZE_MAX;
+        int best_mml_edge_cost = INT_MAX;
+        vector<size_t> best_mml_cost_cand_edges;
+
+        vector<size_t> &adjacent_edges = lvtx_edges_map[lvtx_id];
+        for (auto edge_id : adjacent_edges)
+        {
+            // if the block is a data / parity block (for relocation), filter out edges that connect to a node relocated with a data / parity block
+            Edge &edge = edges_map[edge_id];
+            size_t edge_node_id = vtx_to_node_map[edge.rvtx->id];
+            if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+            {
+                if (sg_relocated_nodes[edge_node_id].first != INVALID_ID)
+                {
+                    continue;
+                }
+            }
+
+            // recv load table after edge connection
+            vector<size_t> cur_slt_after_conn = cur_slt;
+            vector<size_t> cur_rlt_after_conn = cur_rlt;
+            int cur_cost = edge.cost;
+
+            // compute the send and recv load after connection
+            if (block_meta.type == COMPUTE_BLK_RE)
+            {
+                // send load: collect all data blocks from other nodes (TODO: update for re-encoding only parameters)
+                for (size_t node_id = 0; node_id < num_nodes; node_id++)
+                {
+                    if (node_id != edge_node_id)
+                    {
+                        cur_slt_after_conn[node_id] += data_distribution[node_id];
+                    }
+                }
+                // recv load: all blocks are received at the node
+                cur_rlt_after_conn[edge_node_id] += edge.cost;
+            }
+            else if (block_meta.type == COMPUTE_BLK_PM)
+            {
+                // send load: collect all parity blocks with the same offset from other nodes
+                size_t parity_id = block_meta.block_id - code.k_f;
+                vector<size_t> &parity_distribution = parity_distributions[parity_id];
+                for (size_t node_id = 0; node_id < num_nodes; node_id++)
+                {
+                    if (node_id != edge_node_id)
+                    {
+                        cur_slt_after_conn[node_id] += parity_distribution[node_id];
+                    }
+                }
+                // recv load: compute the receive load after connection
+                cur_rlt_after_conn[edge_node_id] += edge.cost;
+            }
+            else if (block_meta.type == DATA_BLK)
+            {
+                // update the from node id
+                Stripe &stripe = *stripe_group.getStripes()[block_meta.stripe_id];
+                vector<size_t> &stripe_indices = stripe.getStripeIndices();
+
+                size_t from_node_id = stripe_indices[block_meta.block_id];
+                // send load: add 1 from send node
+                cur_slt_after_conn[from_node_id] += edge.cost;
+                // recv load: add 1 from recv node
+                cur_rlt_after_conn[edge_node_id] += edge.cost;
+            }
+            else if (block_meta.type == PARITY_BLK)
+            {
+                // find the corresponding compute block
+                for (size_t node_id = 0; node_id < num_nodes; node_id++)
+                {
+                    if (sg_reloc_nodes_map[sg_id][node_id].first == COMPUTE_BLK_RE)
+                    {
+                        // if it's a re-encoding parity block, parity relocation is always required
+
+                        // update the from node id
+                        cur_slt_after_conn[node_id] += edge.cost;
+                        // compute the receive load after connection
+                        cur_rlt_after_conn[edge_node_id] += edge.cost;
+                        break;
+                    }
+                    else if (sg_reloc_nodes_map[sg_id][node_id].first == COMPUTE_BLK_PM)
+                    {
+                        // if it's a parity-merging parity block, if the node have no data block stored, then no need to relocate; otherwise needed
+
+                        if (data_distribution[node_id] > 0)
+                        {
+                            // compute the send load after connection
+                            cur_slt_after_conn[node_id] += edge.cost;
+                            // compute the receive load after connection
+                            cur_rlt_after_conn[edge_node_id] += edge.cost;
+                            break;
+                        }
+                        else
+                        {
+                            // cost is reduced to 0
+                            cur_cost = 0;
+                        }
+                    }
+                }
+            }
+
+            size_t cur_slt_mml = *max_element(cur_slt_after_conn.begin(), cur_slt_after_conn.end()); // max send load
+            size_t cur_rlt_mml = *max_element(cur_rlt_after_conn.begin(), cur_rlt_after_conn.end()); // max recv load
+            size_t cur_mml = max(cur_slt_mml, cur_rlt_mml);
+
+            // it's an edge with lower min-max recv load; or equal mml but with better cost
+            if (cur_mml < best_mml || (cur_mml == best_mml && cur_cost < best_mml_edge_cost))
+            {
+                // update mml and cost
+                best_mml = cur_mml;
+
+                // manually tune the cost (if there is a data block resided in the block, add the cost by 1)
+                best_mml_edge_cost = cur_cost;
+                if (data_distribution[edge_node_id] > 0)
+                {
+                    best_mml_edge_cost += 1;
+                }
+
+                // re-init the candidate lists
+                best_mml_cost_cand_edges.clear();
+                best_mml_cost_cand_edges.push_back(edge.id);
+            }
+            else if (cur_mml == best_mml && cur_cost == best_mml_edge_cost)
+            {
+                best_mml_cost_cand_edges.push_back(edge.id);
+            }
+        }
+
+        // randomly pick one min-load min cost edge
+        size_t rand_pos = Utils::randomUInt(0, best_mml_cost_cand_edges.size() - 1, random_generator);
+        size_t mml_min_cost_edge_id = best_mml_cost_cand_edges[rand_pos];
+        Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
+
+        // // update load on both vertex
+        // Vertex &lvtx = vertices_map[lvtx_id];
+        // Vertex &rvtx = vertices_map[mml_min_cost_edge.rvtx->id];
+        // lvtx.out_degree += mml_min_cost_edge.weight;
+        // lvtx.costs += mml_min_cost_edge.cost;
+        // rvtx.in_degree += mml_min_cost_edge.weight;
+        // rvtx.costs += mml_min_cost_edge.cost;
+
+        size_t mml_min_cost_edge_node_id = vtx_to_node_map[mml_min_cost_edge.rvtx->id];
+        // update send load table and recv table
+        if (block_meta.type == COMPUTE_BLK_RE)
+        {
+            // collect all data blocks from other nodes (TODO: update for re-encoding only parameters)
+            for (size_t node_id = 0; node_id < num_nodes; node_id++)
+            {
+                if (node_id != mml_min_cost_edge_node_id)
+                {
+                    cur_slt[node_id] += data_distribution[node_id];
+                }
+            }
+            // compute the receive load after connection
+            cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+        }
+        else if (block_meta.type == COMPUTE_BLK_PM)
+        {
+            // collect all parity blocks with the same offset from other nodes
+            size_t parity_id = block_meta.block_id - code.k_f;
+            vector<size_t> &parity_distribution = parity_distributions[parity_id];
+            for (size_t node_id = 0; node_id < num_nodes; node_id++)
+            {
+                if (node_id != mml_min_cost_edge_node_id)
+                {
+                    cur_slt[node_id] += parity_distribution[node_id];
+                }
+            }
+            // compute the receive load after connection
+            cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+        }
+        else if (block_meta.type == DATA_BLK)
+        {
+            // update the from node id
+            Stripe &stripe = *stripe_group.getStripes()[block_meta.stripe_id];
+            vector<size_t> &stripe_indices = stripe.getStripeIndices();
+
+            size_t from_node_id = stripe_indices[block_meta.block_id];
+            // compute the send load after connection
+            cur_slt[from_node_id] += mml_min_cost_edge.cost;
+            // compute the receive load after connection
+            cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+        }
+        else if (block_meta.type == PARITY_BLK)
+        {
+            // find the corresponding compute block
+            for (size_t node_id = 0; node_id < num_nodes; node_id++)
+            {
+                if (sg_reloc_nodes_map[sg_id][node_id].first == COMPUTE_BLK_RE)
+                {
+                    // update the from node id
+                    cur_slt[node_id] += mml_min_cost_edge.cost;
+                    // compute the receive load after connection
+                    cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+                    break;
+                }
+                else if (sg_reloc_nodes_map[sg_id][node_id].first == COMPUTE_BLK_PM)
+                {
+                    if (data_distribution[node_id] > 0)
+                    {
+                        // compute the send load after connection
+                        cur_slt[node_id] += mml_min_cost_edge.cost;
+                        // compute the receive load after connection
+                        cur_rlt[mml_min_cost_edge_node_id] += mml_min_cost_edge.cost;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // add edge to solutions
+        sol_edges.push_back(mml_min_cost_edge_id);
+
+        printf("cur_slt:\n");
+        Utils::printUIntVector(cur_slt);
+
+        printf("cur_rlt:\n");
+        Utils::printUIntVector(cur_rlt);
+
+        // if the block is a data / parity block, mark the node as relocated
+        if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
+        {
+            Edge &mml_min_cost_edge = edges_map[mml_min_cost_edge_id];
+            size_t mml_min_cost_edge_node_id = vtx_to_node_map[mml_min_cost_edge.rvtx->id];
+            sg_relocated_nodes[mml_min_cost_edge_node_id] = pair<size_t, BlockType>(block_meta.block_id, block_meta.type);
         }
     }
 

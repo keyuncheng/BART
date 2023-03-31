@@ -57,6 +57,8 @@ public:
 
     bool findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator);
 
+    bool findEdgesWithApproachesGreedySortedSAR(StripeBatch &stripe_batch, vector<size_t> &sol_edges, mt19937 &random_generator);
+
     // construct partial transition solution from edges
     bool constructPartialSolutionFromEdges(StripeBatch &stripe_batch, vector<size_t> &sol_edges, vector<vector<size_t>> &partial_solutions);
 
