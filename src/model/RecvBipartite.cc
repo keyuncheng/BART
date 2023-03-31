@@ -542,6 +542,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
         BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[lvtx_id]];
         vector<bool> &sg_relocated_nodes = sg_reloc_nodes_map[block_meta.stripe_group_id];
 
+        vector<size_t> &data_distribution = data_distributions[block_meta.stripe_group_id];
+
         // find candidate edges from adjacent edges
         size_t best_mml = SIZE_MAX;
         int best_mml_edge_cost = INT_MAX;
@@ -560,7 +562,6 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
                     continue;
                 }
             }
-            vector<size_t> &data_distribution = data_distributions[block_meta.stripe_group_id];
 
             // recv load table after edge connection
             vector<size_t>
@@ -631,61 +632,6 @@ bool RecvBipartite::findEdgesWithApproachesGreedySorted(StripeBatch &stripe_batc
     //     printf("edge_id: %ld, cost: %d\n", edge.id, edge.cost);
     // }
     // printf("\n\nnum_edges: %ld, costs: %d\n\n\n\n", sol_edges.size(), sum_costs);
-
-    return true;
-}
-
-bool RecvBipartite::findEdgesWithApproachesDP(StripeBatch &stripe_batch, vector<size_t> &sol_edges)
-{
-    // follow the structure of scheduling jobs for m-processor problem in JACM'1976
-
-    ClusterSettings &settings = stripe_batch.getClusterSettings();
-    size_t num_nodes = settings.M;
-
-    // initialize the solution edges
-    sol_edges.clear();
-
-    // for each stripe group, record the nodes relocated with a block (to avoid a node overlapped with a data and parity block)
-    unordered_map<size_t, vector<bool>> sg_reloc_nodes_map; // <stripe_group_id, <node_ids relocated with blocks> >
-
-    for (auto it = sg_block_meta_map.begin(); it != sg_block_meta_map.end(); it++)
-    {
-        sg_reloc_nodes_map[it->first] = vector<bool>(num_nodes, false); // init all nodes are not relocated
-    }
-
-    // find solution for each block on the left
-    vector<size_t> sorted_lvtx_ids;
-    vector<size_t> compute_lvtx_ids; // compute lvtx
-    vector<size_t> reloc_lvtx_ids;   // relocate lvtx (data and parity)
-
-    for (auto lvit : left_vertices_map)
-    {
-        Vertex &vtx = *lvit.second;
-        BlockMeta &block_meta = block_metastore[vtx_to_block_meta_map[vtx.id]];
-
-        if (block_meta.type == COMPUTE_BLK_RE || block_meta.type == COMPUTE_BLK_PM)
-        {
-            compute_lvtx_ids.push_back(vtx.id);
-        }
-        else
-        {
-            reloc_lvtx_ids.push_back(vtx.id);
-        }
-    }
-
-    sort(compute_lvtx_ids.begin(), compute_lvtx_ids.end());
-    sort(reloc_lvtx_ids.begin(), reloc_lvtx_ids.end());
-
-    // first add compute vertex
-    for (auto vtx_id : compute_lvtx_ids)
-    {
-        sorted_lvtx_ids.push_back(vtx_id);
-    }
-
-    // // next add relocate vertex
-    // for (auto vtx_id : reloc_lvtx_ids) {
-    //     sorted_lvtx_ids.push_back(vtx_id);
-    // }
 
     return true;
 }
