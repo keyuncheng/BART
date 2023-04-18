@@ -218,3 +218,32 @@ void Utils::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector
 
     return;
 }
+
+vector<size_t> Utils::dotAddUIntVectors(vector<size_t> &v1, vector<size_t> &v2)
+{
+    if (v1.size() != v2.size())
+    {
+        printf("error: v1 and v2 size mismatch!\n");
+    }
+
+    size_t vec_size = 0;
+    vector<size_t> *lv, *rv; // lv.size >= rv.size
+    if (v1.size() < v2.size())
+    {
+        lv = &v2;
+        rv = &v1;
+    }
+    else
+    {
+        lv = &v1;
+        rv = &v2;
+    }
+
+    vector<size_t> result = *lv;
+    for (size_t idx = 0; idx < rv->size(); idx++)
+    {
+        result[idx] += (*rv)[idx];
+    }
+
+    return result;
+}

@@ -13,6 +13,8 @@ private:
     vector<StripeGroup> _stripe_groups;
     size_t _id;
 
+    vector<TransApproach> _enc_mtd_sg; // encoding method for each stripe group
+
 public:
     StripeBatch(size_t id, ConvertibleCode &code, ClusterSettings &settings);
     ~StripeBatch();
@@ -24,6 +26,8 @@ public:
     bool constructByCostAndSendLoad(vector<Stripe> &stripes);
 
     bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
+
+    bool constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 &random_generator);
 
     size_t getId();
     ConvertibleCode &getCode();

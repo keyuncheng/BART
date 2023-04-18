@@ -522,3 +522,54 @@ int StripeGroup::appendMinCostSLTWithReEncoding(vector<size_t> &init_send_load_t
 
     return total_re_cost;
 }
+
+vector<LoadTable> StripeGroup::getCandSLTs()
+{
+    size_t num_nodes = _settings.M;
+
+    // candidate send load tables
+    vector<LoadTable> cand_slts;
+
+    // construct initial send load table with data relocation
+    LoadTable pslt_dr = getPartialSLTWithDataRelocation();
+
+    // send load table of re-encoding
+    LoadTable slt_re;
+    LoadTable pslt_re = getPartialSLTWithReEncoding();
+    slt_re.approach = TransApproach::RE_ENCODE;
+    slt_re.lt = Utils::dotAddUIntVectors(pslt_dr.lt, pslt_re.lt);
+    slt_re.cost = pslt_dr.cost + pslt_re.cost;
+
+    cand_slts.push_back(slt_re);
+
+    // send load table of parity merging
+    if (_code.isValidForPM() == true)
+    {
+        LoadTable slt_pm;
+        LoadTable pslt_pm = getPartialSLTWIthParityMerging();
+        slt_pm.lt = Utils::dotAddUIntVectors(pslt_dr.lt, pslt_pm.lt);
+        slt_pm.cost = pslt_dr.cost + pslt_pm.cost;
+
+        cand_slts.push_back(slt_re);
+    }
+
+    for (auto &cand_slt : cand_slts)
+    {
+        printf("stripe group: %ld, approach: %ld, cost: %ld, send load table:\n", _id, cand_slt.approach, cand_slt.cost);
+        Utils::printUIntVector(cand_slt.lt);
+    }
+
+    return cand_slts;
+}
+
+LoadTable StripeGroup::getPartialSLTWithDataRelocation()
+{
+}
+
+LoadTable StripeGroup::getPartialSLTWithReEncoding()
+{
+}
+
+LoadTable StripeGroup::getPartialSLTWIthParityMerging()
+{
+}

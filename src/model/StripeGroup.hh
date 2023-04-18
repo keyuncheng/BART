@@ -13,6 +13,13 @@ enum TransApproach
     PARITY_MERGE
 };
 
+typedef struct LoadTable
+{
+    TransApproach approach;
+    vector<size_t> lt; // load table
+    size_t cost;
+} LoadTable;
+
 class StripeGroup
 {
 private:
@@ -40,10 +47,15 @@ public:
     int getMinReEncodingCost();
 
     // enumerate send load tables
-    int constructInitSLTWithDataRelocation(vector<size_t> &send_load_table);
     vector<vector<size_t>> getCandSendLoadTables();
+    int constructInitSLTWithDataRelocation(vector<size_t> &send_load_table);
     void appendCandSLTsWithParityMerging(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts);
     void appendCandSLTsWithReEncoding(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts);
+
+    vector<LoadTable> getCandSLTs();
+    LoadTable getPartialSLTWithDataRelocation();
+    LoadTable getPartialSLTWithReEncoding();
+    LoadTable getPartialSLTWIthParityMerging();
 
     // get min cost send load tables
     vector<vector<size_t>> getCandSendLoadTablesForMinTransCost(int min_cost);

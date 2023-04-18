@@ -37,6 +37,15 @@ public:
     static vector<vector<size_t>> getPermutation(size_t n, size_t k);
 
     static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
+
+    /**
+     * @brief Dot add two uint vectors
+     *
+     * @param v1
+     * @param v2
+     * @return vector<size_t>
+     */
+    static vector<size_t> dotAddUIntVectors(vector<size_t> &v1, vector<size_t> &v2);
 };
 
 #endif // __UTILS_HH__
