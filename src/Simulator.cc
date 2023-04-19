@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
     double min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
     double max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
     // mean, stddev, cv
-    double mean_out_degree = std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
+    double mean_out_degree = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
     double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
     double stddev_out_degree = std::sqrt(sq_sum_out_degree / recv_load_dist.size() - mean_out_degree * mean_out_degree);
     double cv_out_degree = stddev_out_degree / mean_out_degree;

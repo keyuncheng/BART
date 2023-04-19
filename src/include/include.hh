@@ -6,6 +6,7 @@
 #include <cmath>
 // #include <bits/stdc++.h>
 #include <ctime>
+#include <cfloat>
 #include <climits>
 #include <cstring>
 #include <cstdlib>
@@ -19,6 +20,5 @@
 using namespace std;
 
 #define INVALID_ID SIZE_MAX
-
 
 #endif // __INCLUDE_HH__

@@ -11,6 +11,7 @@ private:
     ConvertibleCode _code;
     ClusterSettings _settings;
     vector<StripeGroup> _stripe_groups;
+    vector<TransApproach> _sg_approaches;
     size_t _id;
 
     vector<TransApproach> _enc_mtd_sg; // encoding method for each stripe group

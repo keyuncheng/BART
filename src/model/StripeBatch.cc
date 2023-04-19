@@ -671,6 +671,9 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
     size_t num_nodes = _settings.M;
     size_t num_stripes = stripes.size();
 
+    _stripe_groups.clear();
+    _sg_approaches.clear();
+
     // check if the number of stripes is a multiple of lambda_i
     if (num_stripes % _code.lambda_i != 0)
     {
@@ -715,9 +718,6 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
 
     printf("total number of candidate stripe groups: %ld\n", num_cand_sgs);
 
-    // store stripe groups as sorted stripe ids
-    vector<size_t> sorted_stripe_ids;
-
     // maintain a send load table for currently selected stripe groups
     LoadTable cur_slt;
     cur_slt.lt = vector<size_t>(num_nodes, 0);
@@ -744,8 +744,10 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
 
         // for all stripe groups, find the minimum of maximum send load by adding each of the candidate send load tables
 
-        size_t best_load = SIZE_MAX; // first priority: load balance metric (maximum load)
-        size_t best_cost = INT_MAX;  // second priority: cost
+        double best_metric = DBL_MAX; // first priority: load balance metric (maximum load)
+        // size_t best_metric = SIZE_MAX;   // first priority: load balance metric (maximum load)
+        size_t best_max_load = SIZE_MAX; // maximum load
+        size_t best_cost = SIZE_MAX;     // second priority: cost
         vector<pair<size_t, LoadTable>> best_cands;
         for (size_t idx = 0; idx < valid_cand_ids.size(); idx++)
         {
@@ -763,20 +765,34 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
 
                 // get load metric
 
-                // choice 1: maximum load after applying the stripe group
-                size_t slt_load_after = *max_element(slt_after.lt.begin(), slt_after.lt.end());
+                // maximum load after applying the stripe group
+                size_t slt_max_load_after = *max_element(slt_after.lt.begin(), slt_after.lt.end());
 
-                if (slt_load_after < best_load || (slt_load_after == best_load && cand_slt.cost < best_cost))
+                // choice 2: load metric
+                double slt_mean_load_after = 1.0 * accumulate(slt_after.lt.begin(), slt_after.lt.end(), 0) / num_nodes;
+
+                // choice 1: maximum load
+                double metric = slt_max_load_after;
+
+                // // choice 2: load-balance metric ((max - avg) / avg)
+                // double metric = 0;
+                // if (slt_mean_load_after > 0)
+                // {
+                //     metric = slt_max_load_after / slt_mean_load_after;
+                // }
+
+                if (metric < best_metric || (metric == best_metric && cand_slt.cost < best_cost))
                 {
                     // update mml and cost
-                    best_load = slt_load_after;
+                    best_metric = metric;
+                    best_max_load = slt_max_load_after;
                     best_cost = cand_slt.cost;
 
                     // re-init the candidate lists
                     best_cands.clear();
                     best_cands.push_back(pair<size_t, LoadTable>(cand_id, cand_slt));
                 }
-                else if (slt_load_after == best_load && cand_slt.cost == best_cost)
+                else if (metric == best_metric && cand_slt.cost == best_cost)
                 {
                     // add as best candidates
                     best_cands.push_back(pair<size_t, LoadTable>(cand_id, cand_slt));
@@ -790,16 +806,23 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
         LoadTable &best_slt = best_cands[rand_pos].second;
         vector<size_t> &best_comb = combinations[best_cand_id];
 
+        // add the selected best stripe group (with approach)
+        vector<Stripe *> stripes_in_group;
+        for (size_t sid = 0; sid < _code.lambda_i; sid++)
+        {
+            stripes_in_group.push_back(&stripes[best_comb[sid]]);
+        }
+        StripeGroup best_sg(_stripe_groups.size(), _code, _settings, stripes_in_group);
+        _stripe_groups.push_back(best_sg);
+        _sg_approaches.push_back(best_slt.approach);
+
         // update current send load table
         cur_slt.lt = Utils::dotAddUIntVectors(cur_slt.lt, best_slt.lt);
         cur_slt.cost += best_slt.cost;
 
-        // update stripes info
+        // update currently valid stripes
         for (auto stripe_id : best_comb)
         {
-            // add stripes from the selected stripe group to sorted stripes
-            sorted_stripe_ids.push_back(stripe_id);
-
             // mark overlapped candidate stripe groups as invalid
             for (auto cand_sg_ids : overlapped_cand_sgs[stripe_id])
             {
@@ -811,34 +834,8 @@ bool StripeBatch::constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 
         cur_valid_cand_ids = valid_cand_ids;
 
         // summarize current pick
-        printf("pick candidate_id: %ld, best_load (max_load): %ld, best_cost: %ld, remaining number of candidates: (%ld / %ld), cur_slt:\n", best_cand_id, best_load, best_cost, cur_valid_cand_ids.size(), num_cand_sgs);
+        printf("pick candidate_id: %ld, approach: %d, best_load (max_load): %ld, best_cost: %ld, remaining number of candidates: (%ld / %ld), cur_slt:\n", best_cand_id, best_slt.approach, best_max_load, best_cost, cur_valid_cand_ids.size(), num_cand_sgs);
         Utils::printUIntVector(cur_slt.lt);
-    }
-
-    // if (sorted_stripe_ids.size() != num_stripes) {
-    //     printf("error: invalid sorted_stripe_ids\n");
-    //     return false;
-    // }
-
-    // 2. put stripes by sorted stripe ids (by cost) into stripe groups
-    vector<Stripe *> stripes_in_group;
-    size_t sg_id = 0; // stripe group id
-    for (size_t idx = 0; idx < num_stripes; idx++)
-    {
-
-        size_t stripe_id = sorted_stripe_ids[idx];
-
-        // add the stripe into stripe group
-        Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(&stripe);
-
-        if (stripes_in_group.size() == (size_t)_code.lambda_i)
-        {
-            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
-            _stripe_groups.push_back(stripe_group);
-            sg_id++;
-            stripes_in_group.clear();
-        }
     }
 
     return true;
