@@ -18,6 +18,13 @@ typedef struct LoadTable
     TransApproach approach;
     vector<size_t> lt; // load table
     size_t cost;
+
+    LoadTable()
+    {
+        approach = TransApproach::RE_ENCODE;
+        lt.clear();
+        cost = 0;
+    }
 } LoadTable;
 
 class StripeGroup
