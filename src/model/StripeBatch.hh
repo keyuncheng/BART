@@ -23,7 +23,7 @@ public:
     bool constructByRandomPick(vector<Stripe> &stripes, mt19937 &random_generator);
     bool constructByCost(vector<Stripe> &stripes);
 
-    bool constructByCostAndSendLoad(vector<Stripe> &stripes);
+    bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 
     bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
 

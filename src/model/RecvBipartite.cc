@@ -679,7 +679,8 @@ bool RecvBipartite::findEdgesWithApproachesGreedySortedSAR(StripeBatch &stripe_b
         {
             compute_lvtx_ids.push_back(vtx.id);
         }
-        else
+        // else if (block_meta.type == DATA_BLK)
+        else if (block_meta.type == DATA_BLK || block_meta.type == PARITY_BLK)
         {
             reloc_lvtx_ids.push_back(vtx.id);
         }

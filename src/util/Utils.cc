@@ -226,7 +226,6 @@ vector<size_t> Utils::dotAddUIntVectors(vector<size_t> &v1, vector<size_t> &v2)
         printf("error: v1 and v2 size mismatch!\n");
     }
 
-    size_t vec_size = 0;
     vector<size_t> *lv, *rv; // lv.size >= rv.size
     if (v1.size() < v2.size())
     {

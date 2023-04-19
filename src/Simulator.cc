@@ -62,6 +62,11 @@ int main(int argc, char *argv[])
     if (approach == "SM")
     {
         // stripe-merge-g
+        if (code.isValidForPM() == false)
+        {
+            printf("invalid parameters\n");
+            return 0;
+        }
 
         // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
         StripeBatch stripe_batch(0, code, settings);
@@ -85,7 +90,8 @@ int main(int argc, char *argv[])
         // stripe_batch.constructByRandomPick(stripes, random_generator);
         // stripe_batch.constructByCost(stripes);
         // stripe_batch.constructByCostAndSendLoad(stripes);
-        stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
+        // stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
+        stripe_batch.constructBySendLoadAndCostv2(stripes, random_generator);
         stripe_batch.print();
 
         BalancdConversion balanced_conversion;
@@ -101,23 +107,41 @@ int main(int argc, char *argv[])
     Utils::getLoadDist(code, settings, solutions, send_load_dist, recv_load_dist);
 
     // get bandwidth
-    size_t bw = 0;
+    size_t total_bandwidth = 0;
     for (auto item : send_load_dist)
     {
-        bw += item;
+        total_bandwidth += item;
     }
 
-    size_t min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
-    size_t max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
-    size_t min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-    size_t max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    // in-degree
+    // min, max
+    double min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
+    double max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
+    // mean, stddev, cv
+    double mean_in_degree = std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
+    double sq_sum_in_degree = std::inner_product(send_load_dist.begin(), send_load_dist.end(), send_load_dist.begin(), 0.0);
+    double stddev_in_degree = std::sqrt(sq_sum_in_degree / send_load_dist.size() - mean_in_degree * mean_in_degree);
+    double cv_in_degree = stddev_in_degree / mean_in_degree;
 
-    printf("=====================================================\n");
-    printf("%s send load distribution:, minimum_load: %ld, maximum_load: %ld\n", approach.c_str(), min_send_load, max_send_load);
+    // out-degree
+    // min max
+    double min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    double max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    // mean, stddev, cv
+    double mean_out_degree = std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
+    double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
+    double stddev_out_degree = std::sqrt(sq_sum_out_degree / recv_load_dist.size() - mean_out_degree * mean_out_degree);
+    double cv_out_degree = stddev_out_degree / mean_out_degree;
+
+    printf("================ Approach : %s =========================\n", approach.c_str());
+    printf("send load: ");
     Utils::printUIntVector(send_load_dist);
-    printf("%s recv load distribution:, minimum_load: %ld, maximum_load: %ld\n", approach.c_str(), min_recv_load, max_recv_load);
+    printf("recv load: ");
     Utils::printUIntVector(recv_load_dist);
-    printf("%s bandwidth: %ld\n", approach.c_str(), bw);
+
+    printf("send load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
+
+    printf("recv load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
 
     return 0;
 }

@@ -155,7 +155,7 @@ int StripeGroup::getMinParityMergingCost()
 
     int total_pm_cost = 0;
 
-    vector<size_t> selected_nodes;
+    vector<size_t> relocated_nodes = data_distribution;
 
     for (size_t parity_id = 0; parity_id < _code.m_f; parity_id++)
     {
@@ -167,15 +167,18 @@ int StripeGroup::getMinParityMergingCost()
         {
             pm_costs[node_id] = (int)(_code.alpha - parity_distribution[node_id]);
             // the node already stores a data block, need to relocate either the data block or the computed parity block to another node
-            if (data_distribution[node_id] > 0)
+            if (relocated_nodes[node_id] > 0)
             {
                 pm_costs[node_id] += 1;
             }
         }
 
-        // find minimum cost among all nodes
-        int min_pm_cost = *min_element(pm_costs.begin(), pm_costs.end());
-        total_pm_cost += min_pm_cost;
+        // find minimum cost node among all nodes
+        size_t min_cost_node = distance(pm_costs.begin(), min_element(pm_costs.begin(), pm_costs.end()));
+        total_pm_cost += pm_costs[min_cost_node];
+
+        // mark the node as relocated
+        relocated_nodes[min_cost_node] += 1;
     }
 
     return total_pm_cost;
@@ -525,8 +528,6 @@ int StripeGroup::appendMinCostSLTWithReEncoding(vector<size_t> &init_send_load_t
 
 vector<LoadTable> StripeGroup::getCandSLTs()
 {
-    size_t num_nodes = _settings.M;
-
     // candidate send load tables
     vector<LoadTable> cand_slts;
 
@@ -534,30 +535,29 @@ vector<LoadTable> StripeGroup::getCandSLTs()
     LoadTable pslt_dr = getPartialSLTWithDataRelocation();
 
     // send load table of re-encoding
-    LoadTable slt_re;
-    LoadTable pslt_re = getPartialSLTWithReEncoding();
+    LoadTable slt_re = getPartialSLTWithReEncoding();
+
     slt_re.approach = TransApproach::RE_ENCODE;
-    slt_re.lt = Utils::dotAddUIntVectors(pslt_dr.lt, pslt_re.lt);
-    slt_re.cost = pslt_dr.cost + pslt_re.cost;
+    slt_re.lt = Utils::dotAddUIntVectors(slt_re.lt, pslt_dr.lt);
+    slt_re.cost = pslt_dr.cost + slt_re.cost;
 
     cand_slts.push_back(slt_re);
 
     // send load table of parity merging
     if (_code.isValidForPM() == true)
     {
-        LoadTable slt_pm;
-        LoadTable pslt_pm = getPartialSLTWIthParityMerging();
-        slt_pm.lt = Utils::dotAddUIntVectors(pslt_dr.lt, pslt_pm.lt);
-        slt_pm.cost = pslt_dr.cost + pslt_pm.cost;
+        LoadTable slt_pm = getPartialSLTWIthParityMerging();
+        slt_pm.lt = Utils::dotAddUIntVectors(pslt_dr.lt, slt_pm.lt);
+        slt_pm.cost = pslt_dr.cost + slt_pm.cost;
 
-        cand_slts.push_back(slt_re);
+        cand_slts.push_back(slt_pm);
     }
 
-    for (auto &cand_slt : cand_slts)
-    {
-        printf("stripe group: %ld, approach: %ld, cost: %ld, send load table:\n", _id, cand_slt.approach, cand_slt.cost);
-        Utils::printUIntVector(cand_slt.lt);
-    }
+    // for (auto &cand_slt : cand_slts)
+    // {
+    //     printf("stripe group: %ld, approach: %ld, cost: %ld, send load table:\n", _id, cand_slt.approach, cand_slt.cost);
+    //     Utils::printUIntVector(cand_slt.lt);
+    // }
 
     return cand_slts;
 }
@@ -590,116 +590,69 @@ LoadTable StripeGroup::getPartialSLTWithDataRelocation()
 
 LoadTable StripeGroup::getPartialSLTWithReEncoding()
 {
+    // relocation cost not considered in here
 
     size_t num_nodes = _settings.M;
     LoadTable pslt_re;
     vector<size_t> data_distribution = getDataDistribution();
 
-    // sort number of data blocks by descending order
-    vector<size_t> sorted_idx = Utils::argsortUIntVector(data_distribution);
-    reverse(sorted_idx.begin(), sorted_idx.end());
-
-    // it targets at general parameters (for each of lambda_f converted stripes, we should collect k_f data blocks to a node, no matter where they come from)
-    for (size_t final_sid = 0; final_sid < _code.lambda_f; final_sid++)
+    pslt_re.approach = TransApproach::RE_ENCODE;
+    pslt_re.lt = data_distribution; // all data blocks should be sent
+    for (size_t node_id = 0; node_id < num_nodes; node_id++)
     {
-        // required number of data blocks at the compute node
-        size_t num_data_required = _code.k_f - data_distribution[sorted_idx[final_sid]];
-
-        // number of parity blocks that needs relocation from the compute node
-        size_t num_parity_reloc = _code.m_f;
-
-        total_re_cost += (int)(num_data_required + num_parity_reloc);
-
-        // printf("num_data_required: %d, num_parity_reloc: %d\n", num_data_required, num_parity_reloc);
+        pslt_re.cost += data_distribution[node_id];
     }
 
-    if (total_re_cost <= min_cost)
-    {
-        vector<size_t> cand_send_load_table = init_send_load_table;
-
-        for (size_t idx = 0; idx < num_nodes; idx++)
-        {
-            size_t sorted_node_id = sorted_idx[idx];
-            if (idx < _code.lambda_f)
-            {
-                // number of parity blocks that needs relocation from the compute node
-                size_t num_parity_reloc = _code.m_f;
-
-                cand_send_load_table[sorted_node_id] += num_parity_reloc;
-            }
-            else
-            {
-                // required number of data blocks at the compute node
-                size_t num_data_to_send = data_distribution[sorted_node_id];
-
-                cand_send_load_table[sorted_node_id] += num_data_to_send;
-            }
-        }
-
-        // append the candidate send load table to list
-        cand_send_load_tables.push_back(cand_send_load_table);
-    }
-
-    return total_re_cost;
+    return pslt_re;
 }
 
 LoadTable StripeGroup::getPartialSLTWIthParityMerging()
 {
-    // parity merging cost
+    LoadTable pslt_pm;
     if (_code.isValidForPM() == false)
     {
         printf("invalid code for parity merging\n");
-        return -1;
+        return pslt_pm;
     }
 
     size_t num_nodes = _settings.M;
-
-    // candidate load table
-    vector<size_t> cand_send_load_table = init_send_load_table;
-
     vector<size_t> data_distribution = getDataDistribution();
     vector<vector<size_t>> parity_distributions = getParityDistributions();
 
-    int total_pm_cost = 0;
+    // relocation cost not considered in here
+    pslt_pm.lt = vector<size_t>(num_nodes, 0);
+    pslt_pm.approach = TransApproach::PARITY_MERGE;
 
     for (size_t parity_id = 0; parity_id < _code.m_f; parity_id++)
     {
         // candidate nodes for parity merging
         vector<size_t> &parity_distribution = parity_distributions[parity_id];
-        vector<int> pm_costs(num_nodes, 0);
 
+        // check if there is a node with lambda parity blocks, if yes: then no need to do merging for the corresponding parity block
+        bool is_parity_aligned = false;
         for (size_t node_id = 0; node_id < num_nodes; node_id++)
         {
-            pm_costs[node_id] = (int)(_code.alpha - parity_distribution[node_id]);
-            // the node already stores a data block, need to relocate either the data block or the computed parity block to another node
-            if (data_distribution[node_id] > 0)
+
+            if (parity_distribution[node_id] == _code.lambda_i)
             {
-                pm_costs[node_id] += 1;
+                is_parity_aligned = true;
             }
         }
 
-        // find minimum cost among all nodes
-        int min_pm_cost = *min_element(pm_costs.begin(), pm_costs.end());
-
-        size_t min_pm_cost_node_id = distance(pm_costs.begin(), min_element(pm_costs.begin(), pm_costs.end()));
-
-        for (size_t node_id = 0; node_id < num_nodes; node_id++)
+        // if not aligned, need to do merging
+        if (is_parity_aligned == false)
         {
-            if (parity_distribution[node_id] > 0 && node_id != min_pm_cost_node_id)
+            for (size_t node_id = 0; node_id < num_nodes; node_id++)
             {
-                cand_send_load_table[node_id] += parity_distribution[node_id];
+
+                if (parity_distribution[node_id] >= 1)
+                {
+                    pslt_pm.lt[node_id] += 1;
+                    pslt_pm.cost += 1;
+                }
             }
         }
-        // the node already stores a data block, need to relocate either the data block or the computed parity block to another node
-        if (data_distribution[min_pm_cost_node_id] > 0)
-        {
-            cand_send_load_table[min_pm_cost_node_id] += 1;
-        }
-
-        total_pm_cost += min_pm_cost;
     }
 
-    cand_send_load_tables.push_back(cand_send_load_table);
-
-    return total_pm_cost;
+    return pslt_pm;
 }
