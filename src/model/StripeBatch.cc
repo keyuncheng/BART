@@ -31,6 +31,11 @@ size_t StripeBatch::getId()
     return _id;
 }
 
+vector<TransApproach> &StripeBatch::getSGApproaches()
+{
+    return _sg_approaches;
+}
+
 void StripeBatch::print()
 {
     printf("StripeBatch %ld:\n", _id);

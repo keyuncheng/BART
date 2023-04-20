@@ -1,0 +1,16 @@
+numstripeid	numstripe	codeid	code	numblk
+a	500	a	8_2	
+b	1000	a	8_2	
+c	2000	a	8_2	
+d	5000	a	8_2	
+e	10000	a	8_2	
+a	500	b	8_3	
+b	1000	b	8_3	
+c	2000	b	8_3	
+d	5000	b	8_3	
+e	10000	b	8_3	
+a	500	c	8_4	
+b	1000	c	8_4	
+c	2000	c	8_4	
+d	5000	c	8_4	
+e	10000	c	8_4	

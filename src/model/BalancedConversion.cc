@@ -1,4 +1,4 @@
-#include "BalancdConversion.hh"
+#include "BalancedConversion.hh"
 
 BalancdConversion::BalancdConversion(/* args */)
 {
@@ -292,4 +292,42 @@ void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch,
     // for (auto solution : solutions) {
     //     printf("stripe %ld, block %ld, from: %ld, to: %ld\n", solution[0], solution[1], solution[2], solution[3]);
     // }
+}
+
+void BalancdConversion::getSolutionForStripeBatchAssigned(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+{
+
+    // initialize solutions
+    solutions.clear();
+
+    // for (size_t app_cand_id = 0; app_cand_id < num_approach_candidates; app_cand_id++) {
+    //     Utils::printUIntVector(approach_candidates[app_cand_id]);
+    // }
+
+    // Step 2: construct model for each approach candidate, and find the one with minimum max-load
+
+    // Step 2.1: construct recv bipartite graph
+    vector<size_t> approaches;
+    for (auto &item : stripe_batch.getSGApproaches())
+    {
+        approaches.push_back((size_t)item);
+    }
+
+    RecvBipartite recv_bipartite;
+    recv_bipartite.constructStripeBatchWithApproaches(stripe_batch, approaches);
+
+    // recv_bipartite.print_block_metastore();
+    // recv_bipartite.print();
+
+    // find edges
+    vector<size_t> sol_edges;
+    // recv_bipartite.findEdgesWithApproachesGreedy(stripe_batch, sol_edges, random_generator);
+
+    // recv_bipartite.findEdgesWithApproachesGreedySorted(stripe_batch, sol_edges, random_generator);
+    recv_bipartite.findEdgesWithApproachesGreedySortedSAR(stripe_batch, sol_edges, random_generator);
+
+    // construct partial solutions from recv graph
+    vector<vector<size_t>> partial_solutions;
+    recv_bipartite.constructPartialSolutionFromEdges(stripe_batch, sol_edges, partial_solutions);
+    recv_bipartite.updatePartialSolutionFromRecvGraph(stripe_batch, partial_solutions, solutions);
 }

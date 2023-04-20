@@ -1,0 +1,23 @@
+node 	nodeid	type	typeid	num
+0	a	in	a	9
+1	b	in	a	5
+2	c	in	a	8
+3	d	in	a	8
+4	e	in	a	7
+5	f	in	a	7
+6	g	in	a	8
+7	h	in	a	7
+8	i	in	a	3
+9	j	in	a	4
+0	a	out	b	8
+1	b	out	b	8
+2	c	out	b	9
+3	d	out	b	7
+4	e	out	b	3
+5	f	out	b	6
+6	g	out	b	5
+7	h	out	b	5
+8	i	out	b	7
+9	j	out	b	8
+
+

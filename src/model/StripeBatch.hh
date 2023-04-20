@@ -34,6 +34,7 @@ public:
     ConvertibleCode &getCode();
     ClusterSettings &getClusterSettings();
     vector<StripeGroup> &getStripeGroups();
+    vector<TransApproach> &getSGApproaches();
 
     void print();
 };

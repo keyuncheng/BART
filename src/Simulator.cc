@@ -7,7 +7,7 @@
 #include "model/RecvBipartite.hh"
 #include "util/Utils.hh"
 #include "model/StripeMergeG.hh"
-#include "model/BalancdConversion.hh"
+#include "model/BalancedConversion.hh"
 
 int main(int argc, char *argv[])
 {
@@ -96,11 +96,33 @@ int main(int argc, char *argv[])
 
         BalancdConversion balanced_conversion;
 
-        balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
+        // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
 
         // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
 
         // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
+
+        balanced_conversion.getSolutionForStripeBatchAssigned(stripe_batch, solutions, random_generator);
+
+        size_t num_sg = stripe_batch.getStripeGroups().size();
+        size_t num_sg_re = 0;
+        size_t num_sg_pm = 0;
+        double re_percent = 0;
+        double pm_percent = 0;
+        for (auto &item : stripe_batch.getSGApproaches())
+        {
+            if (item == TransApproach::RE_ENCODE)
+            {
+                num_sg_re++;
+            }
+            else
+            {
+                num_sg_pm++;
+            }
+        }
+        re_percent = 1.0 * num_sg_re / num_sg;
+        pm_percent = 1.0 * num_sg_pm / num_sg;
+        printf("approach distribution: re-encoding: %ld / %ld (%f), parity merging: %ld / %ld (%f)\n", num_sg_re, num_sg, re_percent, num_sg_pm, num_sg, pm_percent);
     }
 
     // get load distribution
