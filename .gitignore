@@ -1,4 +1,5 @@
 build/
-
+*/*.log
+*/log.txt
 # Binaries
 Simulator
