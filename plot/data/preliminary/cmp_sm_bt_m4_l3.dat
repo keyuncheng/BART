@@ -1,0 +1,11 @@
+code_param_id	code_param	method_id	method	bandwidth	max_load
+a	(4,4),3	a	SM	689	37
+b	(5,4),3	a	SM	722	39
+c	(6,4),3	a	SM	684	33
+d	(8,4),3	a	SM	756	31
+e	(16,4),3	a	SM	841	23
+a	(4,4),3	b	BT	878	34
+b	(5,4),3	b	BT	930	32
+c	(6,4),3	b	BT	896	30
+d	(8,4),3	b	BT	964	25
+e	(16,4),3	b	BT	1048	16
