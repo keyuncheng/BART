@@ -8,33 +8,28 @@
 class StripeBatch
 {
 private:
-    ConvertibleCode _code;
-    ClusterSettings _settings;
-    vector<StripeGroup> _stripe_groups;
-    vector<TransApproach> _sg_approaches;
-    size_t _id;
-
-    vector<TransApproach> _enc_mtd_sg; // encoding method for each stripe group
-
 public:
-    StripeBatch(size_t id, ConvertibleCode &code, ClusterSettings &settings);
+    size_t id;
+    ConvertibleCode &code;
+    ClusterSettings &settings;
+    vector<Stripe> &stripes;
+    mt19937 &random_generator;
+
+    StripeGroup *enumerated_stripe_groups; // enumreated stripe groups
+    vector<StripeGroup *> stripe_groups;   // chosen stripe groups
+
+    StripeBatch(size_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_stripes);
     ~StripeBatch();
 
-    bool constructInSequence(vector<Stripe> &stripes);
-    bool constructByRandomPick(vector<Stripe> &stripes, mt19937 &random_generator);
-    bool constructByCost(vector<Stripe> &stripes);
+    bool constructSGInSequence();
+    bool constructSGByRandomPick();
+    bool constructSGByCost();
 
-    bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
+    // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 
-    bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
+    // bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
 
-    bool constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 &random_generator);
-
-    size_t getId();
-    ConvertibleCode &getCode();
-    ClusterSettings &getClusterSettings();
-    vector<StripeGroup> &getStripeGroups();
-    vector<TransApproach> &getSGApproaches();
+    // bool constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 &random_generator);
 
     void print();
 };

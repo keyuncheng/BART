@@ -18,6 +18,62 @@ public:
     static mt19937 createRandomGenerator();
     static size_t randomUInt(size_t l, size_t r, mt19937 &random_generator);
 
+    template <typename T>
+    static void printVector(T &vec)
+    {
+        for (T &item : vec)
+        {
+            if (typeid(T) == typeid(u16string))
+            {
+                printf("%u ", item);
+            }
+            else if (typeid(T) == typeid(vector<size_t>))
+            {
+                printf("%ld ", item);
+            }
+            else if (typeid(T) == typeid(vector<int>))
+            {
+                printf("%d ", item);
+            }
+        }
+        printf("\n");
+    }
+
+    template <typename T>
+    static vector<size_t> argsortVector(T &vec)
+    {
+        const size_t vec_len(vec.size());
+        std::vector<size_t> vec_index(vec_len, 0);
+        for (size_t i = 0; i < vec_len; i++)
+        {
+            vec_index[i] = i;
+        }
+
+        std::sort(vec_index.begin(), vec_index.end(),
+                  [&vec](size_t pos1, size_t pos2)
+                  { return (vec[pos1] < vec[pos2]); });
+
+        return vec_index;
+    }
+
+    template <typename T>
+    static T lcm(T a, T b)
+    {
+
+        T max_num = max(a, b);
+
+        while (1)
+        {
+            if (max_num % a == 0 && max_num % b == 0)
+            {
+                break;
+            }
+            max_num++;
+        }
+
+        return max_num;
+    }
+
     static void printUIntVector(vector<size_t> &vec);
     static void printUIntArray(size_t *arr, size_t len);
     static void printUIntMatrix(size_t **matrix, size_t r, size_t c);

@@ -2,40 +2,41 @@
 #define __CONVERTIBLE_CODE_HH__
 
 #include "../include/include.hh"
+#include "../util/Utils.hh"
 
 class ConvertibleCode
 {
 private:
     /* data */
 public:
-
-        // input ec parameters (k, m)
-    size_t k_i;
-    size_t m_i;
-    size_t n_i;
+    // input ec parameters (k, m)
+    uint8_t k_i;
+    uint8_t m_i;
+    uint8_t n_i;
 
     // output ec paramters (k', m')
-    size_t k_f;
-    size_t m_f;
-    size_t n_f;
+    uint8_t k_f;
+    uint8_t m_f;
+    uint8_t n_f;
 
     // k' = alpha k + beta
-    size_t alpha;
-    size_t beta;
-    
+    uint8_t alpha;
+    uint8_t beta;
+
     // theta = lcm(k, k')
-    size_t theta;
-    size_t lambda_i;
-    size_t lambda_f;
+    uint8_t theta;
+    uint8_t lambda_i;
+    uint8_t lambda_f;
 
     ConvertibleCode(/* args */);
-    ConvertibleCode(size_t k_in, size_t m_in, size_t k_out, size_t m_out);
+    ConvertibleCode(uint8_t k_in, uint8_t m_in, uint8_t k_out, uint8_t m_out);
     ~ConvertibleCode();
+    void print();
 
     bool isValidForPM();
 
 private:
-    size_t lcm(size_t a, size_t b);
+    uint8_t lcm(uint8_t a, uint8_t b);
 };
 
 #endif // __CONVERTIBLE_CODE_HH__

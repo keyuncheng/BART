@@ -3,9 +3,11 @@
 #include "util/StripeGenerator.hh"
 #include "util/Utils.hh"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
-    if (argc != 8) {
+    if (argc != 8)
+    {
         printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file");
         return -1;
     }
@@ -27,7 +29,8 @@ int main(int argc, char *argv[]) {
     settings.M = M;
 
     // check the number of stripes are valid
-    if (Utils::isParamValid(code, settings) == false) {
+    if (Utils::isParamValid(code, settings) == false)
+    {
         printf("invalid parameters\n");
         return -1;
     }
@@ -35,9 +38,14 @@ int main(int argc, char *argv[]) {
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
 
-
     // generate random stripes, and store in the placement file
-    vector<Stripe> stripes = stripe_generator.generateRandomStripes(code, settings, random_generator);
+    vector<Stripe> stripes;
+    stripe_generator.generateRandomStripes(code, settings, random_generator, stripes);
+
+    for (auto &stripe : stripes)
+    {
+        stripe.print();
+    }
     stripe_generator.storeStripes(stripes, placement_file);
 
     printf("finished generating %ld (%ld, %ld) stripes in %ld storage nodes", settings.N, code.k_i, code.m_i, settings.M);
