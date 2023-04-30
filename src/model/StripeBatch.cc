@@ -1,6 +1,6 @@
 #include "StripeBatch.hh"
 
-StripeBatch::StripeBatch(size_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_stripes) : id(_id), code(_code), settings(_settings), random_generator(_random_generator), stripes(_stripes)
+StripeBatch::StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_sb_stripes) : id(_id), code(_code), settings(_settings), random_generator(_random_generator), sb_stripes(_sb_stripes)
 {
 }
 
@@ -10,232 +10,203 @@ StripeBatch::~StripeBatch()
 
 void StripeBatch::print()
 {
-    printf("StripeBatch %ld:\n", id);
-    for (auto &stripe_group : stripe_groups)
+    printf("StripeBatch %u:\n", id);
+    for (auto &item : selected_sgs)
     {
-        stripe_group.print();
+        u32string token = item.first;
+        for (uint32_t stripe_id : token)
+        {
+            printf("%u ", stripe_id);
+        }
+        printf("\n");
     }
 }
 
-bool StripeBatch::constructSGInSequence()
+void StripeBatch::constructSGInSequence()
 {
-    size_t num_stripes = settings.N;
-    size_t num_sgs = num_stripes / code.lambda_i;
+    uint32_t num_sgs = settings.num_stripes / code.lambda_i;
 
-    enumerated_stripe_groups = (StripeGroup *)malloc(num_sgs * sizeof(StripeGroup)); // only enumerate num_sgs stripe groups
+    selected_sgs.clear();
 
-    for (size_t sg_id = 0, stripe_id = 0; sg_id < num_sgs; sg_id++)
+    // initialize token
+    for (uint32_t sg_id = 0; sg_id < num_sgs; sg_id++)
     {
-        vector<Stripe *> stripes_in_group(code.lambda_i, NULL);
+        u32string token(code.lambda_i, 0);
+        vector<Stripe *> sg_stripes(code.lambda_i, NULL);
         for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
-            stripes_in_group[stripe_id] = &stripes[sg_id * code.lambda_i + stripe_id];
+            uint32_t sb_stripe_id = sg_id * code.lambda_i + stripe_id;
+            token[stripe_id] = sb_stripe_id;
+            sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-
-        // TODO: make stripe group with smaller memory!!!!
-        enumerated_stripe_groups[sg_id] = StripeGroup()
+        StripeGroup *sg = new StripeGroup(sg_id, code, settings, sg_stripes);
+        selected_sgs[token] = sg;
     }
-
-    // put stripes sequentially into stripe groups
-    for (size_t stripe_id = 0, sg_id = 0; stripe_id < stripes.size(); stripe_id++)
-    {
-
-        // add the stripe into stripe group
-        Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(&stripe);
-
-        if (stripes_in_group.size() == code.lambda_i)
-        {
-            StripeGroup stripe_group(sg_id, code, _settings, stripes_in_group);
-            _stripe_groups.push_back(stripe_group);
-            sg_id++;
-            stripes_in_group.clear();
-        }
-    }
-
-    return true;
 }
 
-bool StripeBatch::constructSGByRandomPick(mt19937 &random_generator)
+void StripeBatch::constructSGByRandomPick()
 {
-    size_t num_stripes = stripes.size();
+    uint32_t num_sgs = settings.num_stripes / code.lambda_i;
 
-    // check if the number of stripes is a multiple of lambda_i
-    if (num_stripes % _code.lambda_i != 0)
+    selected_sgs.clear();
+
+    // shuffle indices of stripes
+    vector<uint32_t> shuff_sb_stripe_idxs(sb_stripes.size(), 0);
+    for (uint32_t stripe_id = 0; stripe_id < sb_stripes.size(); stripe_id++)
     {
-        printf("invalid parameters\n");
-        return false;
+        shuff_sb_stripe_idxs[stripe_id] = stripe_id;
     }
 
-    // mark if the stripes are selected
-    vector<bool> stripes_selected(num_stripes, false);
+    shuffle(shuff_sb_stripe_idxs.begin(), shuff_sb_stripe_idxs.end(), random_generator);
 
-    vector<Stripe *> stripes_in_group;
-    size_t sg_id = 0; // stripe group id
-
-    // put stripes randomly into stripe groups
-    for (size_t idx = 0; idx < num_stripes; idx++)
+    // initialize token
+    for (uint32_t sg_id = 0; sg_id < num_sgs; sg_id++)
     {
-
-        // randomly pick a non-selected stripe into group
-        size_t stripe_id = INVALID_ID;
-        while (true)
+        u32string token(code.lambda_i, 0);
+        vector<Stripe *> sg_stripes(code.lambda_i, NULL);
+        for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
-            stripe_id = Utils::randomUInt(0, num_stripes - 1, random_generator);
-            if (stripes_selected[stripe_id] == false)
-            {
-                stripes_selected[stripe_id] = true;
-                break;
-            }
+            // get shuffled stripe index
+            uint32_t sb_stripe_id = shuff_sb_stripe_idxs[sg_id * code.lambda_i + stripe_id];
+            token[stripe_id] = sb_stripe_id;
+            sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-
-        // add the stripe into stripe group
-        Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(&stripe);
-
-        if (stripes_in_group.size() == _code.lambda_i)
-        {
-            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
-            _stripe_groups.push_back(stripe_group);
-            sg_id++;
-            stripes_in_group.clear();
-        }
+        StripeGroup *sg = new StripeGroup(sg_id, code, settings, sg_stripes);
+        selected_sgs[token] = sg;
     }
-
-    return true;
 }
 
-bool StripeBatch::constructSGByCost(vector<Stripe> &stripes)
-{
-    size_t num_stripes = stripes.size();
+// void StripeBatch::constructSGByCost()
+// {
+//     size_t num_stripes = stripes.size();
 
-    // check if the number of stripes is a multiple of lambda_i
-    if (num_stripes % _code.lambda_i != 0)
-    {
-        printf("invalid parameters\n");
-        return false;
-    }
+//     // check if the number of stripes is a multiple of lambda_i
+//     if (num_stripes % _code.lambda_i != 0)
+//     {
+//         printf("invalid parameters\n");
+//         return false;
+//     }
 
-    // enumerate all possible stripe groups
-    vector<size_t> comb_ids;
-    vector<vector<size_t>> combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
-    size_t num_candidate_sgs = combinations.size();
+//     // enumerate all possible stripe groups
+//     vector<size_t> comb_ids;
+//     vector<vector<size_t>> combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
+//     size_t num_candidate_sgs = combinations.size();
 
-    vector<int> candidate_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
+//     vector<int> candidate_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
 
-    vector<vector<size_t>> overlapped_cand_sgs(num_stripes, vector<size_t>()); // <stripe_id, overlapped_stripe_groups>
+//     vector<vector<size_t>> overlapped_cand_sgs(num_stripes, vector<size_t>()); // <stripe_id, overlapped_stripe_groups>
 
-    for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
-    {
-        comb_ids.push_back(cand_id);
+//     for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
+//     {
+//         comb_ids.push_back(cand_id);
 
-        // construct candidate stripe group
-        vector<size_t> &comb = combinations[cand_id];
+//         // construct candidate stripe group
+//         vector<size_t> &comb = combinations[cand_id];
 
-        // record overlapped candidate stripe_groups
-        for (auto stripe_id : comb)
-        {
-            overlapped_cand_sgs[stripe_id].push_back(cand_id);
-        }
+//         // record overlapped candidate stripe_groups
+//         for (auto stripe_id : comb)
+//         {
+//             overlapped_cand_sgs[stripe_id].push_back(cand_id);
+//         }
 
-        vector<Stripe *> stripes_in_group;
-        for (size_t sid = 0; sid < _code.lambda_i; sid++)
-        {
-            stripes_in_group.push_back(&stripes[comb[sid]]);
-        }
+//         vector<Stripe *> stripes_in_group;
+//         for (size_t sid = 0; sid < _code.lambda_i; sid++)
+//         {
+//             stripes_in_group.push_back(&stripes[comb[sid]]);
+//         }
 
-        StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
+//         StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
 
-        // get transition cost
-        int transition_cost = candidate_sg.getMinTransitionCost();
-        candidate_sgs_costs[cand_id] = transition_cost;
-    }
+//         // get transition cost
+//         int transition_cost = candidate_sg.getMinTransitionCost();
+//         candidate_sgs_costs[cand_id] = transition_cost;
+//     }
 
-    printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
-    // for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
-    // {
-    //     // printf("candidate_id: %ld, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
-    //     // Utils::printUIntVector(combinations[cand_id]);
-    //     printf("stripe (%ld, %ld) merge cost: %d\n", combinations[cand_id][0], combinations[cand_id][1], candidate_sgs_costs[cand_id]);
-    // }
+//     printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
+//     // for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
+//     // {
+//     //     // printf("candidate_id: %ld, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
+//     //     // Utils::printUIntVector(combinations[cand_id]);
+//     //     printf("stripe (%ld, %ld) merge cost: %d\n", combinations[cand_id][0], combinations[cand_id][1], candidate_sgs_costs[cand_id]);
+//     // }
 
-    vector<size_t> sorted_stripe_ids; // store sorted stripe ids
+//     vector<size_t> sorted_stripe_ids; // store sorted stripe ids
 
-    // record currently valid candidates; initialize as all candidate sgs
-    vector<bool> is_cand_valid(num_candidate_sgs, true);
-    vector<size_t> cur_valid_cand_ids = comb_ids;
-    vector<int> cur_valid_cand_costs = candidate_sgs_costs;
+//     // record currently valid candidates; initialize as all candidate sgs
+//     vector<bool> is_cand_valid(num_candidate_sgs, true);
+//     vector<size_t> cur_valid_cand_ids = comb_ids;
+//     vector<int> cur_valid_cand_costs = candidate_sgs_costs;
 
-    size_t num_sgs = num_stripes / _code.lambda_i;
-    for (size_t sg_id = 0; sg_id < num_sgs; sg_id++)
-    {
-        // get remaining valid combinations
-        vector<size_t> valid_cand_ids;
-        vector<int> valid_cand_costs;
+//     size_t num_sgs = num_stripes / _code.lambda_i;
+//     for (size_t sg_id = 0; sg_id < num_sgs; sg_id++)
+//     {
+//         // get remaining valid combinations
+//         vector<size_t> valid_cand_ids;
+//         vector<int> valid_cand_costs;
 
-        // filter out invalid combinations
-        for (size_t idx = 0; idx < cur_valid_cand_ids.size(); idx++)
-        {
-            size_t cand_id = cur_valid_cand_ids[idx];
-            if (is_cand_valid[cand_id] == true)
-            {
-                valid_cand_ids.push_back(cand_id);
-                valid_cand_costs.push_back(candidate_sgs_costs[cand_id]);
-            }
-        }
+//         // filter out invalid combinations
+//         for (size_t idx = 0; idx < cur_valid_cand_ids.size(); idx++)
+//         {
+//             size_t cand_id = cur_valid_cand_ids[idx];
+//             if (is_cand_valid[cand_id] == true)
+//             {
+//                 valid_cand_ids.push_back(cand_id);
+//                 valid_cand_costs.push_back(candidate_sgs_costs[cand_id]);
+//             }
+//         }
 
-        // get stripe group with minimum transition cost
-        size_t min_cost_id = distance(valid_cand_costs.begin(), min_element(valid_cand_costs.begin(), valid_cand_costs.end()));
-        size_t min_cost_cand_id = valid_cand_ids[min_cost_id];
-        vector<size_t> &min_cost_comb = combinations[min_cost_cand_id];
+//         // get stripe group with minimum transition cost
+//         size_t min_cost_id = distance(valid_cand_costs.begin(), min_element(valid_cand_costs.begin(), valid_cand_costs.end()));
+//         size_t min_cost_cand_id = valid_cand_ids[min_cost_id];
+//         vector<size_t> &min_cost_comb = combinations[min_cost_cand_id];
 
-        for (auto stripe_id : min_cost_comb)
-        {
-            // add stripes from the selected stripe group to sorted stripes
-            sorted_stripe_ids.push_back(stripe_id);
+//         for (auto stripe_id : min_cost_comb)
+//         {
+//             // add stripes from the selected stripe group to sorted stripes
+//             sorted_stripe_ids.push_back(stripe_id);
 
-            // mark overlapped candidate stripe groups as invalid
-            for (auto cand_sg_ids : overlapped_cand_sgs[stripe_id])
-            {
-                is_cand_valid[cand_sg_ids] = false;
-            }
-        }
+//             // mark overlapped candidate stripe groups as invalid
+//             for (auto cand_sg_ids : overlapped_cand_sgs[stripe_id])
+//             {
+//                 is_cand_valid[cand_sg_ids] = false;
+//             }
+//         }
 
-        // update currently valid combinations
-        cur_valid_cand_ids = valid_cand_ids;
-        cur_valid_cand_costs = valid_cand_costs;
+//         // update currently valid combinations
+//         cur_valid_cand_ids = valid_cand_ids;
+//         cur_valid_cand_costs = valid_cand_costs;
 
-        // summarize current pick
-        printf("pick candidate_id: %ld, cost: %d, remaining number of candidates: (%ld / %ld)\n", min_cost_cand_id, valid_cand_costs[min_cost_id], cur_valid_cand_ids.size(), num_candidate_sgs);
-    }
+//         // summarize current pick
+//         printf("pick candidate_id: %ld, cost: %d, remaining number of candidates: (%ld / %ld)\n", min_cost_cand_id, valid_cand_costs[min_cost_id], cur_valid_cand_ids.size(), num_candidate_sgs);
+//     }
 
-    // if (sorted_stripe_ids.size() != num_stripes) {
-    //     printf("error: invalid sorted_stripe_ids\n");
-    //     return false;
-    // }
+//     // if (sorted_stripe_ids.size() != num_stripes) {
+//     //     printf("error: invalid sorted_stripe_ids\n");
+//     //     return false;
+//     // }
 
-    // 2. put stripes by sorted stripe ids (by cost) into stripe groups
-    vector<Stripe *> stripes_in_group;
-    size_t sg_id = 0; // stripe group id
-    for (size_t idx = 0; idx < num_stripes; idx++)
-    {
+//     // 2. put stripes by sorted stripe ids (by cost) into stripe groups
+//     vector<Stripe *> stripes_in_group;
+//     size_t sg_id = 0; // stripe group id
+//     for (size_t idx = 0; idx < num_stripes; idx++)
+//     {
 
-        size_t stripe_id = sorted_stripe_ids[idx];
+//         size_t stripe_id = sorted_stripe_ids[idx];
 
-        // add the stripe into stripe group
-        Stripe &stripe = stripes[stripe_id];
-        stripes_in_group.push_back(&stripe);
+//         // add the stripe into stripe group
+//         Stripe &stripe = stripes[stripe_id];
+//         stripes_in_group.push_back(&stripe);
 
-        if (stripes_in_group.size() == (size_t)_code.lambda_i)
-        {
-            StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
-            _stripe_groups.push_back(stripe_group);
-            sg_id++;
-            stripes_in_group.clear();
-        }
-    }
+//         if (stripes_in_group.size() == (size_t)_code.lambda_i)
+//         {
+//             StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
+//             _stripe_groups.push_back(stripe_group);
+//             sg_id++;
+//             stripes_in_group.clear();
+//         }
+//     }
 
-    return true;
+//     return true;
 }
 
 // bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator)

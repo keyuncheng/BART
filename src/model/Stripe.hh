@@ -11,7 +11,7 @@ class Stripe
 private:
 public:
     u16string indices; // stripe length: n
-    size_t id;
+    uint32_t id;
 
     Stripe();
     ~Stripe();

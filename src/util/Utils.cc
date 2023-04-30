@@ -10,28 +10,6 @@ Utils::~Utils()
 {
 }
 
-bool Utils::isParamValid(const ConvertibleCode &code, const ClusterSettings &settings)
-{
-
-    if (code.k_i == 0 || code.m_i == 0 || code.k_f == 0 || code.m_f == 0)
-    {
-        return false;
-    }
-
-    if (settings.M == 0 || settings.N == 0)
-    {
-        return false;
-    }
-
-    size_t num_stripes = settings.N;
-    if (num_stripes % code.lambda_i != 0)
-    {
-        return false;
-    }
-
-    return true;
-}
-
 mt19937 Utils::createRandomGenerator()
 {
     std::random_device rand_dev;
@@ -188,36 +166,35 @@ vector<vector<size_t>> Utils::getPermutation(size_t n, size_t k)
     return ans;
 }
 
-void Utils::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist)
-{
-    size_t num_nodes = settings.M;
+// void Utils::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist)
+// {
 
-    // format for each solution: <stripe_id, block_id, from_node, to_node>
+//     // format for each solution: <stripe_id, block_id, from_node, to_node>
 
-    // initialize send_load_dist and recv_load_dist
-    send_load_dist.resize(num_nodes);
-    for (auto &item : send_load_dist)
-    {
-        item = 0;
-    }
-    recv_load_dist.resize(num_nodes);
-    for (auto &item : recv_load_dist)
-    {
-        item = 0;
-    }
+//     // initialize send_load_dist and recv_load_dist
+//     send_load_dist.resize(settings.num_nodes);
+//     for (auto &item : send_load_dist)
+//     {
+//         item = 0;
+//     }
+//     recv_load_dist.resize(settings.num_nodes);
+//     for (auto &item : recv_load_dist)
+//     {
+//         item = 0;
+//     }
 
-    // record loads for each node_id
-    for (auto &solution : solutions)
-    {
-        size_t from_node_id = solution[2];
-        size_t to_node_id = solution[3];
+//     // record loads for each node_id
+//     for (auto &solution : solutions)
+//     {
+//         size_t from_node_id = solution[2];
+//         size_t to_node_id = solution[3];
 
-        send_load_dist[from_node_id] += 1;
-        recv_load_dist[to_node_id] += 1;
-    }
+//         send_load_dist[from_node_id] += 1;
+//         recv_load_dist[to_node_id] += 1;
+//     }
 
-    return;
-}
+//     return;
+// }
 
 vector<size_t> Utils::dotAddUIntVectors(vector<size_t> &v1, vector<size_t> &v2)
 {

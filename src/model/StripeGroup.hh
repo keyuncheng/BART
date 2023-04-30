@@ -34,25 +34,22 @@ private:
     void initDataDist();
     void initParityDists();
 
-    void initMinTransBW();
+    pair<EncodeMethod, uint8_t> getMinTransBW();
     uint8_t getDataRelocBW();
     uint8_t getMinREBW();
     uint8_t getMinPMBW();
 
 public:
-    size_t id;
+    uint64_t id;
     ConvertibleCode &code;
     ClusterSettings &settings;
-    vector<Stripe *> stripes;
+    vector<Stripe *> sg_stripes;
 
     // block distributions (data and parity)
     u16string data_dist;
     vector<u16string> parity_dists;
 
-    uint8_t min_bw;                 // mininum bandwidth
-    EncodeMethod min_bw_enc_method; // encoding method for mininum bandwidth
-
-    StripeGroup(size_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_stripes);
+    StripeGroup(uint64_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
     ~StripeGroup();
     void print();
 

@@ -10,20 +10,18 @@ StripeGenerator::~StripeGenerator()
 
 void StripeGenerator::generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes)
 {
-    uint16_t num_nodes = settings.M;
-    size_t num_stripes = settings.N;
 
     // init stripes
     stripes.clear();
-    stripes.assign(num_stripes, Stripe());
+    stripes.assign(settings.num_stripes, Stripe());
 
-    u16string nodes(code.n_i, 0);
-    for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+    u16string nodes(settings.num_nodes, 0);
+    for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
         nodes[node_id] = node_id;
     }
 
-    for (size_t stripe_id = 0; stripe_id < num_stripes; stripe_id++)
+    for (uint stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
     {
         // set stripe
         Stripe &stripe = stripes[stripe_id];
@@ -62,7 +60,6 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
 
 bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes)
 {
-    size_t num_stripes = settings.N;
     ifstream ifs(placement_file.c_str());
 
     if (ifs.fail())
@@ -73,10 +70,10 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
 
     // init stripes
     stripes.clear();
-    stripes.assign(num_stripes, Stripe());
+    stripes.assign(settings.num_stripes, Stripe());
 
     string line;
-    size_t stripe_id = 0;
+    uint stripe_id = 0;
     while (getline(ifs, line))
     {
         // set stripe

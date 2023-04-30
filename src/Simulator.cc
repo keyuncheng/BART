@@ -2,7 +2,7 @@
 #include "model/ConvertibleCode.hh"
 #include "model/ClusterSettings.hh"
 #include "util/StripeGenerator.hh"
-// #include "model/StripeBatch.hh"
+#include "model/StripeBatch.hh"
 // #include "model/StripeGroup.hh"
 // #include "model/RecvBipartite.hh"
 // #include "util/Utils.hh"
@@ -14,16 +14,16 @@ int main(int argc, char *argv[])
 
     if (argc != 9)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f N M placement_file approach[BT/SM]");
+        printf("usage: ./Simulator k_i m_i k_f m_f M N placement_file approach[BT/SM]");
         return -1;
     }
 
-    size_t k_i = atoi(argv[1]);
-    size_t m_i = atoi(argv[2]);
-    size_t k_f = atoi(argv[3]);
-    size_t m_f = atoi(argv[4]);
-    size_t N = atoi(argv[5]);
-    size_t M = atoi(argv[6]);
+    uint8_t k_i = atoi(argv[1]);
+    uint8_t m_i = atoi(argv[2]);
+    uint8_t k_f = atoi(argv[3]);
+    uint8_t m_f = atoi(argv[4]);
+    uint16_t num_nodes = atoi(argv[5]);
+    uint32_t num_stripes = atoi(argv[6]);
     string placement_file = argv[7];
     string approach = argv[8];
 
@@ -32,22 +32,13 @@ int main(int argc, char *argv[])
 
     // initialize code
     ConvertibleCode code(k_i, m_i, k_f, m_f);
-    ClusterSettings settings;
-    settings.N = N;
-    settings.M = M;
+    ClusterSettings settings(num_nodes, num_stripes);
 
     // check the number of stripes are valid
-    if (Utils::isParamValid(code, settings) == false)
+    if (code.isValidForPM() == false || settings.isParamValid(code) == false)
     {
         printf("invalid parameters\n");
         return -1;
-    }
-
-    // currently, we only support merging
-    if (code.isValidForPM() == false)
-    {
-        printf("invalid parameters\n");
-        return 0;
     }
 
     // stripe generator
@@ -57,11 +48,11 @@ int main(int argc, char *argv[])
     vector<Stripe> stripes;
     stripe_generator.loadStripes(code, settings, placement_file, stripes);
 
-    printf("stripes:\n");
-    for (size_t i = 0; i < stripes.size(); i++)
-    {
-        stripes[i].print();
-    }
+    // printf("stripes:\n");
+    // for (auto &stripe : stripes)
+    // {
+    //     stripe.print();
+    // }
 
     // solutions and load distribution
     vector<vector<size_t>> solutions;
@@ -71,13 +62,15 @@ int main(int argc, char *argv[])
     {
 
         // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
-        StripeBatch stripe_batch(0, code, settings);
-        stripe_batch.constructByCost(stripes);
+        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
+        // stripe_batch.constructSGInSequence();
+        stripe_batch.constructSGByRandomPick();
+        // stripe_batch.constructSGByCost();
         stripe_batch.print();
 
-        // Step 2: generate transition solutions from all stripe groups
-        StripeMergeG stripe_merge_g;
-        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
+        // // Step 2: generate transition solutions from all stripe groups
+        // StripeMergeG stripe_merge_g;
+        // stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
     }
     // else if (approach == "BT")
     // {

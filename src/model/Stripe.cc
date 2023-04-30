@@ -9,7 +9,6 @@ Stripe::~Stripe()
 }
 void Stripe::print()
 {
-    printf("Stripe %ld, indices: ", id);
+    printf("Stripe %u, indices: ", id);
     Utils::printVector(indices);
-    printf("\n");
 }

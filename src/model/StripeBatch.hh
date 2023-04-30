@@ -9,21 +9,22 @@ class StripeBatch
 {
 private:
 public:
-    size_t id;
+    uint8_t id;
     ConvertibleCode &code;
     ClusterSettings &settings;
-    vector<Stripe> &stripes;
     mt19937 &random_generator;
+    vector<Stripe> &sb_stripes;
 
-    StripeGroup *enumerated_stripe_groups; // enumreated stripe groups
-    vector<StripeGroup *> stripe_groups;   // chosen stripe groups
+    // step 1: stripe group selection
 
-    StripeBatch(size_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_stripes);
+    map<u32string, StripeGroup *> selected_sgs; // selected stripe groups in order <token, StripeGroup>
+
+    StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_sb_stripes);
     ~StripeBatch();
 
-    bool constructSGInSequence();
-    bool constructSGByRandomPick();
-    bool constructSGByCost();
+    void constructSGInSequence();
+    void constructSGByRandomPick();
+    void constructSGByCost();
 
     // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 

@@ -1,10 +1,9 @@
 #include "StripeGroup.hh"
 
-StripeGroup::StripeGroup(size_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_stripes) : id(_id), code(_code), settings(_settings), stripes(_stripes)
+StripeGroup::StripeGroup(uint64_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes) : id(_id), code(_code), settings(_settings), sg_stripes(_sg_stripes)
 {
     initDataDist();
     initParityDists();
-    initMinTransBW();
 }
 
 StripeGroup::~StripeGroup()
@@ -14,13 +13,13 @@ StripeGroup::~StripeGroup()
 void StripeGroup::print()
 {
     printf("Stripe group %ld: [", id);
-    for (auto stripe : stripes)
+    for (auto stripe : sg_stripes)
     {
-        printf("%ld, ", stripe->id);
+        printf("%u, ", stripe->id);
     }
     printf("]\n");
 
-    for (auto stripe : stripes)
+    for (auto stripe : sg_stripes)
     {
         stripe->print();
     }
@@ -28,12 +27,11 @@ void StripeGroup::print()
 
 void StripeGroup::initDataDist()
 {
-    uint16_t num_nodes = settings.M;
 
     // init data distribution
-    data_dist.assign(num_nodes, 0);
+    data_dist.assign(settings.num_nodes, 0);
 
-    for (auto &stripe : stripes)
+    for (auto &stripe : sg_stripes)
     {
         for (uint8_t block_id = 0; block_id < code.k_i; block_id++)
         {
@@ -44,15 +42,14 @@ void StripeGroup::initDataDist()
 
 void StripeGroup::initParityDists()
 {
-    uint16_t num_nodes = settings.M;
 
     // init data distribution
     parity_dists.clear();
-    parity_dists.assign(code.m_i, u16string(num_nodes, 0));
+    parity_dists.assign(code.m_i, u16string(settings.num_nodes, 0));
 
     for (uint8_t parity_id = 0; parity_id < code.m_i; parity_id++)
     {
-        for (auto &stripe : stripes)
+        for (auto &stripe : sg_stripes)
         {
             uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
             parity_dists[parity_id][parity_node_id] += 1;
@@ -60,7 +57,7 @@ void StripeGroup::initParityDists()
     }
 }
 
-void StripeGroup::initMinTransBW()
+pair<EncodeMethod, uint8_t> StripeGroup::getMinTransBW()
 {
     // data relocation cost
     uint8_t data_reloc_bw = getDataRelocBW();
@@ -83,19 +80,16 @@ void StripeGroup::initMinTransBW()
         }
     }
 
-    // update min bw
-    min_bw = data_reloc_bw + parity_update_bw;
-    min_bw_enc_method = enc_method;
+    return pair<EncodeMethod, uint8_t>(enc_method, data_reloc_bw + parity_update_bw);
 }
 
 uint8_t StripeGroup::getDataRelocBW()
 {
     // it targets at general parameters (meaning that for a converted group, there must exist no more than lambda_f data blocks in a node)
-    uint16_t num_nodes = settings.M;
 
     uint8_t data_reloc_bw = 0;
 
-    for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+    for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
         if (data_dist[node_id] > code.lambda_f)
         {
@@ -126,9 +120,6 @@ uint8_t StripeGroup::getMinREBW()
 
 uint8_t StripeGroup::getMinPMBW()
 {
-
-    uint16_t num_nodes = settings.M;
-
     uint8_t sum_pm_bw = 0;
     u16string relocated_nodes = data_dist; // mark if nodes are relocated
 
@@ -140,7 +131,7 @@ uint8_t StripeGroup::getMinPMBW()
         uint16_t min_bw_node = UINT16_MAX;
         uint8_t min_bw = UINT8_MAX;
 
-        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+        for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
         {
             // parity generation bw + parity relocation bw (check if the node already stores a block)
             uint8_t pm_bw = (code.alpha - parity_dist[node_id]) + (relocated_nodes[node_id] > 0 ? 1 : 0);
