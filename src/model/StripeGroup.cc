@@ -57,30 +57,31 @@ void StripeGroup::initParityDists()
     }
 }
 
-pair<EncodeMethod, uint8_t> StripeGroup::getMinTransBW()
+uint8_t StripeGroup::getMinTransBW()
 {
     // data relocation cost
     uint8_t data_reloc_bw = getDataRelocBW();
     uint8_t parity_update_bw = 0;
 
-    // approach 1: re-encoding bandwidth
-    uint8_t re_bw = getMinREBW();
-    EncodeMethod enc_method = EncodeMethod::RE_ENCODE;
-    parity_update_bw = re_bw;
+    // // approach 1: re-encoding bandwidth
+    // uint8_t re_bw = getMinREBW();
+    // parity_update_bw = re_bw;
 
-    // approach 2: parity merging
-    if (code.isValidForPM() == true)
-    {
-        uint8_t pm_bw = getMinPMBW();
+    // // approach 2: parity merging
+    // if (code.isValidForPM() == true)
+    // {
+    //     uint8_t pm_bw = getMinPMBW();
 
-        if (pm_bw <= re_bw)
-        {
-            parity_update_bw = pm_bw;
-            enc_method = EncodeMethod::PARITY_MERGE;
-        }
-    }
+    //     if (pm_bw <= re_bw)
+    //     {
+    //         parity_update_bw = pm_bw;
+    //     }
+    // }
 
-    return pair<EncodeMethod, uint8_t>(enc_method, data_reloc_bw + parity_update_bw);
+    // NOTE: here we assume that bandwidth(pm) <= bandwith (re), thus we calculate pm bandwidth only
+    parity_update_bw = getMinPMBW();
+
+    return data_reloc_bw + parity_update_bw;
 }
 
 uint8_t StripeGroup::getDataRelocBW()
@@ -140,6 +141,12 @@ uint8_t StripeGroup::getMinPMBW()
             {
                 min_bw = pm_bw;
                 min_bw_node = node_id;
+
+                // no need to search if min_bw = 0
+                if (min_bw == 0)
+                {
+                    break;
+                }
             }
         }
 

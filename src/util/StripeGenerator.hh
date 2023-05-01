@@ -18,7 +18,7 @@ public:
     StripeGenerator(mt19937 &random_generator);
     ~StripeGenerator();
 
-    void generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes);
+    void genRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes);
 
     void storeStripes(vector<Stripe> &stripes, string placement_file);
     bool loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes);

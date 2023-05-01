@@ -18,6 +18,113 @@ mt19937 Utils::createRandomGenerator()
     return generator;
 }
 
+uint64_t Utils::calCombSize(uint32_t n, uint32_t k)
+{
+    if (k > n)
+    {
+        return 0;
+    }
+    uint64_t r = 1;
+    for (uint32_t d = 1; d <= k; ++d)
+    {
+        r *= n--;
+        r /= d;
+    }
+    return r;
+}
+
+uint32_t *Utils::genAllCombs(uint32_t n, uint32_t k)
+{
+    uint64_t comb_size = calCombSize(n, k);
+
+    // memory consumption
+    double mem_consump = 1.0 * comb_size * k * sizeof(uint32_t) / pow(2, 30);
+
+    uint32_t *combs = (uint32_t *)malloc(comb_size * k * sizeof(uint32_t));
+    if (combs == NULL)
+    {
+        printf("memory insufficient for generating Comb(%u, %u) = %lu\n", n, k, comb_size);
+        return 0;
+    }
+
+    // print integers and permute
+    u16string bitmask(k, 1);
+    bitmask.resize(n, 0);
+    uint64_t comb_id = 0;
+    do
+    {
+        for (uint32_t i = 0, select_id = 0; i < n; i++) // [0..N-1] integers
+        {
+            if (bitmask[i])
+            {
+                combs[comb_id * k + select_id] = i;
+                select_id++;
+            }
+        }
+        comb_id++;
+        if (comb_size % comb_id == (uint64_t)pow(10, 5))
+        {
+            printf("finished generation of (%ld / %ld) combinations\n", comb_id, comb_size);
+        }
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+    printf("Generated Comb(%u, %u) = %lu, required memory space (GiBytes): %f\n", n, k, comb_size, mem_consump);
+
+    return combs;
+}
+
+u32string Utils::getCombFromPosition(uint32_t n, uint32_t k, uint64_t comb_id)
+{
+    u32string result(k, 0);
+    u16string bitmask(n, 0);
+    while (n > 0)
+    {
+        uint64_t y = 0;
+        if (n > k && k >= 0)
+        {
+            y = calCombSize(n - 1, k);
+        }
+        if (comb_id >= y)
+        {
+            bitmask[n] = 1;
+            comb_id -= y;
+            k -= 1;
+            // record in results
+            result[k] = n - 1;
+        }
+        else
+        {
+            bitmask[n] = 0;
+        }
+        n--;
+    }
+
+    return result;
+}
+
+void Utils::getNextComb(uint32_t n, uint32_t k, u32string &cur_comb)
+{
+    // update sg_stripe_ids for the next combination
+    uint32_t msb = k - 1, lsb = k - 1; // most (least) significant bit
+    cur_comb[lsb]++;
+    // handle carrying (for least significant bit)
+    if (cur_comb[lsb] == n)
+    {
+        for (uint8_t idx = k - 1; idx > 0; idx--)
+        {
+            if (cur_comb[idx] == (n - (k - 1 - idx)))
+            {
+                msb = idx - 1;
+                cur_comb[msb]++;
+            }
+        }
+        for (uint8_t idx = msb + 1; idx <= lsb; idx++)
+        {
+            cur_comb[idx] = cur_comb[idx - 1] + 1;
+        }
+    }
+}
+
 size_t Utils::randomUInt(size_t l, size_t r, mt19937 &random_generator)
 {
     std::uniform_int_distribution<size_t> distr(l, r);

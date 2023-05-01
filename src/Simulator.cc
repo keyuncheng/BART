@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
     // initialize code
     ConvertibleCode code(k_i, m_i, k_f, m_f);
     ClusterSettings settings(num_nodes, num_stripes);
+    code.print();
+    settings.print();
 
     // check the number of stripes are valid
     if (code.isValidForPM() == false || settings.isParamValid(code) == false)
@@ -47,6 +49,8 @@ int main(int argc, char *argv[])
     // load stripes from placement file
     vector<Stripe> stripes;
     stripe_generator.loadStripes(code, settings, placement_file, stripes);
+
+    printf("finished loading stripes\n");
 
     // printf("stripes:\n");
     // for (auto &stripe : stripes)
@@ -64,8 +68,8 @@ int main(int argc, char *argv[])
         // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
         StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         // stripe_batch.constructSGInSequence();
-        stripe_batch.constructSGByRandomPick();
-        // stripe_batch.constructSGByCost();
+        // stripe_batch.constructSGByRandomPick();
+        stripe_batch.constructSGByCost();
         stripe_batch.print();
 
         // // Step 2: generate transition solutions from all stripe groups

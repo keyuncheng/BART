@@ -16,8 +16,7 @@ public:
     vector<Stripe> &sb_stripes;
 
     // step 1: stripe group selection
-
-    map<u32string, StripeGroup *> selected_sgs; // selected stripe groups in order <token, StripeGroup>
+    map<u32string, StripeGroup> selected_sgs; // selected stripe groups in order <token, StripeGroup>
 
     StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_sb_stripes);
     ~StripeBatch();

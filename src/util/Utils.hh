@@ -17,19 +17,19 @@ public:
     template <typename T>
     static void printVector(T &vec)
     {
-        for (auto &item : vec)
+        for (size_t idx = 0; idx < vec.size(); idx++)
         {
-            if (typeid(T) == typeid(u16string))
+            if (typeid(T) == typeid(u16string) || typeid(T) == typeid(u32string))
             {
-                printf("%u ", item);
+                printf("%u ", vec[idx]);
             }
-            else if (typeid(T) == typeid(vector<size_t>))
+            else if (typeid(T) == typeid(vector<size_t>) || typeid(T) == typeid(vector<uint64_t>))
             {
-                printf("%ld ", item);
+                printf("%ld ", vec[idx]);
             }
             else if (typeid(T) == typeid(vector<int>))
             {
-                printf("%d ", item);
+                printf("%d ", vec[idx]);
             }
         }
         printf("\n");
@@ -70,6 +70,31 @@ public:
         return max_num;
     }
 
+    static uint64_t calCombSize(uint32_t n, uint32_t k);
+    static uint32_t *genAllCombs(uint32_t n, uint32_t k);
+    static void getNextComb(uint32_t n, uint32_t k, u32string &cur_comb);
+
+    /**
+     * @brief Get the combination given it's lexigraphical position
+     *
+     * e.g. for Comb(5,3) (5 choose 3), the lexigraphical position is as follows:
+     * Comb | position
+     * [1,1,1,0,0]: 0
+     * [1,1,0,1,0]: 1
+     * [1,1,0,0,1]: 2
+     * ...
+     * [0,0,1,1,1]: 9
+     *
+     * Reference: https://math.stackexchange.com/questions/1368526/fast-way-to-get-a-combination-given-its-position-in-reverse-lexicographic-or
+     *
+     * @param n
+     * @param k
+     * @param comb_id
+     * @return u32string
+     */
+    static u32string getCombFromPosition(uint32_t n, uint32_t k, uint64_t comb_id);
+
+    // old
     static void printUIntVector(vector<size_t> &vec);
     static void printUIntArray(size_t *arr, size_t len);
     static void printUIntMatrix(size_t **matrix, size_t r, size_t c);

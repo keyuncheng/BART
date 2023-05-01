@@ -13,8 +13,8 @@ void StripeBatch::print()
     printf("StripeBatch %u:\n", id);
     for (auto &item : selected_sgs)
     {
-        u32string token = item.first;
-        for (uint32_t stripe_id : token)
+        u32string sg_stripe_ids = item.first;
+        for (uint32_t stripe_id : sg_stripe_ids)
         {
             printf("%u ", stripe_id);
         }
@@ -28,19 +28,18 @@ void StripeBatch::constructSGInSequence()
 
     selected_sgs.clear();
 
-    // initialize token
+    // initialize sg_stripe_ids
     for (uint32_t sg_id = 0; sg_id < num_sgs; sg_id++)
     {
-        u32string token(code.lambda_i, 0);
+        u32string sg_stripe_ids(code.lambda_i, 0);
         vector<Stripe *> sg_stripes(code.lambda_i, NULL);
         for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
             uint32_t sb_stripe_id = sg_id * code.lambda_i + stripe_id;
-            token[stripe_id] = sb_stripe_id;
+            sg_stripe_ids[stripe_id] = sb_stripe_id;
             sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-        StripeGroup *sg = new StripeGroup(sg_id, code, settings, sg_stripes);
-        selected_sgs[token] = sg;
+        selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
 }
 
@@ -59,154 +58,149 @@ void StripeBatch::constructSGByRandomPick()
 
     shuffle(shuff_sb_stripe_idxs.begin(), shuff_sb_stripe_idxs.end(), random_generator);
 
-    // initialize token
+    // initialize sg_stripe_ids
     for (uint32_t sg_id = 0; sg_id < num_sgs; sg_id++)
     {
-        u32string token(code.lambda_i, 0);
+        u32string sg_stripe_ids(code.lambda_i, 0);
         vector<Stripe *> sg_stripes(code.lambda_i, NULL);
         for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
             // get shuffled stripe index
             uint32_t sb_stripe_id = shuff_sb_stripe_idxs[sg_id * code.lambda_i + stripe_id];
-            token[stripe_id] = sb_stripe_id;
+            sg_stripe_ids[stripe_id] = sb_stripe_id;
             sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-        StripeGroup *sg = new StripeGroup(sg_id, code, settings, sg_stripes);
-        selected_sgs[token] = sg;
+        selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
 }
 
-// void StripeBatch::constructSGByCost()
-// {
-//     size_t num_stripes = stripes.size();
+void StripeBatch::constructSGByCost()
+{
+    uint32_t num_sgs = settings.num_stripes / code.lambda_i;
 
-//     // check if the number of stripes is a multiple of lambda_i
-//     if (num_stripes % _code.lambda_i != 0)
-//     {
-//         printf("invalid parameters\n");
-//         return false;
-//     }
+    selected_sgs.clear();
 
-//     // enumerate all possible stripe groups
-//     vector<size_t> comb_ids;
-//     vector<vector<size_t>> combinations = Utils::getCombinations(num_stripes, _code.lambda_i);
-//     size_t num_candidate_sgs = combinations.size();
+    // enumerate all possible stripe groups
+    uint64_t num_combs = Utils::calCombSize(settings.num_stripes, code.lambda_i);
 
-//     vector<int> candidate_sgs_costs(num_candidate_sgs, -1); // mark down the minimum cost for each candidate stripe group
+    uint64_t num_cand_sgs = num_combs;
+    printf("candidates stripe groups: %ld\n", num_cand_sgs);
 
-//     vector<vector<size_t>> overlapped_cand_sgs(num_stripes, vector<size_t>()); // <stripe_id, overlapped_stripe_groups>
+    /**
+     * @brief bandwidth table for all stripe groups
+     *  bandwidth 0: sg_0; sg_1; ...
+     *  bandwidth 1: sg_2; sg_3; ...
+     *  ...
+     *  bandwidth n_f: ...
+     */
 
-//     for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
-//     {
-//         comb_ids.push_back(cand_id);
+    uint8_t max_bw = code.n_f + 1; // allowed maximum bandwidth
+    vector<vector<uint64_t>> bw_sgs_table(max_bw);
 
-//         // construct candidate stripe group
-//         vector<size_t> &comb = combinations[cand_id];
+    // current stripe ids
+    u32string sg_stripe_ids(code.lambda_i, 0);
+    for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+    {
+        sg_stripe_ids[stripe_id] = stripe_id;
+    }
+    for (uint64_t cand_sg_id = 0; cand_sg_id < num_cand_sgs; cand_sg_id++)
+    {
+        // // get stripe ids
+        // u32string sg_stripe_ids = Utils::getCombFromPosition(settings.num_stripes, code.lambda_i, cand_sg_id);
 
-//         // record overlapped candidate stripe_groups
-//         for (auto stripe_id : comb)
-//         {
-//             overlapped_cand_sgs[stripe_id].push_back(cand_id);
-//         }
+        vector<Stripe *> sg_stripes(code.lambda_i, NULL);
+        for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+        {
+            sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
+        }
 
-//         vector<Stripe *> stripes_in_group;
-//         for (size_t sid = 0; sid < _code.lambda_i; sid++)
-//         {
-//             stripes_in_group.push_back(&stripes[comb[sid]]);
-//         }
+        StripeGroup stripe_group(0, code, settings, sg_stripes);
+        uint8_t min_bw = stripe_group.getMinTransBW();
+        bw_sgs_table[min_bw].push_back(cand_sg_id);
 
-//         StripeGroup candidate_sg(cand_id, _code, _settings, stripes_in_group);
+        // printf("candidate stripe group: %lu, minimum bandwidth: %u\n", cand_sg_id, min_bw);
+        // Utils::printVector(sg_stripe_ids);
 
-//         // get transition cost
-//         int transition_cost = candidate_sg.getMinTransitionCost();
-//         candidate_sgs_costs[cand_id] = transition_cost;
-//     }
+        if (cand_sg_id % (uint64_t)pow(10, 7) == 0)
+        {
+            printf("stripe groups (%lu / %lu) bandwidth calculated\n", cand_sg_id, num_cand_sgs);
+        }
 
-//     printf("total number of candidate stripe groups: %ld\n", num_candidate_sgs);
-//     // for (size_t cand_id = 0; cand_id < num_candidate_sgs; cand_id++)
-//     // {
-//     //     // printf("candidate_id: %ld, cost: %d\n", cand_id, candidate_sgs_costs[cand_id]);
-//     //     // Utils::printUIntVector(combinations[cand_id]);
-//     //     printf("stripe (%ld, %ld) merge cost: %d\n", combinations[cand_id][0], combinations[cand_id][1], candidate_sgs_costs[cand_id]);
-//     // }
+        // get next combination
+        Utils::getNextComb(settings.num_stripes, code.lambda_i, sg_stripe_ids);
+    }
 
-//     vector<size_t> sorted_stripe_ids; // store sorted stripe ids
+    printf("bw_sgs_table:\n");
+    for (uint8_t bw = 0; bw < max_bw; bw++)
+    {
+        printf("bandwidth: %u, %lu candidate stripe groups\n", bw, bw_sgs_table[bw].size());
+    }
 
-//     // record currently valid candidates; initialize as all candidate sgs
-//     vector<bool> is_cand_valid(num_candidate_sgs, true);
-//     vector<size_t> cur_valid_cand_ids = comb_ids;
-//     vector<int> cur_valid_cand_costs = candidate_sgs_costs;
+    vector<uint32_t> bw_num_selected_sgs(max_bw, 0);           // record bw for selected stripes
+    vector<bool> stripe_selected(settings.num_stripes, false); // mark if stripe is selected
 
-//     size_t num_sgs = num_stripes / _code.lambda_i;
-//     for (size_t sg_id = 0; sg_id < num_sgs; sg_id++)
-//     {
-//         // get remaining valid combinations
-//         vector<size_t> valid_cand_ids;
-//         vector<int> valid_cand_costs;
+    uint32_t num_selected_sgs = 0;
+    for (uint8_t bw = 0; bw < max_bw && num_selected_sgs < num_sgs; bw++)
+    {
+        printf("checking table with bw: %u\n", bw);
+        // for (auto cand_sg_id : bw_sgs_table[bw])
+        for (uint64_t idx = 0; idx < bw_sgs_table[bw].size(); idx++)
+        {
+            auto cand_sg_id = bw_sgs_table[bw][idx];
+            u32string sg_stripe_ids = Utils::getCombFromPosition(settings.num_stripes, code.lambda_i, cand_sg_id);
 
-//         // filter out invalid combinations
-//         for (size_t idx = 0; idx < cur_valid_cand_ids.size(); idx++)
-//         {
-//             size_t cand_id = cur_valid_cand_ids[idx];
-//             if (is_cand_valid[cand_id] == true)
-//             {
-//                 valid_cand_ids.push_back(cand_id);
-//                 valid_cand_costs.push_back(candidate_sgs_costs[cand_id]);
-//             }
-//         }
+            // check whether the stripe group is valid (TODO: check why the performance is bad here)
+            bool is_cand_sg_valid = true;
+            for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            {
+                is_cand_sg_valid = is_cand_sg_valid && !stripe_selected[sg_stripe_ids[stripe_id]];
+            }
 
-//         // get stripe group with minimum transition cost
-//         size_t min_cost_id = distance(valid_cand_costs.begin(), min_element(valid_cand_costs.begin(), valid_cand_costs.end()));
-//         size_t min_cost_cand_id = valid_cand_ids[min_cost_id];
-//         vector<size_t> &min_cost_comb = combinations[min_cost_cand_id];
+            if (idx % 100000 == 0)
+            {
+                printf("looking into cand_sg_id: %lu (%lu / %lu), %u\n", cand_sg_id, idx, bw_sgs_table[bw].size(), is_cand_sg_valid);
+            }
 
-//         for (auto stripe_id : min_cost_comb)
-//         {
-//             // add stripes from the selected stripe group to sorted stripes
-//             sorted_stripe_ids.push_back(stripe_id);
+            if (is_cand_sg_valid == true)
+            {
+                // add the valid stripe group
+                vector<Stripe *> sg_stripes(code.lambda_i, NULL);
+                for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+                {
+                    sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
+                }
+                // selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(cand_sg_id, code, settings, sg_stripes)));
 
-//             // mark overlapped candidate stripe groups as invalid
-//             for (auto cand_sg_ids : overlapped_cand_sgs[stripe_id])
-//             {
-//                 is_cand_valid[cand_sg_ids] = false;
-//             }
-//         }
+                // mark the stripes as selected
+                num_selected_sgs++;
+                for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+                {
+                    stripe_selected[sg_stripe_ids[stripe_id]] = true;
+                }
 
-//         // update currently valid combinations
-//         cur_valid_cand_ids = valid_cand_ids;
-//         cur_valid_cand_costs = valid_cand_costs;
+                // update stats
+                bw_num_selected_sgs[bw]++;
 
-//         // summarize current pick
-//         printf("pick candidate_id: %ld, cost: %d, remaining number of candidates: (%ld / %ld)\n", min_cost_cand_id, valid_cand_costs[min_cost_id], cur_valid_cand_ids.size(), num_candidate_sgs);
-//     }
+                printf("(%u / %u) select sg_id: %ld, bandwidth: %u, stripes: ", num_selected_sgs, num_sgs, cand_sg_id, bw);
+                Utils::printVector(sg_stripe_ids);
+            }
+        }
+    }
 
-//     // if (sorted_stripe_ids.size() != num_stripes) {
-//     //     printf("error: invalid sorted_stripe_ids\n");
-//     //     return false;
-//     // }
+    uint32_t sum_sgs = 0;
+    uint32_t sum_bw_sgs = 0;
+    for (uint8_t bw = 1; bw < max_bw; bw++)
+    {
+        sum_sgs += bw_num_selected_sgs[bw];
+        sum_bw_sgs += bw_num_selected_sgs[bw] * bw;
+    }
 
-//     // 2. put stripes by sorted stripe ids (by cost) into stripe groups
-//     vector<Stripe *> stripes_in_group;
-//     size_t sg_id = 0; // stripe group id
-//     for (size_t idx = 0; idx < num_stripes; idx++)
-//     {
-
-//         size_t stripe_id = sorted_stripe_ids[idx];
-
-//         // add the stripe into stripe group
-//         Stripe &stripe = stripes[stripe_id];
-//         stripes_in_group.push_back(&stripe);
-
-//         if (stripes_in_group.size() == (size_t)_code.lambda_i)
-//         {
-//             StripeGroup stripe_group(sg_id, _code, _settings, stripes_in_group);
-//             _stripe_groups.push_back(stripe_group);
-//             sg_id++;
-//             stripes_in_group.clear();
-//         }
-//     }
-
-//     return true;
+    printf("sum_sgs: %u, sum_bw_sgs: %u\n", sum_sgs, sum_bw_sgs);
+    printf("bw_num_selected_sgs:\n");
+    for (uint8_t bw = 0; bw < max_bw; bw++)
+    {
+        printf("bandwidth: %u, %u selected stripe groups\n", bw, bw_num_selected_sgs[bw]);
+    }
 }
 
 // bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator)

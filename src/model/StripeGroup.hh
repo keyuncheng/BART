@@ -34,7 +34,6 @@ private:
     void initDataDist();
     void initParityDists();
 
-    pair<EncodeMethod, uint8_t> getMinTransBW();
     uint8_t getDataRelocBW();
     uint8_t getMinREBW();
     uint8_t getMinPMBW();
@@ -52,6 +51,8 @@ public:
     StripeGroup(uint64_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
     ~StripeGroup();
     void print();
+
+    uint8_t getMinTransBW();
 
     // // enumerate send load tables
     // vector<vector<size_t>> getCandSendLoadTables();

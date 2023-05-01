@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     // generate random stripes, and store in the placement file
     vector<Stripe> stripes;
-    stripe_generator.generateRandomStripes(code, settings, random_generator, stripes);
+    stripe_generator.genRandomStripes(code, settings, random_generator, stripes);
 
     stripe_generator.storeStripes(stripes, placement_file);
 

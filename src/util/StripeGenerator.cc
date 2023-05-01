@@ -8,7 +8,7 @@ StripeGenerator::~StripeGenerator()
 {
 }
 
-void StripeGenerator::generateRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes)
+void StripeGenerator::genRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes)
 {
 
     // init stripes
