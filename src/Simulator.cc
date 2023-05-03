@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
         stripe_batch.constructSGByCost();
         stripe_batch.print();
 
-        printf("Step 2: generate transition tasks\n");
+        printf("Step 2: generate transition solution\n");
 
         // Step 2: generate transition solutions from all stripe groups
         StripeMergeG stripe_merge_g;
