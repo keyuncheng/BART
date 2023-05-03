@@ -50,7 +50,5 @@ int main(int argc, char *argv[])
     //     stripe.print();
     // }
 
-    printf("finished generating stripes\n");
-
     return 0;
 }

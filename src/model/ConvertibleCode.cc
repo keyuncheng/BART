@@ -28,7 +28,7 @@ ConvertibleCode::~ConvertibleCode()
 
 void ConvertibleCode::print()
 {
-    printf("Convertible Code (%u, %u) -> (%u, %u), alpha: %u, beta: %u, theta: %u, lambda_i: %u, lambda_f: %u\n", k_i, m_i, k_f, m_f, alpha, beta, theta, lambda_i, lambda_f);
+    printf("ConvertibleCode: (%u, %u) -> (%u, %u), alpha: %u, beta: %u, theta: %u, lambda_i: %u, lambda_f: %u\n", k_i, m_i, k_f, m_f, alpha, beta, theta, lambda_i, lambda_f);
 }
 
 bool ConvertibleCode::isValidForPM()

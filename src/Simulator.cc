@@ -50,8 +50,6 @@ int main(int argc, char *argv[])
     vector<Stripe> stripes;
     stripe_generator.loadStripes(code, settings, placement_file, stripes);
 
-    printf("finished loading stripes\n");
-
     // printf("stripes:\n");
     // for (auto &stripe : stripes)
     // {
@@ -65,16 +63,19 @@ int main(int argc, char *argv[])
     if (approach == "SM")
     {
 
-        // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
         StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
+        // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
+        printf("Step 1: construct stripe groups\n");
         // stripe_batch.constructSGInSequence();
         // stripe_batch.constructSGByRandomPick();
         stripe_batch.constructSGByCost();
         stripe_batch.print();
 
-        // // Step 2: generate transition solutions from all stripe groups
-        // StripeMergeG stripe_merge_g;
-        // stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
+        printf("Step 2: generate transition tasks\n");
+
+        // Step 2: generate transition solutions from all stripe groups
+        StripeMergeG stripe_merge_g;
+        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
     }
     // else if (approach == "BT")
     // {

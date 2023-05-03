@@ -56,6 +56,8 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
     }
 
     of.close();
+
+    printf("finished storing %lu stripes in %s\n", stripes.size(), placement_file.c_str());
 }
 
 bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes)
@@ -94,6 +96,8 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
     }
 
     ifs.close();
+
+    printf("finished loading %lu stripes from %s\n", stripes.size(), placement_file.c_str());
 
     return true;
 }

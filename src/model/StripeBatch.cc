@@ -94,8 +94,8 @@ void StripeBatch::constructSGByCost()
      *  bandwidth n_f: ...
      */
 
-    uint8_t max_bw = code.n_f + 1; // allowed maximum bandwidth
-    vector<vector<uint64_t>> bw_sgs_table(max_bw);
+    uint8_t max_bw = code.n_f + 1;                  // allowed maximum bandwidth
+    vector<vector<u32string>> bw_sgs_table(max_bw); // record sg_stripe_ids for each candidate stripe group
 
     // current stripe ids
     u32string sg_stripe_ids(code.lambda_i, 0);
@@ -116,7 +116,7 @@ void StripeBatch::constructSGByCost()
 
         StripeGroup stripe_group(0, code, settings, sg_stripes);
         uint8_t min_bw = stripe_group.getMinTransBW();
-        bw_sgs_table[min_bw].push_back(cand_sg_id);
+        bw_sgs_table[min_bw].push_back(sg_stripe_ids);
 
         // printf("candidate stripe group: %lu, minimum bandwidth: %u\n", cand_sg_id, min_bw);
         // Utils::printVector(sg_stripe_ids);
@@ -130,11 +130,11 @@ void StripeBatch::constructSGByCost()
         Utils::getNextComb(settings.num_stripes, code.lambda_i, sg_stripe_ids);
     }
 
-    printf("bw_sgs_table:\n");
-    for (uint8_t bw = 0; bw < max_bw; bw++)
-    {
-        printf("bandwidth: %u, %lu candidate stripe groups\n", bw, bw_sgs_table[bw].size());
-    }
+    // printf("bw_sgs_table:\n");
+    // for (uint8_t bw = 0; bw < max_bw; bw++)
+    // {
+    //     printf("bandwidth: %u, %lu candidate stripe groups\n", bw, bw_sgs_table[bw].size());
+    // }
 
     vector<uint32_t> bw_num_selected_sgs(max_bw, 0);           // record bw for selected stripes
     vector<bool> stripe_selected(settings.num_stripes, false); // mark if stripe is selected
@@ -142,23 +142,18 @@ void StripeBatch::constructSGByCost()
     uint32_t num_selected_sgs = 0;
     for (uint8_t bw = 0; bw < max_bw && num_selected_sgs < num_sgs; bw++)
     {
-        printf("checking table with bw: %u\n", bw);
         // for (auto cand_sg_id : bw_sgs_table[bw])
         for (uint64_t idx = 0; idx < bw_sgs_table[bw].size(); idx++)
         {
-            auto cand_sg_id = bw_sgs_table[bw][idx];
-            u32string sg_stripe_ids = Utils::getCombFromPosition(settings.num_stripes, code.lambda_i, cand_sg_id);
+            u32string &sg_stripe_ids = bw_sgs_table[bw][idx];
+            // auto cand_sg_id = bw_sgs_table[bw][idx];
+            // u32string sg_stripe_ids = Utils::getCombFromPosition(settings.num_stripes, code.lambda_i, cand_sg_id);
 
             // check whether the stripe group is valid (TODO: check why the performance is bad here)
             bool is_cand_sg_valid = true;
             for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
             {
                 is_cand_sg_valid = is_cand_sg_valid && !stripe_selected[sg_stripe_ids[stripe_id]];
-            }
-
-            if (idx % 100000 == 0)
-            {
-                printf("looking into cand_sg_id: %lu (%lu / %lu), %u\n", cand_sg_id, idx, bw_sgs_table[bw].size(), is_cand_sg_valid);
             }
 
             if (is_cand_sg_valid == true)
@@ -169,7 +164,7 @@ void StripeBatch::constructSGByCost()
                 {
                     sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
                 }
-                // selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(cand_sg_id, code, settings, sg_stripes)));
+                selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(num_selected_sgs, code, settings, sg_stripes)));
 
                 // mark the stripes as selected
                 num_selected_sgs++;
@@ -181,25 +176,23 @@ void StripeBatch::constructSGByCost()
                 // update stats
                 bw_num_selected_sgs[bw]++;
 
-                printf("(%u / %u) select sg_id: %ld, bandwidth: %u, stripes: ", num_selected_sgs, num_sgs, cand_sg_id, bw);
-                Utils::printVector(sg_stripe_ids);
+                // printf("(%u / %u) stripe groups selected, bandwidth: %u, stripes: ", num_selected_sgs, num_sgs, bw);
+                // Utils::printVector(sg_stripe_ids);
             }
         }
     }
 
-    uint32_t sum_sgs = 0;
-    uint32_t sum_bw_sgs = 0;
-    for (uint8_t bw = 1; bw < max_bw; bw++)
+    uint32_t total_bw_selected_sgs = 0;
+    for (uint8_t bw = 0; bw < max_bw; bw++)
     {
-        sum_sgs += bw_num_selected_sgs[bw];
-        sum_bw_sgs += bw_num_selected_sgs[bw] * bw;
+        total_bw_selected_sgs += bw_num_selected_sgs[bw] * bw;
     }
 
-    printf("sum_sgs: %u, sum_bw_sgs: %u\n", sum_sgs, sum_bw_sgs);
+    printf("selected stripe groups: (%u / %u), total bandwidth: %u\n", num_selected_sgs, num_sgs, total_bw_selected_sgs);
     printf("bw_num_selected_sgs:\n");
     for (uint8_t bw = 0; bw < max_bw; bw++)
     {
-        printf("bandwidth: %u, %u selected stripe groups\n", bw, bw_num_selected_sgs[bw]);
+        printf("bandwidth = %u: %u stripe groups\n", bw, bw_num_selected_sgs[bw]);
     }
 }
 
