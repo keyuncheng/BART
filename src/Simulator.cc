@@ -4,10 +4,9 @@
 #include "util/StripeGenerator.hh"
 #include "model/StripeBatch.hh"
 #include "model/StripeMerge.hh"
-// #include "model/StripeGroup.hh"
+#include "model/BalancedConversion.hh"
 // #include "model/RecvBipartite.hh"
 // #include "util/Utils.hh"
-// #include "model/BalancedConversion.hh"
 
 int main(int argc, char *argv[])
 {
@@ -61,13 +60,14 @@ int main(int argc, char *argv[])
 
     if (approach == "SM")
     {
+        // StripeMerge
 
         StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
         printf("Step 1: construct stripe groups\n");
+        stripe_batch.constructSGByCost();
         // stripe_batch.constructSGInSequence();
         // stripe_batch.constructSGByRandomPick();
-        stripe_batch.constructSGByCost();
         stripe_batch.print();
 
         // Step 2: generate transition solutions from all stripe groups
@@ -76,53 +76,53 @@ int main(int argc, char *argv[])
         stripe_merge.genTransSolution(stripe_batch, trans_solution);
         trans_solution.print();
     }
-    // else if (approach == "BT")
-    // {
-    //     // balanced transition
+    else if (approach == "BT")
+    {
+        // Balanced Transition
 
-    //     // Step 1: construct a stripe batch
+        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
+        // Step 1: construct stripe groups
+        stripe_batch.constructSGByCost();
+        // stripe_batch.constructSGInSequence();
+        // stripe_batch.constructSGByRandomPick();
+        // stripe_batch.constructByCostAndSendLoad(stripes);
+        // stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
+        // stripe_batch.constructBySendLoadAndCostv2(stripes, random_generator);
+        stripe_batch.print();
 
-    //     // possible construction techniques: sequentially construct; randomly construct; construct by cost
-    //     StripeBatch stripe_batch(0, code, settings);
+        // Step 2 - 3: select encoding method and parity generation nodes
+        // TODO: fix load table selection
 
-    //     // stripe_batch.constructInSequence(stripes);
-    //     // stripe_batch.constructByRandomPick(stripes, random_generator);
-    //     stripe_batch.constructByCost(stripes);
-    //     // stripe_batch.constructByCostAndSendLoad(stripes);
-    //     // stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
-    //     // stripe_batch.constructBySendLoadAndCostv2(stripes, random_generator);
-    //     stripe_batch.print();
+        BalancedConversion balanced_conversion;
 
-    //     BalancdConversion balanced_conversion;
+        // // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
 
-    //     // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
+        // // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
 
-    //     // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
+        // // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
 
-    //     // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
+        // balanced_conversion.getSolutionForStripeBatchAssigned(stripe_batch, solutions, random_generator);
 
-    //     balanced_conversion.getSolutionForStripeBatchAssigned(stripe_batch, solutions, random_generator);
-
-    //     size_t num_sg = stripe_batch.getStripeGroups().size();
-    //     size_t num_sg_re = 0;
-    //     size_t num_sg_pm = 0;
-    //     double re_percent = 0;
-    //     double pm_percent = 0;
-    //     for (auto &item : stripe_batch.getSGApproaches())
-    //     {
-    //         if (item == EncodeMethod::RE_ENCODE)
-    //         {
-    //             num_sg_re++;
-    //         }
-    //         else
-    //         {
-    //             num_sg_pm++;
-    //         }
-    //     }
-    //     re_percent = 1.0 * num_sg_re / num_sg;
-    //     pm_percent = 1.0 * num_sg_pm / num_sg;
-    //     printf("approach distribution: re-encoding: %ld / %ld (%f), parity merging: %ld / %ld (%f)\n", num_sg_re, num_sg, re_percent, num_sg_pm, num_sg, pm_percent);
-    // }
+        // size_t num_sg = stripe_batch.getStripeGroups().size();
+        // size_t num_sg_re = 0;
+        // size_t num_sg_pm = 0;
+        // double re_percent = 0;
+        // double pm_percent = 0;
+        // for (auto &item : stripe_batch.getSGApproaches())
+        // {
+        //     if (item == EncodeMethod::RE_ENCODE)
+        //     {
+        //         num_sg_re++;
+        //     }
+        //     else
+        //     {
+        //         num_sg_pm++;
+        //     }
+        // }
+        // re_percent = 1.0 * num_sg_re / num_sg;
+        // pm_percent = 1.0 * num_sg_pm / num_sg;
+        // printf("approach distribution: re-encoding: %ld / %ld (%f), parity merging: %ld / %ld (%f)\n", num_sg_re, num_sg, re_percent, num_sg_pm, num_sg, pm_percent);
+    }
 
     // get load distribution
     vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();

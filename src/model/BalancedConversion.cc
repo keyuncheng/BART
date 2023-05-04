@@ -1,14 +1,14 @@
-// #include "BalancedConversion.hh"
+#include "BalancedConversion.hh"
 
-// BalancdConversion::BalancdConversion(/* args */)
-// {
-// }
+BalancedConversion::BalancedConversion(/* args */)
+{
+}
 
-// BalancdConversion::~BalancdConversion()
-// {
-// }
+BalancedConversion::~BalancedConversion()
+{
+}
 
-// void BalancdConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+// void BalancedConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
 // {
 //     ConvertibleCode &code = stripe_batch.getCode();
 //     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -125,7 +125,7 @@
 //     }
 // }
 
-// void BalancdConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+// void BalancedConversion::getSolutionForStripeBatchGreedy(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
 // {
 //     ConvertibleCode &code = stripe_batch.getCode();
 //     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -209,7 +209,7 @@
 //     // }
 // }
 
-// void BalancdConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+// void BalancedConversion::getSolutionForStripeBatchIter(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
 // {
 //     ConvertibleCode &code = stripe_batch.getCode();
 //     ClusterSettings &settings = stripe_batch.getClusterSettings();
@@ -294,7 +294,7 @@
 //     // }
 // }
 
-// void BalancdConversion::getSolutionForStripeBatchAssigned(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
+// void BalancedConversion::getSolutionForStripeBatchAssigned(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
 // {
 
 //     // initialize solutions
