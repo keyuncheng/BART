@@ -1,6 +1,6 @@
 #include "StripeGroup.hh"
 
-StripeGroup::StripeGroup(uint64_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes) : id(_id), code(_code), settings(_settings), sg_stripes(_sg_stripes)
+StripeGroup::StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes) : id(_id), code(_code), settings(_settings), sg_stripes(_sg_stripes)
 {
     initDataDist();
     initParityDists();
@@ -12,7 +12,7 @@ StripeGroup::~StripeGroup()
 
 void StripeGroup::print()
 {
-    printf("Stripe group %ld: [", id);
+    printf("Stripe group %u: [", id);
     for (auto stripe : sg_stripes)
     {
         printf("%u, ", stripe->id);

@@ -39,7 +39,7 @@ private:
     uint8_t getMinPMBW();
 
 public:
-    uint64_t id;
+    uint32_t id;
     ConvertibleCode &code;
     ClusterSettings &settings;
     vector<Stripe *> sg_stripes;
@@ -48,7 +48,7 @@ public:
     u16string data_dist;
     vector<u16string> parity_dists;
 
-    StripeGroup(uint64_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
+    StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
     ~StripeGroup();
     void print();
 

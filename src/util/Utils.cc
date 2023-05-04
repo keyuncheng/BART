@@ -273,36 +273,6 @@ vector<vector<size_t>> Utils::getPermutation(size_t n, size_t k)
     return ans;
 }
 
-// void Utils::getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist)
-// {
-
-//     // format for each solution: <stripe_id, block_id, from_node, to_node>
-
-//     // initialize send_load_dist and recv_load_dist
-//     send_load_dist.resize(settings.num_nodes);
-//     for (auto &item : send_load_dist)
-//     {
-//         item = 0;
-//     }
-//     recv_load_dist.resize(settings.num_nodes);
-//     for (auto &item : recv_load_dist)
-//     {
-//         item = 0;
-//     }
-
-//     // record loads for each node_id
-//     for (auto &solution : solutions)
-//     {
-//         size_t from_node_id = solution[2];
-//         size_t to_node_id = solution[3];
-
-//         send_load_dist[from_node_id] += 1;
-//         recv_load_dist[to_node_id] += 1;
-//     }
-
-//     return;
-// }
-
 vector<size_t> Utils::dotAddUIntVectors(vector<size_t> &v1, vector<size_t> &v2)
 {
     if (v1.size() != v2.size())

@@ -13,12 +13,11 @@ void StripeBatch::print()
     printf("StripeBatch %u:\n", id);
     for (auto &item : selected_sgs)
     {
-        u32string sg_stripe_ids = item.first;
-        for (uint32_t stripe_id : sg_stripe_ids)
+        printf("Stripe group %u:\n", item.first);
+        for (auto &stripe : item.second.sg_stripes)
         {
-            printf("%u ", stripe_id);
+            stripe->print();
         }
-        printf("\n");
     }
 }
 
@@ -39,7 +38,7 @@ void StripeBatch::constructSGInSequence()
             sg_stripe_ids[stripe_id] = sb_stripe_id;
             sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-        selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(sg_id, code, settings, sg_stripes)));
+        selected_sgs.insert(pair<uint32_t, StripeGroup>(sg_id, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
 }
 
@@ -70,7 +69,7 @@ void StripeBatch::constructSGByRandomPick()
             sg_stripe_ids[stripe_id] = sb_stripe_id;
             sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
         }
-        selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(sg_id, code, settings, sg_stripes)));
+        selected_sgs.insert(pair<uint32_t, StripeGroup>(sg_id, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
 }
 
@@ -164,7 +163,7 @@ void StripeBatch::constructSGByCost()
                 {
                     sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
                 }
-                selected_sgs.insert(pair<u32string, StripeGroup>(sg_stripe_ids, StripeGroup(num_selected_sgs, code, settings, sg_stripes)));
+                selected_sgs.insert(pair<uint32_t, StripeGroup>(num_selected_sgs, StripeGroup(num_selected_sgs, code, settings, sg_stripes)));
 
                 // mark the stripes as selected
                 num_selected_sgs++;
@@ -192,7 +191,10 @@ void StripeBatch::constructSGByCost()
     printf("bw_num_selected_sgs:\n");
     for (uint8_t bw = 0; bw < max_bw; bw++)
     {
-        printf("bandwidth = %u: %u stripe groups\n", bw, bw_num_selected_sgs[bw]);
+        if (bw_num_selected_sgs[bw] > 0)
+        {
+            printf("bandwidth = %u: %u stripe groups\n", bw, bw_num_selected_sgs[bw]);
+        }
     }
 }
 

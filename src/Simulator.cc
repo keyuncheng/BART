@@ -3,10 +3,10 @@
 #include "model/ClusterSettings.hh"
 #include "util/StripeGenerator.hh"
 #include "model/StripeBatch.hh"
+#include "model/StripeMerge.hh"
 // #include "model/StripeGroup.hh"
 // #include "model/RecvBipartite.hh"
 // #include "util/Utils.hh"
-// #include "model/StripeMergeG.hh"
 // #include "model/BalancedConversion.hh"
 
 int main(int argc, char *argv[])
@@ -57,8 +57,7 @@ int main(int argc, char *argv[])
     // }
 
     // solutions and load distribution
-    vector<vector<size_t>> solutions;
-    vector<size_t> send_load_dist, recv_load_dist;
+    TransSolution trans_solution(code, settings);
 
     if (approach == "SM")
     {
@@ -71,11 +70,11 @@ int main(int argc, char *argv[])
         stripe_batch.constructSGByCost();
         stripe_batch.print();
 
-        printf("Step 2: generate transition solution\n");
-
         // Step 2: generate transition solutions from all stripe groups
-        StripeMergeG stripe_merge_g;
-        stripe_merge_g.getSolutionForStripeBatch(stripe_batch, solutions, random_generator);
+        printf("Step 2: generate transition solution\n");
+        StripeMerge stripe_merge(random_generator);
+        stripe_merge.genTransSolution(stripe_batch, trans_solution);
+        trans_solution.print();
     }
     // else if (approach == "BT")
     // {
@@ -125,45 +124,48 @@ int main(int argc, char *argv[])
     //     printf("approach distribution: re-encoding: %ld / %ld (%f), parity merging: %ld / %ld (%f)\n", num_sg_re, num_sg, re_percent, num_sg_pm, num_sg, pm_percent);
     // }
 
-    // // get load distribution
-    // Utils::getLoadDist(code, settings, solutions, send_load_dist, recv_load_dist);
+    // get load distribution
+    vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();
 
-    // // get bandwidth
-    // size_t total_bandwidth = 0;
-    // for (auto item : send_load_dist)
-    // {
-    //     total_bandwidth += item;
-    // }
+    u32string &send_load_dist = transfer_load_dist[0];
+    u32string &recv_load_dist = transfer_load_dist[1];
 
-    // // in-degree
-    // // min, max
-    // double min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
-    // double max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
-    // // mean, stddev, cv
-    // double mean_in_degree = std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
-    // double sq_sum_in_degree = std::inner_product(send_load_dist.begin(), send_load_dist.end(), send_load_dist.begin(), 0.0);
-    // double stddev_in_degree = std::sqrt(sq_sum_in_degree / send_load_dist.size() - mean_in_degree * mean_in_degree);
-    // double cv_in_degree = stddev_in_degree / mean_in_degree;
+    // get bandwidth
+    size_t total_bandwidth = 0;
+    for (auto item : send_load_dist)
+    {
+        total_bandwidth += item;
+    }
 
-    // // out-degree
-    // // min max
-    // double min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-    // double max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-    // // mean, stddev, cv
-    // double mean_out_degree = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
-    // double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
-    // double stddev_out_degree = std::sqrt(sq_sum_out_degree / recv_load_dist.size() - mean_out_degree * mean_out_degree);
-    // double cv_out_degree = stddev_out_degree / mean_out_degree;
+    // in-degree
+    // min, max
+    double min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
+    double max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
+    // mean, stddev, cv
+    double mean_in_degree = std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
+    double sq_sum_in_degree = std::inner_product(send_load_dist.begin(), send_load_dist.end(), send_load_dist.begin(), 0.0);
+    double stddev_in_degree = std::sqrt(sq_sum_in_degree / send_load_dist.size() - mean_in_degree * mean_in_degree);
+    double cv_in_degree = stddev_in_degree / mean_in_degree;
 
-    // printf("================ Approach : %s =========================\n", approach.c_str());
-    // printf("send load: ");
-    // Utils::printUIntVector(send_load_dist);
-    // printf("recv load: ");
-    // Utils::printUIntVector(recv_load_dist);
+    // out-degree
+    // min max
+    double min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    double max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    // mean, stddev, cv
+    double mean_out_degree = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
+    double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
+    double stddev_out_degree = std::sqrt(sq_sum_out_degree / recv_load_dist.size() - mean_out_degree * mean_out_degree);
+    double cv_out_degree = stddev_out_degree / mean_out_degree;
 
-    // printf("send load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
+    printf("================ Approach : %s =========================\n", approach.c_str());
+    printf("send load: ");
+    Utils::printVector(send_load_dist);
+    printf("recv load: ");
+    Utils::printVector(recv_load_dist);
 
-    // printf("recv load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
+    printf("send load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
+
+    printf("recv load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
 
     return 0;
 }
