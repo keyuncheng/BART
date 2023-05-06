@@ -67,7 +67,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     }
 
     // use a while loop until the solution cannot be further optimized (i.e., cannot further improve load balance and then bandwidth)
-    // Q: Do we need to set a max_iter to avoid too heavy computation?
+    // Q: Do we need to set a max_iter to avoid too much iteration?
     uint64_t iter = 0;
     uint32_t cur_max_load_iter = UINT32_MAX;
     uint32_t cur_bw_iter = UINT32_MAX;
@@ -159,18 +159,32 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
         }
         // summarize the current bw
         uint32_t cur_max_load = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
-        if (cur_max_load < cur_max_load_iter || (cur_max_load == cur_max_load_iter && cur_lt.bw < cur_bw_iter))
+        bool improved = cur_max_load < cur_max_load_iter || (cur_max_load == cur_max_load_iter && cur_lt.bw < cur_bw_iter);
+        if (improved == true)
         {
             // update the max load and bw
             cur_max_load_iter = cur_max_load;
             cur_bw_iter = cur_lt.bw;
-            continue;
         }
         else
         {
             // the solution cannot be further optimized
             break;
         }
+        printf("cur_lt after iteration %u:\n", iter);
+        printf("send load: ");
+        Utils::printVector(cur_lt.slt);
+        printf("recv load: ");
+        Utils::printVector(cur_lt.rlt);
+        printf("bandwidth: %u\n", cur_lt.bw);
+    }
+
+    // clear the candidate load tables for memory saving
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
+        stripe_group.cand_partial_lts.clear();
     }
 
     uint32_t num_re_groups = 0;
@@ -179,7 +193,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
         num_re_groups += (item.second.applied_lt.approach == EncodeMethod::RE_ENCODE ? 1 : 0);
     }
 
-    printf("final load table with relocation, parity generation and parity relocation (send load only) %u:\n");
+    printf("final load table with data relocation (send load only), parity generation (both send and receive load) and parity relocation (send load only):\n");
     printf("send load: ");
     Utils::printVector(cur_lt.slt);
     printf("recv load: ");
