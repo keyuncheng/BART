@@ -70,9 +70,36 @@ public:
         return max_num;
     }
 
+    template <typename T>
+    static void dotAddVectors(T &a, T &b, T &result)
+    {
+        if (typeid(T) == typeid(u16string))
+        {
+            std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::plus<uint16_t>());
+        }
+        else if (typeid(T) == typeid(u32string))
+        {
+            std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::plus<uint32_t>());
+        }
+    }
+
+    template <typename T>
+    static void dotSubVectors(T &a, T &b, T &result)
+    {
+        if (typeid(T) == typeid(u16string))
+        {
+            std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::minus<uint16_t>());
+        }
+        else if (typeid(T) == typeid(u32string))
+        {
+            std::transform(a.begin(), a.end(), b.begin(), result.begin(), std::minus<uint32_t>());
+        }
+    }
+
     static uint64_t calCombSize(uint32_t n, uint32_t k);
     static uint32_t *genAllCombs(uint32_t n, uint32_t k);
     static void getNextComb(uint32_t n, uint32_t k, u32string &cur_comb);
+    static void getNextPerm(uint16_t n, uint16_t k, u16string &cur_perm);
 
     /**
      * @brief Get the combination given it's lexigraphical position

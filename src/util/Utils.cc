@@ -125,6 +125,26 @@ void Utils::getNextComb(uint32_t n, uint32_t k, u32string &cur_comb)
     }
 }
 
+void Utils::getNextPerm(uint16_t n, uint16_t k, u16string &cur_perm)
+{
+    // update sg_stripe_ids for the next combination
+    uint16_t msb = k - 1, lsb = k - 1; // most (least) significant bit
+    cur_perm[lsb]++;
+    // handle carrying (for least significant bit)
+    if (cur_perm[lsb] == n)
+    {
+        for (uint8_t idx = k - 1; idx > 0; idx--)
+        {
+            if (cur_perm[idx] == n)
+            {
+                cur_perm[msb] = 0;
+                msb = idx - 1;
+                cur_perm[msb]++;
+            }
+        }
+    }
+}
+
 size_t Utils::randomUInt(size_t l, size_t r, mt19937 &random_generator)
 {
     std::uniform_int_distribution<size_t> distr(l, r);

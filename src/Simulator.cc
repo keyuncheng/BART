@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
     if (argc != 9)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f M N placement_file approach[BT/SM]");
+        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes placement_file approach[BT/SM]");
         return -1;
     }
 
@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
     {
         // Balanced Transition
 
+        printf("Step 1: construct stripe groups\n");
         StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         // Step 1: construct stripe groups
         stripe_batch.constructSGByCost();
@@ -92,8 +93,9 @@ int main(int argc, char *argv[])
 
         // Step 2 - 3: select encoding method and parity generation nodes
         // TODO: fix load table selection
-
-        BalancedConversion balanced_conversion;
+        BalancedConversion balanced_conversion(random_generator);
+        printf("Step 2: generate partial solution for parity generation\n");
+        balanced_conversion.genParityGenerationLTs(stripe_batch);
 
         // // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
 

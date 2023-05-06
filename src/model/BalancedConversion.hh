@@ -3,15 +3,22 @@
 
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
-#include "RecvBipartite.hh"
+#include "TransSolution.hh"
+// #include "RecvBipartite.hh"
 
 class BalancedConversion
 {
 private:
     /* data */
 public:
-    BalancedConversion(/* args */);
+    mt19937 &random_generator;
+
+    BalancedConversion(mt19937 &_random_generator);
     ~BalancedConversion();
+
+    void genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution);
+
+    void genParityGenerationLTs(StripeBatch &stripe_batch);
 
     // void getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator);
 

@@ -53,7 +53,6 @@ vector<u32string> TransSolution::getTransferLoadDist()
     // idx 0: send; idx 1: receive
     vector<u32string> load_dist(2, u32string(settings.num_nodes, 0));
 
-    uint32_t count = 0;
     for (auto &item : sg_transfer_tasks)
     {
 

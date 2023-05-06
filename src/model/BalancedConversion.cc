@@ -1,11 +1,191 @@
 #include "BalancedConversion.hh"
 
-BalancedConversion::BalancedConversion(/* args */)
+BalancedConversion::BalancedConversion(mt19937 &_random_generator) : random_generator(_random_generator)
 {
 }
 
 BalancedConversion::~BalancedConversion()
 {
+}
+
+void BalancedConversion::genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution)
+{
+    // Step 2 - 3: select encoding method and parity generation nodes
+    genParityGenerationLTs(stripe_batch);
+}
+
+void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
+{
+    ConvertibleCode &code = stripe_batch.code;
+    uint16_t num_nodes = stripe_batch.settings.num_nodes;
+
+    // maintain a dynamic load table for current stripe groups
+    LoadTable cur_lt;
+    cur_lt.slt.assign(num_nodes, 0);
+    cur_lt.rlt.assign(num_nodes, 0);
+
+    // first, calculate the send load distribution for data relocation across all stripe groups, as given the data placement for each stripe group, the send load distribution is deterministic; at this point, the receive load for data relocation is not determined and can be scheduled
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        u16string &data_dist = item.second.data_dist;
+        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+        {
+            if (data_dist[node_id] > 1)
+            {
+                cur_lt.slt[node_id] += data_dist[node_id] - 1;
+            }
+        }
+    }
+    cur_lt.bw = accumulate(cur_lt.slt.begin(), cur_lt.slt.end(), 0);
+
+    printf("current_lt initialized with data relocation send load:\n");
+    printf("send load: ");
+    Utils::printVector(cur_lt.slt);
+    printf("recv load: ");
+    Utils::printVector(cur_lt.rlt);
+    printf("bandwidth : %u\n", cur_lt.bw);
+
+    // obtain candidate load tables by enumerating encoding methods and nodes for parity generation
+    unordered_map<uint32_t, bool> is_sg_perfect_pm;
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
+
+        // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
+        if (stripe_group.getMinPMBW() == 0)
+        {
+            // generate partial load table for parity merging (with send load for data relocation only)
+            stripe_group.genParityGenScheme4PerfectPM();
+            is_sg_perfect_pm[sg_id] = true;
+            continue;
+        }
+
+        // for other groups with non-zero parity generation bandwidth, generate all load tables
+        vector<LoadTable> partial_lts;
+        stripe_group.genAllPartialLTs4ParityGen();
+    }
+
+    // use a while loop until the solution cannot be further optimized (i.e., cannot further improve load balance and then bandwidth)
+    // Q: Do we need to set a max_iter to avoid too heavy computation?
+    uint64_t iter = 0;
+    uint32_t cur_max_load_iter = UINT32_MAX;
+    uint32_t cur_bw_iter = UINT32_MAX;
+    while (true)
+    {
+        iter++;
+        printf("iteration: %ld\n", iter);
+        for (auto &item : stripe_batch.selected_sgs)
+        {
+            uint32_t sg_id = item.first;
+            StripeGroup &stripe_group = item.second;
+
+            // skip perfect merging stripe groups
+            if (is_sg_perfect_pm[sg_id] == true)
+            {
+                continue;
+            }
+
+            // based on the send load from data relocation, for each stripe group, generate all possible load tables (for re-encoding and parity merging) and finds the most load-balanced load table, which determines the parity generation method and node
+
+            // metric for choosing load tables: (1) minimize max load: max(max(cur_lt.slt + slt), max(cur_lt.rlt + rlt)); if (1) finds multiple load tables, choose the load table with minimum bandwidth; if (2) also finds multiple lts, randomly pick one
+
+            uint32_t min_max_load = UINT32_MAX;
+            uint32_t min_bw = UINT8_MAX;
+            vector<LoadTable *> best_lts;
+            for (auto &cand_lt : stripe_group.cand_partial_lts)
+            {
+                // calculate cur_lt after applying the cand_lt
+                LoadTable cur_lt_after = cur_lt;
+                Utils::dotAddVectors(cur_lt_after.slt, cand_lt.slt, cur_lt_after.slt);
+                Utils::dotAddVectors(cur_lt_after.rlt, cand_lt.rlt, cur_lt_after.rlt);
+
+                // if we already find and applied a load table for the stripe group, need to subtract it
+                if (stripe_group.applied_lt.approach != EncodeMethod::UNKNOWN_METHOD)
+                {
+                    Utils::dotSubVectors(cur_lt_after.slt, stripe_group.applied_lt.slt, cur_lt_after.slt);
+                    Utils::dotSubVectors(cur_lt_after.rlt, stripe_group.applied_lt.rlt, cur_lt_after.rlt);
+                }
+
+                uint32_t max_load = max(*max_element(cur_lt_after.slt.begin(), cur_lt_after.slt.end()), *max_element(cur_lt_after.rlt.begin(), cur_lt_after.rlt.end()));
+
+                // update min_max_load and min_bw
+                if (max_load < min_max_load || (max_load == min_max_load && cand_lt.bw < min_bw))
+                {
+                    min_max_load = max_load;
+                    min_bw = cand_lt.bw;
+                    best_lts.clear();
+                    best_lts.push_back(&cand_lt);
+                }
+                else if (max_load == min_max_load && cand_lt.bw == min_bw)
+                {
+                    best_lts.push_back(&cand_lt);
+                }
+            }
+
+            // randomly choose a best load table
+            uint random_pos = Utils::randomUInt(0, best_lts.size() - 1, random_generator);
+            LoadTable *selected_lt = best_lts[random_pos];
+
+            // update current load table
+            if (stripe_group.applied_lt.approach != EncodeMethod::UNKNOWN_METHOD)
+            {
+                // if we already find and applied a load table for the stripe group, need to subtract it
+                Utils::dotSubVectors(cur_lt.slt, stripe_group.applied_lt.slt, cur_lt.slt);
+                Utils::dotSubVectors(cur_lt.rlt, stripe_group.applied_lt.rlt, cur_lt.rlt);
+                cur_lt.bw -= stripe_group.applied_lt.bw;
+            }
+
+            Utils::dotAddVectors(cur_lt.slt, selected_lt->slt, cur_lt.slt);
+            Utils::dotAddVectors(cur_lt.rlt, selected_lt->rlt, cur_lt.rlt);
+            cur_lt.bw += selected_lt->bw;
+
+            // apply the load table for stripe group
+            stripe_group.applied_lt = *selected_lt;
+
+            // printf("applied_lt for stripe group %u:\n", stripe_group.id);
+            // printf("send load: ");
+            // Utils::printVector(stripe_group.applied_lt.slt);
+            // printf("recv load: ");
+            // Utils::printVector(stripe_group.applied_lt.rlt);
+            // printf("encode method: %u, bandwidth : %u\n", stripe_group.applied_lt.approach, stripe_group.applied_lt.bw);
+
+            // printf("current_lt after choosing stripe group %u:\n", stripe_group.id);
+            // printf("send load: ");
+            // Utils::printVector(cur_lt.slt);
+            // printf("recv load: ");
+            // Utils::printVector(cur_lt.rlt);
+            // printf("bandwidth : %u\n", cur_lt.bw);
+        }
+        // summarize the current bw
+        uint32_t cur_max_load = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
+        if (cur_max_load < cur_max_load_iter || (cur_max_load == cur_max_load_iter && cur_lt.bw < cur_bw_iter))
+        {
+            // update the max load and bw
+            cur_max_load_iter = cur_max_load;
+            cur_bw_iter = cur_lt.bw;
+            continue;
+        }
+        else
+        {
+            // the solution cannot be further optimized
+            break;
+        }
+    }
+
+    uint32_t num_re_groups = 0;
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        num_re_groups += (item.second.applied_lt.approach == EncodeMethod::RE_ENCODE ? 1 : 0);
+    }
+
+    printf("final load table with relocation, parity generation and parity relocation (send load only) %u:\n");
+    printf("send load: ");
+    Utils::printVector(cur_lt.slt);
+    printf("recv load: ");
+    Utils::printVector(cur_lt.rlt);
+    printf("bandwidth: %u\n", cur_lt.bw);
+    printf("number of re-encoding groups: (%u / %u), num of parity merging groups: (%u / %u)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
 }
 
 // void BalancedConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)

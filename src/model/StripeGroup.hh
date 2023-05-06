@@ -10,22 +10,26 @@
 enum EncodeMethod
 {
     RE_ENCODE,
-    PARITY_MERGE
+    PARITY_MERGE,
+    UNKNOWN_METHOD
 };
 
-// typedef struct LoadTable
-// {
-//     EncodeMethod approach;
-//     vector<size_t> lt; // load table
-//     size_t cost;
+typedef struct LoadTable
+{
+    EncodeMethod approach;
+    u16string re_nodes; // parity generation nodes for re-encoding
+    u16string pm_nodes; // parity generation nodes for parity merging
 
-//     LoadTable()
-//     {
-//         approach = EncodeMethod::RE_ENCODE;
-//         lt.clear();
-//         cost = 0;
-//     }
-// } LoadTable;
+    u16string slt; // send load table
+    u16string rlt; // receive load table
+    uint32_t bw;   // bandwidth
+
+    LoadTable()
+    {
+        approach = EncodeMethod::UNKNOWN_METHOD;
+        bw = 0;
+    }
+} LoadTable;
 
 class StripeGroup
 {
@@ -33,10 +37,6 @@ class StripeGroup
 private:
     void initDataDist();
     void initParityDists();
-
-    uint8_t getDataRelocBW();
-    uint8_t getMinREBW();
-    uint8_t getMinPMBW();
 
 public:
     uint32_t id;
@@ -48,11 +48,24 @@ public:
     u16string data_dist;
     vector<u16string> parity_dists;
 
+    // for BalancedConversion
+    LoadTable applied_lt;
+    vector<LoadTable> cand_partial_lts;
+
     StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
     ~StripeGroup();
     void print();
 
     uint8_t getMinTransBW();
+    uint8_t getDataRelocBW();
+    uint8_t getMinREBW();
+    uint8_t getMinPMBW();
+
+    // generate parity generation scheme for perfect parity merging (parity generation bandwidth = 0)
+    void genParityGenScheme4PerfectPM();
+
+    // generate all candidate partial load tables for the stripe group, including re-encoding and parity merging
+    void genAllPartialLTs4ParityGen();
 
     // // enumerate send load tables
     // vector<vector<size_t>> getCandSendLoadTables();
