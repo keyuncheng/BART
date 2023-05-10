@@ -17,8 +17,7 @@ enum EncodeMethod
 typedef struct LoadTable
 {
     EncodeMethod approach;
-    u16string re_nodes; // parity generation nodes for re-encoding
-    u16string pm_nodes; // parity generation nodes for parity merging
+    u16string enc_nodes; // parity generation nodes (m parity blocks)
 
     u16string slt; // send load table
     u16string rlt; // receive load table

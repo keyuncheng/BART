@@ -17,6 +17,15 @@ void StripeMerge::genTransSolution(StripeBatch &stripe_batch, TransSolution &tra
         return;
     }
 
+    // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
+    printf("Step 1: construct stripe groups\n");
+    stripe_batch.constructSGByCost();
+    // stripe_batch.constructSGInSequence();
+    // stripe_batch.constructSGByRandomPick();
+    stripe_batch.print();
+
+    // Step 2: generate transition solutions from all stripe groups
+    printf("Step 2: generate transition solution\n");
     for (auto &item : stripe_batch.selected_sgs)
     {
         StripeGroup &stripe_group = item.second;

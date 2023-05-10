@@ -163,12 +163,12 @@ void StripeGroup::genParityGenScheme4PerfectPM()
     applied_lt.approach = EncodeMethod::PARITY_MERGE;
 
     // find corresponding code.m_f nodes for perfect parity merging
-    applied_lt.pm_nodes.assign(code.m_f, INVALID_NODE_ID);
+    applied_lt.enc_nodes.assign(code.m_f, INVALID_NODE_ID);
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
         u16string &parity_dist = parity_dists[parity_id];
         uint16_t min_bw_node_id = distance(parity_dist.begin(), max_element(parity_dist.begin(), parity_dist.end()));
-        applied_lt.pm_nodes[parity_id] = min_bw_node_id;
+        applied_lt.enc_nodes[parity_id] = min_bw_node_id;
     }
 }
 
@@ -191,10 +191,10 @@ void StripeGroup::genAllPartialLTs4ParityGen()
         LoadTable &lt = cand_partial_lts[lt_id];
         lt.approach = EncodeMethod::RE_ENCODE;
         lt.bw = code.k_f - data_dist[node_id] + code.m_f;
-        lt.re_nodes.assign(1, node_id); // re-encoding node
-        lt.slt = data_dist;             // send load table
-        lt.slt[node_id] = code.m_f;     // only need to send the data blocks at <node_id>
-        lt.rlt.assign(num_nodes, 0);    // recv load table
+        lt.enc_nodes.assign(code.m_f, node_id); // re-encoding nodes
+        lt.slt = data_dist;                     // send load table
+        lt.slt[node_id] = code.m_f;             // only need to send the data blocks at <node_id>
+        lt.rlt.assign(num_nodes, 0);            // recv load table
         lt.rlt[node_id] = code.k_f - data_dist[node_id];
         lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
 
@@ -207,7 +207,7 @@ void StripeGroup::genAllPartialLTs4ParityGen()
     {
         LoadTable &lt = cand_partial_lts[lt_id];
         lt.approach = EncodeMethod::PARITY_MERGE;
-        lt.pm_nodes = pm_nodes;      // re-encoding node
+        lt.enc_nodes = pm_nodes;     // re-encoding node
         lt.slt.assign(num_nodes, 0); // send load table
         lt.rlt.assign(num_nodes, 0); // recv load table
 

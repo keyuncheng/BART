@@ -61,41 +61,18 @@ int main(int argc, char *argv[])
     if (approach == "SM")
     {
         // StripeMerge
-
-        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
-        // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
-        printf("Step 1: construct stripe groups\n");
-        stripe_batch.constructSGByCost();
-        // stripe_batch.constructSGInSequence();
-        // stripe_batch.constructSGByRandomPick();
-        stripe_batch.print();
-
-        // Step 2: generate transition solutions from all stripe groups
-        printf("Step 2: generate transition solution\n");
         StripeMerge stripe_merge(random_generator);
+        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         stripe_merge.genTransSolution(stripe_batch, trans_solution);
         trans_solution.print();
     }
     else if (approach == "BT")
     {
-        // Balanced Transition
-
-        printf("Step 1: construct stripe groups\n");
-        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
-        // Step 1: construct stripe groups
-        stripe_batch.constructSGByCost();
-        // stripe_batch.constructSGInSequence();
-        // stripe_batch.constructSGByRandomPick();
-        // stripe_batch.constructByCostAndSendLoad(stripes);
-        // stripe_batch.constructBySendLoadAndCost(stripes, random_generator);
-        // stripe_batch.constructBySendLoadAndCostv2(stripes, random_generator);
-        stripe_batch.print();
-
-        // Step 2 - 3: select encoding method and parity generation nodes
-        // TODO: fix load table selection
+        // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
-        printf("Step 2: generate partial solution for parity generation\n");
-        balanced_conversion.genParityGenerationLTs(stripe_batch);
+        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
+        balanced_conversion.genTransSolution(stripe_batch, trans_solution);
+        trans_solution.print();
 
         // // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
 

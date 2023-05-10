@@ -25,5 +25,6 @@ using namespace std;
 #define INVALID_STRIPE_ID UINT8_MAX
 #define INVALID_NODE_ID UINT16_MAX
 #define INVALID_BLK_ID UINT8_MAX
+#define INVALID_VTX_ID UINT64_MAX
 
 #endif // __INCLUDE_HH__

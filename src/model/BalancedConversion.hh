@@ -4,12 +4,17 @@
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
 #include "TransSolution.hh"
+#include "Bipartite.hh"
 // #include "RecvBipartite.hh"
 
 class BalancedConversion
 {
 private:
     /* data */
+    void genParityGenerationLTs(StripeBatch &stripe_batch);
+    void genBlockRelocation(StripeBatch &stripe_batch, TransSolution &trans_solution);
+    void buildTransTasks(StripeBatch &stripe_batch, unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc, unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement, TransSolution &trans_solution);
+
 public:
     mt19937 &random_generator;
 
@@ -17,8 +22,6 @@ public:
     ~BalancedConversion();
 
     void genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution);
-
-    void genParityGenerationLTs(StripeBatch &stripe_batch);
 
     // void getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator);
 

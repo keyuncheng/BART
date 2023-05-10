@@ -10,8 +10,20 @@ BalancedConversion::~BalancedConversion()
 
 void BalancedConversion::genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution)
 {
+    // Step 1: construct stripe groups
+    printf("Step 1: construct stripe groups\n");
+    stripe_batch.constructSGByCost();
+    // stripe_batch.constructSGInSequence();
+    // stripe_batch.constructSGByRandomPick();
+    stripe_batch.print();
+
     // Step 2 - 3: select encoding method and parity generation nodes
+    printf("Step 2 - 3: select encoding method and parity generation nodes\n");
     genParityGenerationLTs(stripe_batch);
+
+    // Step 4: scheduling (data and parity) block relocation
+    printf("Step 4: scheduling (data and parity) block relocation\n");
+    genBlockRelocation(stripe_batch, trans_solution);
 }
 
 void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
@@ -200,6 +212,155 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     Utils::printVector(cur_lt.rlt);
     printf("bandwidth: %u\n", cur_lt.bw);
     printf("number of re-encoding groups: (%u / %u), num of parity merging groups: (%u / %u)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
+}
+
+void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolution &trans_solution)
+{
+    // NOTE: at this point, the parity generation (encoding methods and nodes are fixed); in this step we schedule the nodes to relocate the data and parity blocks for each stripe group
+
+    ConvertibleCode &code = stripe_batch.code;
+    uint16_t num_nodes = stripe_batch.settings.num_nodes;
+
+    // step 1: for each stripe group, find the data and parity blocks that needs to be relocated, and available nodes for relocation
+    unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement;
+    unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc; // for each block in the final stripe, record <final_block_id, node it stored>
+    unordered_map<uint32_t, vector<uint16_t>> sg_avail_nodes;
+
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
+
+        // init block placement
+        sg_final_block_placement[sg_id] = vector<uint16_t>(code.n_f, INVALID_NODE_ID);
+        vector<bool> is_node_relocated(num_nodes, 0);
+
+        // find the blocks to be relocated
+        for (uint8_t final_block_id = 0; final_block_id < code.n_f; final_block_id++)
+        {
+            uint16_t cur_placed_node_id = INVALID_NODE_ID;
+            if (final_block_id < code.k_f)
+            { // data block
+                uint8_t stripe_id = final_block_id / code.lambda_i;
+                uint8_t block_id = final_block_id % code.lambda_i;
+                cur_placed_node_id = stripe_group.sg_stripes[stripe_id]->indices[block_id];
+            }
+            else
+            { // parity block
+                uint8_t parity_id = final_block_id - code.k_f;
+                cur_placed_node_id = stripe_group.applied_lt.enc_nodes[parity_id]; // check the applied load table
+            }
+            if (is_node_relocated[cur_placed_node_id] == false)
+            {
+                // directly store the block at the node
+                sg_final_block_placement[sg_id][final_block_id] = cur_placed_node_id;
+                is_node_relocated[cur_placed_node_id] = true; // mark the node as relocated
+            }
+            else
+            {
+                // mark the block to be relocated
+                sg_blocks_to_reloc[sg_id].push_back(pair<uint8_t, uint16_t>(final_block_id, cur_placed_node_id));
+            }
+        }
+
+        // find available nodes
+        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+        {
+            if (is_node_relocated[node_id] == false)
+            {
+                sg_avail_nodes[sg_id].push_back(node_id);
+            }
+        }
+    }
+
+    // step 2: construct bipartite graph
+    Bipartite bipartite;
+
+    unordered_map<uint32_t, uint64_t> node2vtx_map;               // node to vertex map
+    unordered_map<uint64_t, uint32_t> vtx2node_map;               // node to vertex map
+    unordered_map<uint64_t, pair<uint32_t, uint8_t>> lvtx2sg_map; // left vertex to stripe group map
+    unordered_map<uint32_t, vector<uint64_t>> sg2lvtx_map;        // stripe group to left vertex map (corresponding to sg_blocks_to_reloc)
+
+    for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+    {
+        // for each node, create a right vertex
+        uint64_t rvtx_id = bipartite.addVertex(VertexType::RIGHT);
+        node2vtx_map[node_id] = rvtx_id;
+        vtx2node_map[rvtx_id] = node_id;
+    }
+
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+
+        // for each block to relocate, create a left vertex
+        for (auto &item : sg_blocks_to_reloc[sg_id])
+        {
+            uint64_t lvtx_id = bipartite.addVertex(VertexType::LEFT);
+            lvtx2sg_map[lvtx_id] = pair<uint32_t, uint8_t>(sg_id, item.first); // record stripe group information for the vertex
+            sg2lvtx_map[sg_id].push_back(lvtx_id);
+
+            // for each available nodes of the stripe group, add an edge
+            for (auto avail_node_id : sg_avail_nodes[sg_id])
+            {
+                bipartite.addEdge(bipartite.left_vertices_map[lvtx_id], bipartite.right_vertices_map[node2vtx_map[avail_node_id]]);
+            }
+        }
+    }
+
+    // accumulate receive load of parity generation
+    LoadTable lt;
+    lt.rlt.assign(num_nodes, 0);
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
+        if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
+        {
+            uint16_t enc_node = stripe_group.applied_lt.enc_nodes[0];
+            lt.rlt[enc_node] += code.k_f - stripe_group.data_dist[enc_node]; // require to receive # of data blocks
+        }
+        else if (stripe_group.applied_lt.approach == EncodeMethod::PARITY_MERGE)
+        {
+            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+            {
+                uint16_t enc_node = stripe_group.applied_lt.enc_nodes[parity_id];
+                lt.rlt[enc_node] += code.lambda_i - stripe_group.parity_dists[parity_id][enc_node]; // require to receive # of parity blocks
+            }
+        }
+    }
+
+    // initialize bipartite right vertices degrees with the receive load of parity generation
+    for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+    {
+        Vertex &rvtx = *bipartite.right_vertices_map[node2vtx_map[node_id]];
+        rvtx.in_degree = lt.rlt[node_id];
+    }
+
+    // step 3: find optimal semi-matching (based on the initial receive load)
+    vector<uint64_t> sm_edges = bipartite.findOptSemiMatching();
+
+    // step 4: build solution
+    for (auto edge_id : sm_edges)
+    {
+        Edge &edge = bipartite.edges_map[edge_id];
+        Vertex &lvtx = *bipartite.left_vertices_map[edge.lvtx->id];
+        uint32_t sg_id = lvtx2sg_map[lvtx.id].first;
+        uint8_t final_block_id = lvtx2sg_map[lvtx.id].second;
+        uint16_t reloc_node_id = vtx2node_map[edge.rvtx->id];
+
+        sg_final_block_placement[sg_id][final_block_id] = reloc_node_id; // record place node_id
+    }
+
+    buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
+}
+
+void BalancedConversion::buildTransTasks(StripeBatch &stripe_batch, unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc, unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement, TransSolution &trans_solution)
+{
+    // To Implement
+    // 1. parity computation
+
+    // 2. block relocation
 }
 
 // void BalancedConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
