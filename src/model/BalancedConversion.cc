@@ -28,7 +28,6 @@ void BalancedConversion::genTransSolution(StripeBatch &stripe_batch, TransSoluti
 
 void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
 {
-    ConvertibleCode &code = stripe_batch.code;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
     // maintain a dynamic load table for current stripe groups
@@ -183,7 +182,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
             // the solution cannot be further optimized
             break;
         }
-        printf("cur_lt after iteration %u:\n", iter);
+        printf("cur_lt after iteration %lu:\n", iter);
         printf("send load: ");
         Utils::printVector(cur_lt.slt);
         printf("recv load: ");
@@ -194,7 +193,6 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     // clear the candidate load tables for memory saving
     for (auto &item : stripe_batch.selected_sgs)
     {
-        uint32_t sg_id = item.first;
         StripeGroup &stripe_group = item.second;
         stripe_group.cand_partial_lts.clear();
     }
@@ -211,7 +209,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     printf("recv load: ");
     Utils::printVector(cur_lt.rlt);
     printf("bandwidth: %u\n", cur_lt.bw);
-    printf("number of re-encoding groups: (%u / %u), num of parity merging groups: (%u / %u)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
+    printf("number of re-encoding groups: (%u / %lu), num of parity merging groups: (%lu / %lu)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
 }
 
 void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolution &trans_solution)
@@ -313,7 +311,6 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
     lt.rlt.assign(num_nodes, 0);
     for (auto &item : stripe_batch.selected_sgs)
     {
-        uint32_t sg_id = item.first;
         StripeGroup &stripe_group = item.second;
         if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
         {
@@ -340,7 +337,7 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
     // step 3: find optimal semi-matching (based on the initial receive load)
     vector<uint64_t> sm_edges = bipartite.findOptSemiMatching();
 
-    // step 4: build solution
+    // update the final_block_placement from chosen edges
     for (auto edge_id : sm_edges)
     {
         Edge &edge = bipartite.edges_map[edge_id];
@@ -352,15 +349,178 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
         sg_final_block_placement[sg_id][final_block_id] = reloc_node_id; // record place node_id
     }
 
-    buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
+    // step 4: build solution
+    // buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
 }
 
 void BalancedConversion::buildTransTasks(StripeBatch &stripe_batch, unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc, unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement, TransSolution &trans_solution)
 {
-    // To Implement
-    // 1. parity computation
+    ConvertibleCode &code = stripe_batch.code;
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
 
-    // 2. block relocation
+        // 1 - 2: generate tasks for parity computation
+
+        // 1. Re-encoding
+        if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
+        {
+            uint16_t enc_node = stripe_group.applied_lt.enc_nodes[0];
+
+            // read code.k_f data blocks
+            for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            {
+                Stripe *stripe = stripe_group.sg_stripes[stripe_id];
+                for (uint8_t data_block_id = 0; data_block_id < code.k_i; data_block_id++)
+                {
+                    uint16_t data_node_id = stripe->indices[data_block_id];
+
+                    if (TRANSFER_TASKS_ONLY == false)
+                    {
+                        // 1.1 create data block read tasks
+                        TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe->id, stripe_id, data_block_id, data_node_id);
+                        trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
+                        trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
+                    }
+
+                    // 1.2 create transfer task
+                    // check if the parity block is not located at min_bw_node
+                    if (data_node_id != enc_node)
+                    {
+                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe->id, stripe_id, data_block_id, data_node_id);
+                        transfer_task->dst_node_id = enc_node;
+                        trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
+                        trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
+                    }
+                }
+
+                if (TRANSFER_TASKS_ONLY == false)
+                {
+                    // 1.3 create compute task
+                    for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+                    {
+                        TransTask *compute_task = new TransTask(TransTaskType::COMPUTE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
+                        trans_solution.sg_tasks[stripe_group.id].push_back(compute_task);
+                        trans_solution.sg_compute_tasks[stripe_group.id].push_back(compute_task);
+
+                        // 1.4 create write task
+                        TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
+                        trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
+                        trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
+                    }
+                }
+            }
+        }
+        else if (stripe_group.applied_lt.approach == EncodeMethod::PARITY_MERGE)
+        {
+            // 2. Parity Merging
+            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+            {
+                uint16_t enc_node = stripe_group.applied_lt.enc_nodes[parity_id];
+
+                for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+                {
+                    Stripe *stripe = stripe_group.sg_stripes[stripe_id];
+                    uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
+
+                    if (TRANSFER_TASKS_ONLY == false)
+                    {
+                        // 2.1 create parity block read tasks
+                        TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe->id, stripe_id, code.k_i + parity_id, parity_node_id);
+                        trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
+                        trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
+                    }
+
+                    // 2.2 create transfer task
+                    // check if the parity block is not located at enc_node
+                    if (parity_node_id != enc_node)
+                    {
+                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe->id, stripe_id, code.k_i + parity_id, parity_node_id);
+                        transfer_task->dst_node_id = enc_node;
+                        trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
+                        trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
+                    }
+                }
+
+                if (TRANSFER_TASKS_ONLY == false)
+                {
+                    // 2.3 create compute task
+                    TransTask *compute_task = new TransTask(TransTaskType::COMPUTE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
+                    trans_solution.sg_tasks[stripe_group.id].push_back(compute_task);
+                    trans_solution.sg_compute_tasks[stripe_group.id].push_back(compute_task);
+
+                    // 2.4 create write task
+                    TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
+                    trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
+                    trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
+                }
+
+                if (TRANSFER_TASKS_ONLY == false)
+                {
+                    for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+                    {
+                        Stripe *stripe = stripe_group.sg_stripes[stripe_id];
+                        uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
+
+                        // 2.5 create parity block delete tasks
+                        TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, stripe->id, stripe_id, code.k_f + parity_id, parity_node_id);
+                        trans_solution.sg_tasks[stripe_group.id].push_back(delete_task);
+                        trans_solution.sg_delete_tasks[stripe_group.id].push_back(delete_task);
+                    }
+                }
+            }
+        }
+
+        // 3. generate tasks for (data and parity) block relocation
+        vector<pair<uint8_t, uint16_t>> &blocks_to_reloc = sg_blocks_to_reloc[sg_id];
+        vector<uint16_t> final_block_placement = sg_final_block_placement[sg_id];
+
+        for (auto &item : blocks_to_reloc)
+        {
+            uint8_t final_block_id = item.first;
+            uint16_t source_node = item.second;
+            uint16_t dst_node = final_block_placement[final_block_id];
+
+            uint32_t stripe_id_global = INVALID_STRIPE_ID_GLOBAL;
+            uint8_t stripe_id = INVALID_STRIPE_ID;
+            uint8_t block_id = INVALID_BLK_ID;
+            if (final_block_id < code.k_f)
+            {
+                stripe_id = final_block_id / code.lambda_i;
+                block_id = final_block_id % code.lambda_i;
+                stripe_id_global = stripe_group.sg_stripes[stripe_id]->id;
+            }
+
+            if (TRANSFER_TASKS_ONLY == false)
+            {
+                // 3.1 read tasks
+                TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, source_node);
+
+                trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
+                trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
+            }
+
+            // 3.2 transfer tasks
+            TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, source_node);
+            transfer_task->dst_node_id = dst_node;
+            trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
+            trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
+
+            if (TRANSFER_TASKS_ONLY == false)
+            {
+                // 3.3 write tasks
+                TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, dst_node);
+                trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
+                trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
+
+                // 3.4 delete tasks
+                TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, stripe_group.sg_stripes[stripe_id]->id, stripe_id, block_id, source_node);
+                trans_solution.sg_tasks[stripe_group.id].push_back(delete_task);
+                trans_solution.sg_delete_tasks[stripe_group.id].push_back(delete_task);
+            }
+        }
+    }
 }
 
 // void BalancedConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)

@@ -55,6 +55,7 @@ uint64_t Bipartite::addEdge(Vertex *lvtx, Vertex *rvtx)
 vector<uint64_t> Bipartite::findOptSemiMatching()
 {
     // To Implement
+    return vector<uint64_t>();
 }
 
 void Bipartite::clear()

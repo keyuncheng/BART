@@ -88,7 +88,7 @@ void StripeMerge::genTransSolution(StripeGroup &stripe_group, TransSolution &tra
         final_block_dist[min_bw_node]++;                           // the block is computed at min_bw_node, which may need to be relocated later
         final_block_placement[code.k_f + parity_id] = min_bw_node; // mark the node for parity block computation
 
-        for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+        for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
             Stripe *stripe = stripe_group.sg_stripes[stripe_id];
             uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
@@ -127,7 +127,7 @@ void StripeMerge::genTransSolution(StripeGroup &stripe_group, TransSolution &tra
 
         if (TRANSFER_TASKS_ONLY == false)
         {
-            for (size_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
             {
                 Stripe *stripe = stripe_group.sg_stripes[stripe_id];
                 uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];

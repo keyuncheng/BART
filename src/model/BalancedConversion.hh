@@ -5,6 +5,7 @@
 #include "StripeBatch.hh"
 #include "TransSolution.hh"
 #include "Bipartite.hh"
+#include "TransTask.hh"
 // #include "RecvBipartite.hh"
 
 class BalancedConversion
