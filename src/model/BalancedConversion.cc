@@ -279,6 +279,7 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
     unordered_map<uint64_t, pair<uint32_t, uint8_t>> lvtx2sg_map; // left vertex to stripe group map
     unordered_map<uint32_t, vector<uint64_t>> sg2lvtx_map;        // stripe group to left vertex map (corresponding to sg_blocks_to_reloc)
 
+    // create right vertices for nodes (rvtx_id <=> node_id)
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
         // for each node, create a right vertex
@@ -291,17 +292,19 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
     {
         uint32_t sg_id = item.first;
 
-        // for each block to relocate, create a left vertex
+        // for each block to relocate, create a left vertex (lvtx_id <=> block_id)
         for (auto &item : sg_blocks_to_reloc[sg_id])
         {
             uint64_t lvtx_id = bipartite.addVertex(VertexType::LEFT);
-            lvtx2sg_map[lvtx_id] = pair<uint32_t, uint8_t>(sg_id, item.first); // record stripe group information for the vertex
+
+            // record stripe group information for the vertex
+            lvtx2sg_map[lvtx_id] = pair<uint32_t, uint8_t>(sg_id, item.first);
             sg2lvtx_map[sg_id].push_back(lvtx_id);
 
             // for each available nodes of the stripe group, add an edge
             for (auto avail_node_id : sg_avail_nodes[sg_id])
             {
-                bipartite.addEdge(bipartite.left_vertices_map[lvtx_id], bipartite.right_vertices_map[node2vtx_map[avail_node_id]]);
+                bipartite.addEdge(lvtx_id, node2vtx_map[avail_node_id]);
             }
         }
     }
@@ -330,27 +333,27 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
     // initialize bipartite right vertices degrees with the receive load of parity generation
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
-        Vertex &rvtx = *bipartite.right_vertices_map[node2vtx_map[node_id]];
+        Vertex &rvtx = bipartite.right_vertices_map[node2vtx_map[node_id]];
         rvtx.in_degree = lt.rlt[node_id];
     }
 
     // step 3: find optimal semi-matching (based on the initial receive load)
-    vector<uint64_t> sm_edges = bipartite.findOptSemiMatching();
+    vector<uint64_t> sm_edges = bipartite.findOptSemiMatching(lvtx2sg_map, sg2lvtx_map);
 
     // update the final_block_placement from chosen edges
     for (auto edge_id : sm_edges)
     {
         Edge &edge = bipartite.edges_map[edge_id];
-        Vertex &lvtx = *bipartite.left_vertices_map[edge.lvtx->id];
+        Vertex &lvtx = bipartite.left_vertices_map[edge.lvtx_id];
         uint32_t sg_id = lvtx2sg_map[lvtx.id].first;
         uint8_t final_block_id = lvtx2sg_map[lvtx.id].second;
-        uint16_t reloc_node_id = vtx2node_map[edge.rvtx->id];
+        uint16_t reloc_node_id = vtx2node_map[edge.rvtx_id];
 
         sg_final_block_placement[sg_id][final_block_id] = reloc_node_id; // record place node_id
     }
 
     // step 4: build solution
-    // buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
+    buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
 }
 
 void BalancedConversion::buildTransTasks(StripeBatch &stripe_batch, unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc, unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement, TransSolution &trans_solution)
