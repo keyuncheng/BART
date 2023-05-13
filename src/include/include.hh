@@ -18,6 +18,7 @@
 #include <map>
 #include <queue>
 #include <cassert>
+#include <fstream>
 
 using namespace std;
 

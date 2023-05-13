@@ -1,5 +1,9 @@
 #include "ClusterSettings.hh"
 
+ClusterSettings::ClusterSettings()
+{
+}
+
 ClusterSettings::ClusterSettings(uint16_t _num_nodes, uint32_t _num_stripes) : num_nodes(_num_nodes), num_stripes(_num_stripes)
 {
 }

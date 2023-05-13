@@ -12,6 +12,7 @@ public:
     uint16_t num_nodes;
     uint32_t num_stripes;
 
+    ClusterSettings();
     ClusterSettings(uint16_t _num_nodes, uint32_t _num_stripes);
     ~ClusterSettings();
 
