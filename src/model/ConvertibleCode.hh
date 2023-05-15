@@ -34,8 +34,6 @@ public:
     void print();
 
     bool isValidForPM();
-
-private:
     uint8_t lcm(uint8_t a, uint8_t b);
 };
 

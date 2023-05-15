@@ -1,6 +1,6 @@
 #include "CoordNode.hh"
 
-CoordNode::CoordNode(/* args */)
+CoordNode::CoordNode(Config &_config) : config(_config)
 {
 }
 

@@ -4,16 +4,17 @@
 #include "../include/include.hh"
 #include "../model/ConvertibleCode.hh"
 #include "../model/ClusterSettings.hh"
-#include "inipp.h"
+#include "../util/inipp.h"
 
 class Config
 {
 private:
 public:
+    // Common
     string filename;
     ConvertibleCode code;
     ClusterSettings settings;
-    in_port_t port;
+    uint16_t port;
 
     // Coordinator
     string coord_ip;

@@ -2,6 +2,7 @@
 #define __COORD_NODE_HH__
 
 #include "../include/include.hh"
+#include "../util/Config.hh"
 #include "Node.hh"
 
 class CoordNode
@@ -9,7 +10,9 @@ class CoordNode
 private:
     /* data */
 public:
-    CoordNode(/* args */);
+    Config &config;
+
+    CoordNode(Config &_config);
     ~CoordNode();
 };
 

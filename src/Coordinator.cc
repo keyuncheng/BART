@@ -1,6 +1,6 @@
 #include "include/include.hh"
 #include "util/Config.hh"
-#include "CoordNode.hh"
+#include "comm/CoordNode.hh"
 
 int main(int argc, char **argv)
 {
@@ -15,5 +15,5 @@ int main(int argc, char **argv)
     Config config(config_filename);
     config.print();
 
-    CoordNode coord_node;
+    CoordNode coord_node(config);
 }
