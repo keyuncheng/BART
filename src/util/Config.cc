@@ -7,9 +7,9 @@ Config::Config(string filename)
     ini.parse(is);
 
     // Common
-    uint8_t k_i, m_i, k_f, m_f;
-    uint32_t num_stripes;
-    uint16_t num_nodes;
+    uint8_t k_i = 0, m_i = 0, k_f = 0, m_f = 0;
+    uint32_t num_stripes = 0;
+    uint16_t num_nodes = 0;
     string agent_ips_raw;
 
     inipp::get_value(ini.sections["Common"], "k_i", k_i);
@@ -29,7 +29,7 @@ Config::Config(string filename)
     uint16_t aid = 0;
     agent_ip_map[aid] = token;
     aid++;
-    while (token = strtok(NULL, ","))
+    while ((token = strtok(NULL, ",")))
     {
         agent_ip_map[aid] = token;
         aid++;

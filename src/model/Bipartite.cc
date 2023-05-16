@@ -28,8 +28,8 @@ uint64_t Bipartite::addVertex(VertexType type)
     // create new vertex
     uint64_t new_vtx_id = vtx_map_ptr->size(); // vertex id
     Vertex &vtx = (*vtx_map_ptr)[new_vtx_id];
-    (*vtx_map_ptr)[new_vtx_id].id = new_vtx_id;
-    (*vtx_map_ptr)[new_vtx_id].type = type;
+    vtx.id = new_vtx_id;
+    vtx.type = type;
 
     return new_vtx_id;
 }
@@ -88,7 +88,6 @@ vector<uint64_t> Bipartite::findOptSemiMatching(unordered_map<uint64_t, pair<uin
     for (uint64_t idx = 0; idx < num_lvtxes; idx++)
     {
         Vertex &root_lvtx = left_vertices_map[idx];
-        uint64_t sg_id = lvtx2sg_map[root_lvtx.id].first;
 
         // build alternating search tree with lvtx as the root
         queue<Vertex *> bfs_queue;
