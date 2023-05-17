@@ -10,8 +10,8 @@ aux_source_directory(. DIR_SRCS)
 
 add_executable(GenPlacement GenPlacement.cc)
 add_executable(Simulator Simulator.cc)
-add_executable(Coordinator Coordinator.cc)
+add_executable(Controller Controller.cc)
 
 target_link_libraries(GenPlacement util model)
 target_link_libraries(Simulator util model)
-target_link_libraries(Coordinator comm util model)
+target_link_libraries(Controller comm util model pthread sockpp)

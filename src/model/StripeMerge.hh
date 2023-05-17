@@ -21,4 +21,4 @@ public:
     void genTransSolution(StripeGroup &stripe_group, TransSolution &trans_solution);
 };
 
-#endif
+#endif // __STRIPE_MERGE_G_HH__

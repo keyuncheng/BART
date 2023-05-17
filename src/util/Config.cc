@@ -19,9 +19,11 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "num_nodes", num_nodes);
     inipp::get_value(ini.sections["Common"], "num_stripes", num_stripes);
     inipp::get_value(ini.sections["Common"], "port", port);
+    inipp::get_value(ini.sections["Common"], "num_cmd_handler_thread", num_cmd_handler_thread);
 
     inipp::get_value(ini.sections["Coordinator"], "ip", coord_ip);
     inipp::get_value(ini.sections["Coordinator"], "agent_ips", agent_ips_raw);
+    inipp::get_value(ini.sections["Coordinator"], "num_cmd_dist_thread", num_cmd_dist_thread);
 
     char *raw_str = (char *)malloc(agent_ips_raw.size() * sizeof(char));
     memcpy(raw_str, agent_ips_raw.c_str(), agent_ips_raw.size() * sizeof(char));

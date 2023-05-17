@@ -81,4 +81,4 @@ public:
     }
 };
 
-#endif __MESSAGE_QUEUE_HH__
+#endif // __MESSAGE_QUEUE_HH__

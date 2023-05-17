@@ -30,4 +30,8 @@ using namespace std;
 #define INVALID_BLK_ID UINT8_MAX
 #define INVALID_VTX_ID UINT64_MAX
 
+#define MAX_MSG_QUEUE_LEN 1024
+#define MAX_CMD_LEN 1024
+#define CTRL_NODE_ID (INVALID_NODE_ID - 1)
+
 #endif // __INCLUDE_HH__
