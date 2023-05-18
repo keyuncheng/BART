@@ -3,13 +3,11 @@
 Command::Command(/* args */)
 {
     type = CommandType::CMD_UNKNOWN;
-    len = 0;                                                               // command length
-    content = (unsigned char *)calloc(MAX_CMD_LEN, sizeof(unsigned char)); // buffer size
+    len = 0; // command length
 }
 
 Command::~Command()
 {
-    free(content);
 }
 
 void Command::writeUInt(unsigned int val)

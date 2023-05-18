@@ -26,7 +26,7 @@ private:
 public:
     CommandType type;
     uint64_t len; // command length
-    unsigned char *content;
+    unsigned char content[MAX_CMD_LEN];
     uint16_t src_conn_id; // source connection id
     uint16_t dst_conn_id; // dst connection id
 

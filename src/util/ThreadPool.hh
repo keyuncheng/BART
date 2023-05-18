@@ -53,12 +53,11 @@ public:
         {
             threads[thread_id].join();
         }
-        is_finished = true; // set threads as finished
     }
 
     bool finished()
     {
-        return (is_finished == true && queue.IsEmpty() == true);
+        return (is_finished == true && queue->IsEmpty() == true);
     }
 };
 
