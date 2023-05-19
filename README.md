@@ -3,7 +3,7 @@ Balanced Code Conversion
 
 ## Workflow
 
-* Coordinator
+* Controller
     * Generate physical stripes
         * Use middleware: store in ```/data/``` with file name
           ```blk_<stripe_id>_<block_id>```
@@ -32,8 +32,8 @@ Balanced Code Conversion
 
 * Agent
     * Handle the commands
-        * From Coordinators: Parse Transfer command into Send command, and
-          send physical blocks to other Agents
+        * From Controller: Parse Transfer command into Send command, and send
+          physical blocks to other Agents
         * From Agents: Parse Send command and receive physical block
     * Command Format:
         * Read: stripe_id, block_id, final_block_id, physical path

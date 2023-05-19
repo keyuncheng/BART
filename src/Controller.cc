@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        printf("usage: ./Coordinator config_filename");
+        printf("usage: ./Controller config_filename");
         return -1;
     }
 

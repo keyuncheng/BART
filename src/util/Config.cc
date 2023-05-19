@@ -11,7 +11,6 @@ Config::Config(string filename)
     uint32_t num_stripes = 0;
     uint16_t num_nodes = 0;
     string agent_ips_raw;
-
     inipp::get_value(ini.sections["Common"], "k_i", k_i);
     inipp::get_value(ini.sections["Common"], "m_i", m_i);
     inipp::get_value(ini.sections["Common"], "k_f", k_f);
@@ -19,12 +18,16 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "num_nodes", num_nodes);
     inipp::get_value(ini.sections["Common"], "num_stripes", num_stripes);
     inipp::get_value(ini.sections["Common"], "approach", approach);
+    inipp::get_value(ini.sections["Common"], "enable_HDFS", enable_HDFS);
     inipp::get_value(ini.sections["Common"], "port", port);
     inipp::get_value(ini.sections["Common"], "num_cmd_handler_thread", num_cmd_handler_thread);
+    inipp::get_value(ini.sections["Common"], "num_cmd_dist_thread", num_cmd_dist_thread);
 
-    inipp::get_value(ini.sections["Coordinator"], "ip", coord_ip);
-    inipp::get_value(ini.sections["Coordinator"], "agent_ips", agent_ips_raw);
-    inipp::get_value(ini.sections["Coordinator"], "num_cmd_dist_thread", num_cmd_dist_thread);
+    // Controller
+    inipp::get_value(ini.sections["Controller"], "ip", coord_ip);
+    inipp::get_value(ini.sections["Controller"], "agent_ips", agent_ips_raw);
+    inipp::get_value(ini.sections["Controller"], "placement_filename", placement_filename);
+    inipp::get_value(ini.sections["Controller"], "block_mapping_file", block_mapping_file);
 
     char *raw_str = (char *)malloc(agent_ips_raw.size() * sizeof(char));
     memcpy(raw_str, agent_ips_raw.c_str(), agent_ips_raw.size() * sizeof(char));
@@ -52,18 +55,31 @@ Config::~Config()
 
 void Config::print()
 {
+    printf("========= Config ==========\n");
+    printf("Common:\n");
     code.print();
     settings.print();
-    printf("approach: %s\n", approach.c_str());
+    printf("Transition approach: %s\n", approach.c_str());
+    printf("enable_HDFS: %u\n", enable_HDFS);
+    printf("num_cmd_handler_thread: %u\n", num_cmd_handler_thread);
+    printf("num_cmd_dist_thread: %u\n", num_cmd_dist_thread);
+    printf("===========================\n");
 
-    printf("Coordinator:\n");
+    printf("Controller:\n");
     printf("ip: %s:%u\n", coord_ip.c_str(), port);
-    printf("Agent ips (%lu):\n", agent_ip_map.size());
+    printf("placement_filename: %s\n", placement_filename.c_str());
+    printf("block_mapping_file: %s\n", block_mapping_file.c_str());
+    printf("===========================\n");
+
+    printf("Agent (%lu):\n", agent_ip_map.size());
     for (auto &item : agent_ip_map)
     {
-        printf("Agent %u, ip: %s\n", item.first, item.second.c_str());
+        string is_current;
+        if (agent_id == item.first)
+        {
+            is_current = " (current)";
+        }
+        printf("Agent %u%s, ip: %s:%d\n", item.first, is_current.c_str(), item.second.c_str(), port);
     }
-
-    printf("Agent (current):\n");
-    printf("id: %u, ip: %s:%u\n", agent_id, agent_ip_map[agent_id].c_str(), port);
+    printf("===========================\n");
 }

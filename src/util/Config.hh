@@ -11,17 +11,19 @@ class Config
 private:
 public:
     // Common
-    string filename;
     ConvertibleCode code;
     ClusterSettings settings;
     string approach;
+    bool enable_HDFS;
     uint16_t port;
     unsigned int num_cmd_handler_thread;
+    unsigned int num_cmd_dist_thread;
 
-    // Coordinator
+    // Controller
     string coord_ip;
     map<uint16_t, string> agent_ip_map;
-    unsigned int num_cmd_dist_thread;
+    string placement_filename;
+    string block_mapping_file;
 
     // Agent
     uint16_t agent_id;
