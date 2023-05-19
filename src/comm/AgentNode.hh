@@ -4,6 +4,7 @@
 #include "../include/include.hh"
 #include "../util/Config.hh"
 #include "Node.hh"
+#include "CmdDist.hh"
 #include "CmdHandler.hh"
 
 class AgentNode : public Node
@@ -11,7 +12,8 @@ class AgentNode : public Node
 private:
     /* data */
 public:
-    CmdHandler *cmd_handler;
+    CmdHandler *cmd_handler;  // handler commands from Controller and Agents
+    CmdDist *cmd_distributor; // distribute send block commands
 
     AgentNode(uint16_t _self_conn_id, Config &_config);
     ~AgentNode();

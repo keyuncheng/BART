@@ -1,19 +1,53 @@
 # BalancedConversion
 Balanced Code Conversion
 
-## Known issues
+## Workflow
 
-* The current greedy algorithm for finding the load-balanced solution is not
-  good
-    * Need to implement a alternating path based algorithm
+* Coordinator
+    * Generate physical stripes
+        * Use middleware: store in ```/data/``` with file name
+          ```blk_<stripe_id>_<block_id>```
+        * Use HDFS: call HDFS put to write stripes
+    * Store stripe metadata
+        * Placement: ```/metadata/placement```
+            * format: each line represents a (k, m) stripe of length: k + m;
+              store the node ids
+            * <node_id_0> <node_id_1> ... <node_id_k+m-1>
+        * Block mapping: ```/metadata/block_mapping```
+            * It's a verbose version of Placement
+            * format: each line stores the metadata of a block:
+            * <stripe_id> <block_id> <node_id> <absolute_path>
+    * Read stripe metadata
+        * Placement
+        * Block mapping
+    * Generate transition solution with BTS (done)
+    * Parse the transition solution from BTS into commands
+    * Distribute the transition commands to Agents (done)
+    * Wait for all finish signals from all Agents (done)
+        * Report the time
 
-* Reducing the search space: The approach enumeration space is too large
-    * e.g. 100 SGs, the approach enumeration = 2^100 = 1.2676506e+30
-    * Implemented two heuristics to reduce the search space (Feb 25)
-        * Greedy
-        * Iterative replace
+* Balanced Transition Generator (done)
+    * Read stripe placement
+    * Generate transition solution
 
-* Handle re-encoding only coding schemes: lambda_f > 1
-    * Need to make sure that each of lambda_f stripes have k_f data blocks
-    * Need to find lambda_f locations for computation
-    * Need to relocate for lambda_f * m_f parity blocks
+* Agent
+    * Handle the commands
+        * From Coordinators: Parse Transfer command into Send command, and
+          send physical blocks to other Agents
+        * From Agents: Parse Send command and receive physical block
+    * Command Format:
+        * Read: stripe_id, block_id, final_block_id, physical path
+            * Cache into memory
+        * Write: stripe_id, block_id, final_block_id, physical path
+            * From memory to path
+        * Transfer: stripe_id, block_id, final_block_id, src_node_id,
+          dst_node_id
+          * Send: same format
+        * Compute: stripe_id, final_block_id
+        * Delete: stripe_id, block_id, physical path
+    * Pipeline
+        * Read -> Compute
+        * Transfer -> Compute
+        * Transfer -> Write
+        * Compute -> Write
+        * Delete: directly delete
