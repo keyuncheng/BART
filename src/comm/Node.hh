@@ -8,8 +8,6 @@
 #include "sockpp/tcp_acceptor.h"
 #include "../util/Config.hh"
 #include "Command.hh"
-#include "CmdDist.hh"
-#include "CmdHandler.hh"
 
 class Node
 {
@@ -21,14 +19,9 @@ public:
     unordered_map<uint16_t, sockpp::tcp_connector> connectors_map;
     unordered_map<uint16_t, sockpp::tcp_socket> sockets_map;
     sockpp::tcp_acceptor *acceptor;
-    CmdHandler *cmd_handler;
-    CmdDist *cmd_distributor;
 
     Node(uint16_t _self_conn_id, Config &_config);
     ~Node();
-
-    void start();
-    void stop();
 
     void connect_all();
     void connect_one(uint16_t conn_id, string ip, uint16_t port);

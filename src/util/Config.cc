@@ -18,6 +18,7 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "m_f", m_f);
     inipp::get_value(ini.sections["Common"], "num_nodes", num_nodes);
     inipp::get_value(ini.sections["Common"], "num_stripes", num_stripes);
+    inipp::get_value(ini.sections["Common"], "approach", approach);
     inipp::get_value(ini.sections["Common"], "port", port);
     inipp::get_value(ini.sections["Common"], "num_cmd_handler_thread", num_cmd_handler_thread);
 
@@ -53,6 +54,7 @@ void Config::print()
 {
     code.print();
     settings.print();
+    printf("approach: %s\n", approach.c_str());
 
     printf("Coordinator:\n");
     printf("ip: %s:%u\n", coord_ip.c_str(), port);

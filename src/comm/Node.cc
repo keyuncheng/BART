@@ -37,43 +37,12 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
 
     // join ack connector threads
     ack_conn_thread.join();
-
-    // create command handler
-    cmd_handler = new CmdHandler(connectors_map, sockets_map, *acceptor, 1);
-
-    // create command distributor
-    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, 1);
 }
 
 Node::~Node()
 {
-    delete cmd_distributor;
-    delete cmd_handler;
+
     delete acceptor;
-}
-
-void Node::start()
-{
-    // start cmd_handler
-    cmd_handler->start();
-}
-
-void Node::stop()
-{
-    // wait cmd_distributor finish
-    if (cmd_distributor->finished())
-    {
-        cmd_distributor->wait();
-    }
-
-    // wait cmd_handler finish
-    if (cmd_handler->finished())
-    {
-        cmd_handler->wait();
-    }
-
-    // disconnect all connectors
-    disconnect_all();
 }
 
 void Node::connect_all()

@@ -14,6 +14,7 @@ public:
     string filename;
     ConvertibleCode code;
     ClusterSettings settings;
+    string approach;
     uint16_t port;
     unsigned int num_cmd_handler_thread;
 

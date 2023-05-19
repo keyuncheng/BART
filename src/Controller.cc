@@ -15,5 +15,7 @@ int main(int argc, char **argv)
     Config config(config_filename);
     config.print();
 
-    CtrlNode coord_node(config);
+    CtrlNode ctrl_node(CTRL_NODE_ID, config);
+
+    ctrl_node.start();
 }
