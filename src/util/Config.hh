@@ -23,7 +23,7 @@ public:
     string coord_ip;
     map<uint16_t, string> agent_ip_map;
     string placement_filename;
-    string block_mapping_file;
+    string block_mapping_filename;
 
     // Agent
     uint16_t agent_id;
