@@ -1,5 +1,8 @@
-build/
+
 */*.log
 */log.txt
+data/
+metadata/
+
 # Binaries
-Simulator
+build/

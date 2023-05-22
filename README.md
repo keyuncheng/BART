@@ -4,11 +4,11 @@ Balanced Code Conversion
 ## Workflow
 
 * Controller
-    * Generate physical stripes
+    * Generate physical stripes (done)
         * Use middleware: store in ```/data/``` with file name
           ```blk_<stripe_id>_<block_id>```
         * Use HDFS: call HDFS put to write stripes
-    * Store stripe metadata
+    * Store stripe metadata (done)
         * Placement: ```/metadata/placement```
             * format: each line represents a (k, m) stripe of length: k + m;
               store the node ids

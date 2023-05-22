@@ -8,8 +8,8 @@ from pathlib import Path
 def parse_args(cmd_args):
     arg_parser = argparse.ArgumentParser(description="generate physical stripes")
     arg_parser.add_argument("-config_filename", type=str, required=True, help="configuration file name")
-    arg_parser.add_argument("-gen_meta", type=bool, default=False, help="whether to generate metadata files (placement and block mapping)")
-    arg_parser.add_argument("-gen_data", type=bool, default=False, help="whether to generate data in Agents")
+    arg_parser.add_argument("-gen_meta", type=lambda x: (str(x).lower() == 'true'), default=False, help="whether to generate metadata files (placement and block mapping)")
+    arg_parser.add_argument("-gen_data", type=lambda x: (str(x).lower() == 'true'), default=False, help="whether to generate data in Agents")
 
     args = arg_parser.parse_args(cmd_args)
     return args
@@ -67,7 +67,7 @@ def main():
 
     # Generate placement file
     if is_gen_meta == True:
-        print("generate placement placement file {}")
+        print("generate placement placement file {}".format(str(placement_path)))
         cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, placement_path)
         exec_cmd(cmd, exec=True)
     
@@ -78,42 +78,36 @@ def main():
             stripe_indices = [int(block_id) for block_id in line.strip().split(" ")]
             placement.append(stripe_indices)
     
-    # Generate block mapping file
+    # obtain block mapping from placement
     block_mapping = []
+    for stripe_id, stripe_indices in enumerate(placement):
+        for block_id, placed_node_id in enumerate(stripe_indices):
+            block_placement_path = ""
+            if enable_HDFS == False:
+                block_placement_path = data_dir / "block_{}_{}".format(stripe_id, block_id)
+            else:
+                pass # TO IMPLEMENT
+            block_mapping.append([stripe_id, block_id, placed_node_id, block_placement_path])
 
+    # Write block mapping file
     if is_gen_meta == True:
-        print("generate block mapping file {}")
-        for stripe_id, stripe_indices in enumerate(placement):
-            for block_id, placed_node_id in enumerate(stripe_indices):
-                block_placement_path = ""
-                if enable_HDFS == False:
-                    block_placement_path = data_dir / "block_{}_{}".format(stripe_id, block_id)
-                else:
-                    pass # TO IMPLEMENT
-                block_mapping.append([stripe_id, block_id, placed_node_id, block_placement_path])
+        print("generate block mapping file {}".format(str(block_mapping_path)))
 
-    with open("{}".format(str(block_mapping_path)), "w") as f:
-        for stripe_id, block_id, node_id, block_placement_path in block_mapping:
-            f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(block_placement_path)))
+        with open("{}".format(str(block_mapping_path)), "w") as f:
+            for stripe_id, block_id, node_id, block_placement_path in block_mapping:
+                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(block_placement_path)))
 
-    
     # Generate physical blocks (if HDFS not enabled)
     if (is_gen_data == True and enable_HDFS == False):
         print("generate physical blocks on storage nodes")
 
-        # Read node to block mapping
+        # obtain node to block mapping
         node_block_mapping = {}
         for node_id in range(num_nodes):
             node_block_mapping[node_id] = []
 
-        with open("{}".format(str(block_mapping_path)), "r") as f:
-            for line in f.readlines():
-                item = line.strip().split(" ")
-                stripe_id = int(item[0])
-                block_id = int(item[1])
-                node_id = int(item[2])
-                block_placement_path = item[3]
-                node_block_mapping[node_id].append(block_placement_path)
+        for stripe_id, block_id, node_id, block_placement_path in block_mapping:
+            node_block_mapping[node_id].append(block_placement_path)
 
         for node_id in range(num_nodes):
             node_ip = agent_ips[node_id]
@@ -128,7 +122,7 @@ def main():
 
             for block_path in blocks_to_gen:
                 block_size_MB = int(block_size / (1024 * 1024))
-                cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, block_path, block_size_MB)
+                cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, str(block_path), block_size_MB)
                 exec_cmd(cmd, exec=False)
         
 
