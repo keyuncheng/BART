@@ -143,7 +143,7 @@ public:
     // static void getLoadDist(ConvertibleCode &code, ClusterSettings &settings, vector<vector<size_t>> &solutions, vector<size_t> &send_load_dist, vector<size_t> &recv_load_dist);
 
     /**
-     * @brief Dot add two uint vectors
+     * @brief Dot add two unsigned int vectors
      *
      * @param v1
      * @param v2

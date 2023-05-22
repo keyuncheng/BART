@@ -15,7 +15,12 @@ int main(int argc, char **argv)
     Config config(config_filename);
     config.print();
 
-    CtrlNode ctrl_node(CTRL_NODE_ID, config);
+    // read block mapping file
+    vector<vector<pair<uint16_t, string>>> stripe_placements;
 
+    StripeGenerator generator;
+    generator.loadBlockMapping(config.code, config.settings, config.block_mapping_filename, stripe_placements);
+
+    CtrlNode ctrl_node(CTRL_NODE_ID, config);
     ctrl_node.start();
 }

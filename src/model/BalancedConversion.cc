@@ -135,7 +135,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
             }
 
             // randomly choose a best load table
-            uint random_pos = Utils::randomUInt(0, best_lts.size() - 1, random_generator);
+            size_t random_pos = Utils::randomUInt(0, best_lts.size() - 1, random_generator);
             LoadTable *selected_lt = best_lts[random_pos];
 
             // update current load table

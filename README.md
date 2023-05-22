@@ -4,29 +4,29 @@ Balanced Code Conversion
 ## Workflow
 
 * Controller
-    * Generate physical stripes (done)
+    * Generate physical stripes (implemented, verified)
         * Use middleware: store in ```/data/``` with file name
-          ```blk_<stripe_id>_<block_id>```
+          ```block_<stripe_id>_<block_id>```
         * Use HDFS: call HDFS put to write stripes
-    * Store stripe metadata (done)
-        * Placement: ```/metadata/placement```
-            * format: each line represents a (k, m) stripe of length: k + m;
-              store the node ids
-            * <node_id_0> <node_id_1> ... <node_id_k+m-1>
+            * Metadata is obtained from HDFS
+    * Maintain metadata (implemented, verified)
+        * Block placement: ```/metadata/placement```
+            * Each line represents a (k, m) stripe of length: k + m
+            * Line format: <node_id_0> <node_id_1> ... <node_id_k+m-1>
         * Block mapping: ```/metadata/block_mapping```
             * It's a verbose version of Placement
             * format: each line stores the metadata of a block:
-            * <stripe_id> <block_id> <node_id> <absolute_path>
-    * Read stripe metadata
+            * <stripe_id> <block_id> <placed_node_id> <absolute_path>
+    * Read stripe metadata (implemented, verified)
         * Placement
         * Block mapping
-    * Generate transition solution with BTS (done)
-    * Parse the transition solution from BTS into commands
-    * Distribute the transition commands to Agents (done)
-    * Wait for all finish signals from all Agents (done)
+    * Generate transition solution with BTS (implemented)
+    * Parse the transition solution from BTS into commands (on-going)
+    * Distribute the transition commands to Agents (on-going)
+    * Wait for all finish signals from all Agents (implemented)
         * Report the time
 
-* Balanced Transition Generator (done)
+* Balanced Transition Generator (implemented, partially verified)
     * Read stripe placement
     * Generate transition solution
 

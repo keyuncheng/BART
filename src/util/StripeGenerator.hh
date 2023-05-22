@@ -22,6 +22,18 @@ public:
 
     void storeStripes(vector<Stripe> &stripes, string placement_file);
     bool loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes);
+
+    /**
+     * @brief read block mapping file
+     *
+     * @param code
+     * @param settings
+     * @param block_mapping_file
+     * @param stripe_placements <stripe <block> <placed_node_id, placed_path>>
+     * @return true
+     * @return false
+     */
+    bool loadBlockMapping(ConvertibleCode &code, ClusterSettings &settings, string block_mapping_file, vector<vector<pair<uint16_t, string>>> &stripe_placements);
 };
 
 #endif // __STRIPE_GENERATOR_HH__

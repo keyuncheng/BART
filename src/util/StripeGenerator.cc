@@ -21,7 +21,7 @@ void StripeGenerator::genRandomStripes(ConvertibleCode &code, ClusterSettings &s
         nodes[node_id] = node_id;
     }
 
-    for (uint stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
+    for (uint32_t stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
     {
         // set stripe
         Stripe &stripe = stripes[stripe_id];
@@ -66,7 +66,7 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
 
     if (ifs.fail())
     {
-        printf("invalid parameters\n");
+        printf("invalid placement file: %s\n", placement_file.c_str());
         return false;
     }
 
@@ -75,7 +75,7 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
     stripes.assign(settings.num_stripes, Stripe());
 
     string line;
-    uint stripe_id = 0;
+    uint32_t stripe_id = 0;
     while (getline(ifs, line))
     {
         // set stripe
@@ -98,6 +98,65 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
     ifs.close();
 
     printf("finished loading %lu stripes from %s\n", stripes.size(), placement_file.c_str());
+
+    return true;
+}
+
+bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &settings, string block_mapping_file, vector<vector<pair<uint16_t, string>>> &stripe_placements)
+{
+    ifstream ifs(block_mapping_file.c_str());
+
+    if (ifs.fail())
+    {
+        printf("invalid block mapping file: %s\n", block_mapping_file.c_str());
+        return false;
+    }
+
+    // init stripe placement
+    stripe_placements.clear();
+    stripe_placements.assign(settings.num_stripes, vector<pair<uint16_t, string>>(code.n_i, pair<uint16_t, string>(0, "")));
+
+    string line;
+    uint64_t record_id = 0;
+    while (getline(ifs, line))
+    {
+        // set stripe
+        uint32_t stripe_id = INVALID_STRIPE_ID_GLOBAL;
+        uint8_t block_id = INVALID_BLK_ID;
+        uint16_t placed_node_id = INVALID_NODE_ID;
+        string placed_path = "";
+
+        istringstream iss(line);
+        unsigned int val;
+
+        iss >> val;
+        stripe_id = val; // get stripe_id
+
+        iss >> val;
+        block_id = val; // get block_id
+
+        iss >> val;
+        placed_node_id = val; // get placed_node_id
+
+        iss >> placed_path; // get placed_path
+
+        stripe_placements[stripe_id][block_id].first = placed_node_id;
+        stripe_placements[stripe_id][block_id].second = placed_path;
+
+        record_id++;
+    }
+
+    ifs.close();
+
+    // for (uint32_t stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
+    // {
+    //     for (uint8_t block_id = 0; block_id < code.n_i; block_id++)
+    //     {
+    //         printf("stripe_id: %u, block_id: %u, placed_node_id: %u, placed_path: %s\n", stripe_id, block_id, stripe_placements[stripe_id][block_id].first, stripe_placements[stripe_id][block_id].second.c_str());
+    //     }
+    // }
+
+    printf("finished loading %ld blocks metadata from %s\n", record_id, block_mapping_file.c_str());
 
     return true;
 }
