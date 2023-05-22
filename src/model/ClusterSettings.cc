@@ -14,7 +14,7 @@ ClusterSettings::~ClusterSettings()
 
 void ClusterSettings::print()
 {
-    printf("ClusterSettings: num nodes: %u, num_stripes: %u\n", num_nodes, num_stripes);
+    printf("ClusterSettings: num_nodes: %u, num_stripes: %u\n", num_nodes, num_stripes);
 }
 
 bool ClusterSettings::isParamValid(const ConvertibleCode &code)

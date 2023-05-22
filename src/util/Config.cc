@@ -7,9 +7,9 @@ Config::Config(string filename)
     ini.parse(is);
 
     // Common
-    uint8_t k_i = 0, m_i = 0, k_f = 0, m_f = 0;
-    uint32_t num_stripes = 0;
-    uint16_t num_nodes = 0;
+    unsigned int k_i = 0, m_i = 0, k_f = 0, m_f = 0;
+    unsigned int num_stripes = 0;
+    unsigned int num_nodes = 0;
     string agent_ips_raw;
     inipp::get_value(ini.sections["Common"], "k_i", k_i);
     inipp::get_value(ini.sections["Common"], "m_i", m_i);
@@ -19,6 +19,7 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "num_stripes", num_stripes);
     inipp::get_value(ini.sections["Common"], "approach", approach);
     inipp::get_value(ini.sections["Common"], "enable_HDFS", enable_HDFS);
+    inipp::get_value(ini.sections["Common"], "block_size", block_size);
     inipp::get_value(ini.sections["Common"], "port", port);
     inipp::get_value(ini.sections["Common"], "num_cmd_handler_thread", num_cmd_handler_thread);
     inipp::get_value(ini.sections["Common"], "num_cmd_dist_thread", num_cmd_dist_thread);
@@ -61,6 +62,7 @@ void Config::print()
     settings.print();
     printf("Transition approach: %s\n", approach.c_str());
     printf("enable_HDFS: %u\n", enable_HDFS);
+    printf("block_size: %u\n", block_size);
     printf("num_cmd_handler_thread: %u\n", num_cmd_handler_thread);
     printf("num_cmd_dist_thread: %u\n", num_cmd_dist_thread);
     printf("===========================\n");

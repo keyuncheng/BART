@@ -8,12 +8,20 @@ from pathlib import Path
 def parse_args(cmd_args):
     arg_parser = argparse.ArgumentParser(description="generate physical stripes")
     arg_parser.add_argument("-config_filename", type=str, required=True, help="configuration file name")
-    arg_parser.add_argument("-gen_meta", type=bool, default=True, help="whether to generate metadata files (placement and block mapping)")
+    arg_parser.add_argument("-gen_meta", type=bool, default=False, help="whether to generate metadata files (placement and block mapping)")
     arg_parser.add_argument("-gen_data", type=bool, default=False, help="whether to generate data in Agents")
 
     args = arg_parser.parse_args(cmd_args)
     return args
 
+def exec_cmd(cmd, exec=False):
+    print("Execute Command: {}".format(cmd))
+    msg = ""
+    if exec == True:
+        return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
+        msg = return_str.decode().strip()
+        print(msg)
+    return msg
 
 def main():
     args = parse_args(sys.argv[1:])
@@ -37,6 +45,7 @@ def main():
     num_stripes = int(config["Common"]["num_stripes"])
     num_nodes = int(config["Common"]["num_nodes"])
     enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
+    block_size = int(config["Common"]["block_size"])
 
     print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; enable_HDFS: {}".format(k_i, m_i, num_stripes, num_nodes, enable_HDFS))
 
@@ -60,10 +69,7 @@ def main():
     if is_gen_meta == True:
         print("generate placement placement file {}")
         cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, placement_path)
-        print(cmd)
-        return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
-        msg = return_str.decode().strip()
-        print(msg)
+        exec_cmd(cmd, exec=True)
     
     # Read placement
     placement = []
@@ -90,27 +96,41 @@ def main():
         for stripe_id, block_id, node_id, block_placement_path in block_mapping:
             f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(block_placement_path)))
 
-    # Generate physical block
     
-    # Read node to block mapping
-    node_block_mapping = {}
-    for node_id in range(num_nodes):
-        node_block_mapping[node_id] = []
+    # Generate physical blocks (if HDFS not enabled)
+    if (is_gen_data == True and enable_HDFS == False):
+        print("generate physical blocks on storage nodes")
 
-    with open("{}".format(str(block_mapping_path)), "r") as f:
-        for line in f.readlines():
-            item = line.strip().split(" ")
-            stripe_id = int(item[0])
-            block_id = int(item[1])
-            node_id = int(item[2])
-            block_placement_path = item[3]
-            node_block_mapping[node_id].append(block_placement_path)
+        # Read node to block mapping
+        node_block_mapping = {}
+        for node_id in range(num_nodes):
+            node_block_mapping[node_id] = []
 
-    # connect to node and check if physical block exists
-    # if enable_HDFS == False and physical block doesn't exist, generate it with dd
-    for node_id in range(num_nodes):
-        print(node_id, agent_ips[node_id])
+        with open("{}".format(str(block_mapping_path)), "r") as f:
+            for line in f.readlines():
+                item = line.strip().split(" ")
+                stripe_id = int(item[0])
+                block_id = int(item[1])
+                node_id = int(item[2])
+                block_placement_path = item[3]
+                node_block_mapping[node_id].append(block_placement_path)
 
+        for node_id in range(num_nodes):
+            node_ip = agent_ips[node_id]
+            blocks_to_gen = node_block_mapping[node_id]
+            print("Generate {} blocks at Node {} ({})".format(len(blocks_to_gen), node_id, node_ip))
+
+            cmd = "ssh {} \"mkdir -p {}\"".format(node_ip, str(data_dir))
+            exec_cmd(cmd, exec=False)
+
+            cmd = "ssh {} \"rm -f {}/*\"".format(node_ip, str(data_dir))
+            exec_cmd(cmd, exec=False)
+
+            for block_path in blocks_to_gen:
+                block_size_MB = int(block_size / (1024 * 1024))
+                cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, block_path, block_size_MB)
+                exec_cmd(cmd, exec=False)
+        
 
 if __name__ == '__main__':
     main()

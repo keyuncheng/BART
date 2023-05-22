@@ -15,6 +15,7 @@ public:
     ClusterSettings settings;
     string approach;
     bool enable_HDFS;
+    unsigned int block_size; // block size in Bytes
     uint16_t port;
     unsigned int num_cmd_handler_thread;
     unsigned int num_cmd_dist_thread;
