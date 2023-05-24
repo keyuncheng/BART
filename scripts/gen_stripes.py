@@ -6,7 +6,7 @@ import configparser
 from pathlib import Path
 
 def parse_args(cmd_args):
-    arg_parser = argparse.ArgumentParser(description="generate physical stripes")
+    arg_parser = argparse.ArgumentParser(description="generate stripes")
     arg_parser.add_argument("-config_filename", type=str, required=True, help="configuration file name")
     arg_parser.add_argument("-gen_meta", type=lambda x: (str(x).lower() == 'true'), default=False, help="whether to generate metadata files (placement and block mapping)")
     arg_parser.add_argument("-gen_data", type=lambda x: (str(x).lower() == 'true'), default=False, help="whether to generate data in Agents")

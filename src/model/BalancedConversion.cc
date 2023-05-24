@@ -239,8 +239,9 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
             uint16_t cur_placed_node_id = INVALID_NODE_ID;
             if (final_block_id < code.k_f)
             { // data block
-                uint8_t stripe_id = final_block_id / code.lambda_i;
-                uint8_t block_id = final_block_id % code.lambda_i;
+                uint8_t stripe_id = final_block_id / code.k_i;
+                uint8_t block_id = final_block_id % code.k_i;
+
                 cur_placed_node_id = stripe_group.sg_stripes[stripe_id]->indices[block_id];
             }
             else
@@ -493,8 +494,8 @@ void BalancedConversion::buildTransTasks(StripeBatch &stripe_batch, unordered_ma
             uint8_t block_id = INVALID_BLK_ID;
             if (final_block_id < code.k_f)
             { // data block
-                stripe_id = final_block_id / code.lambda_i;
-                block_id = final_block_id % code.lambda_i;
+                stripe_id = final_block_id / code.k_i;
+                block_id = final_block_id % code.k_i;
                 stripe_id_global = stripe_group.sg_stripes[stripe_id]->id;
             }
             else
