@@ -13,12 +13,13 @@ public:
     ConvertibleCode &code;
     ClusterSettings &settings;
     mt19937 &random_generator;
-    vector<Stripe> &sb_stripes;
+    vector<Stripe> &pre_stripes;  // pre-transition stripes
+    vector<Stripe> &post_stripes; // post-transition stripes
 
     // step 1: stripe group selection
     map<uint32_t, StripeGroup> selected_sgs; // selected stripe groups in order <sg_id, StripeGroup>
 
-    StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_sb_stripes);
+    StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_pre_stripes);
     ~StripeBatch();
 
     void constructSGInSequence();

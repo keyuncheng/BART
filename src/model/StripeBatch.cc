@@ -1,6 +1,6 @@
 #include "StripeBatch.hh"
 
-StripeBatch::StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_sb_stripes) : id(_id), code(_code), settings(_settings), random_generator(_random_generator), sb_stripes(_sb_stripes)
+StripeBatch::StripeBatch(uint8_t _id, ConvertibleCode &_code, ClusterSettings &_settings, mt19937 &_random_generator, vector<Stripe> &_pre_stripes) : id(_id), code(_code), settings(_settings), random_generator(_random_generator), pre_stripes(_pre_stripes)
 {
 }
 
@@ -36,7 +36,7 @@ void StripeBatch::constructSGInSequence()
         {
             uint32_t sb_stripe_id = sg_id * code.lambda_i + stripe_id;
             sg_stripe_ids[stripe_id] = sb_stripe_id;
-            sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
+            sg_stripes[stripe_id] = &pre_stripes[sb_stripe_id];
         }
         selected_sgs.insert(pair<uint32_t, StripeGroup>(sg_id, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
@@ -49,8 +49,8 @@ void StripeBatch::constructSGByRandomPick()
     selected_sgs.clear();
 
     // shuffle indices of stripes
-    vector<uint32_t> shuff_sb_stripe_idxs(sb_stripes.size(), 0);
-    for (uint32_t stripe_id = 0; stripe_id < sb_stripes.size(); stripe_id++)
+    vector<uint32_t> shuff_sb_stripe_idxs(pre_stripes.size(), 0);
+    for (uint32_t stripe_id = 0; stripe_id < pre_stripes.size(); stripe_id++)
     {
         shuff_sb_stripe_idxs[stripe_id] = stripe_id;
     }
@@ -67,7 +67,7 @@ void StripeBatch::constructSGByRandomPick()
             // get shuffled stripe index
             uint32_t sb_stripe_id = shuff_sb_stripe_idxs[sg_id * code.lambda_i + stripe_id];
             sg_stripe_ids[stripe_id] = sb_stripe_id;
-            sg_stripes[stripe_id] = &sb_stripes[sb_stripe_id];
+            sg_stripes[stripe_id] = &pre_stripes[sb_stripe_id];
         }
         selected_sgs.insert(pair<uint32_t, StripeGroup>(sg_id, StripeGroup(sg_id, code, settings, sg_stripes)));
     }
@@ -110,7 +110,7 @@ void StripeBatch::constructSGByCost()
         vector<Stripe *> sg_stripes(code.lambda_i, NULL);
         for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
         {
-            sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
+            sg_stripes[stripe_id] = &pre_stripes[sg_stripe_ids[stripe_id]];
         }
 
         StripeGroup stripe_group(0, code, settings, sg_stripes);
@@ -161,7 +161,7 @@ void StripeBatch::constructSGByCost()
                 vector<Stripe *> sg_stripes(code.lambda_i, NULL);
                 for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
                 {
-                    sg_stripes[stripe_id] = &sb_stripes[sg_stripe_ids[stripe_id]];
+                    sg_stripes[stripe_id] = &pre_stripes[sg_stripe_ids[stripe_id]];
                 }
                 selected_sgs.insert(pair<uint32_t, StripeGroup>(num_selected_sgs, StripeGroup(num_selected_sgs, code, settings, sg_stripes)));
 
