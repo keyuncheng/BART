@@ -5,7 +5,6 @@
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
 #include "StripeGroup.hh"
-#include "TransSolution.hh"
 
 class StripeMerge
 {
@@ -17,8 +16,8 @@ public:
     StripeMerge(mt19937 &_random_generator);
     ~StripeMerge();
 
-    void genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution);
-    void genTransSolution(StripeGroup &stripe_group, TransSolution &trans_solution);
+    void genTransSolution(StripeBatch &stripe_batch);
+    void genTransSolution(StripeGroup &stripe_group);
 };
 
 #endif // __STRIPE_MERGE_G_HH__

@@ -41,17 +41,23 @@ public:
     uint32_t id;
     ConvertibleCode &code;
     ClusterSettings &settings;
-    vector<Stripe *> sg_stripes;
+
+    // stripes
+    vector<Stripe *> pre_stripes; // pre-transition stripes
+    Stripe *post_stripe;          // post transition stripes
 
     // block distributions (data and parity)
     u16string data_dist;
     vector<u16string> parity_dists;
 
-    // for BalancedConversion
+    // nodes for parity block computation
+    u16string parity_comp_nodes;
+
+    // (for BalancedConversion only) load tables
     LoadTable applied_lt;
     vector<LoadTable> cand_partial_lts;
 
-    StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes);
+    StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_pre_stripes, Stripe *_post_stripe);
     ~StripeGroup();
     void print();
 

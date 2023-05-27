@@ -10,11 +10,6 @@ StripeGenerator::~StripeGenerator()
 
 void StripeGenerator::genRandomStripes(ConvertibleCode &code, ClusterSettings &settings, mt19937 &random_generator, vector<Stripe> &stripes)
 {
-
-    // init stripes
-    stripes.clear();
-    stripes.assign(settings.num_stripes, Stripe());
-
     u16string nodes(settings.num_nodes, 0);
     for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
@@ -25,7 +20,6 @@ void StripeGenerator::genRandomStripes(ConvertibleCode &code, ClusterSettings &s
     {
         // set stripe
         Stripe &stripe = stripes[stripe_id];
-        stripe.id = stripe_id;
         // random order the indices
         u16string sorted_nodes = nodes;
         shuffle(sorted_nodes.begin(), sorted_nodes.end(), random_generator);
@@ -70,18 +64,12 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
         return false;
     }
 
-    // init stripes
-    stripes.clear();
-    stripes.assign(settings.num_stripes, Stripe());
-
     string line;
     uint32_t stripe_id = 0;
     while (getline(ifs, line))
     {
         // set stripe
         Stripe &stripe = stripes[stripe_id];
-        stripe.id = stripe_id;
-        stripe.indices.assign(code.n_i, 0);
 
         // get indices
         istringstream iss(line);

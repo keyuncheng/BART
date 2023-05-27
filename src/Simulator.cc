@@ -42,18 +42,20 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Stripe batch
+    StripeBatch stripe_batch(0, code, settings, random_generator);
+
     // stripe generator
     StripeGenerator stripe_generator;
 
-    // load stripes from placement file
-    vector<Stripe> stripes;
-    stripe_generator.loadStripes(code, settings, placement_file, stripes);
+    // load pre-transition stripes from placement file
+    stripe_generator.loadStripes(code, settings, placement_file, stripe_batch.pre_stripes);
 
-    // printf("stripes:\n");
-    // for (auto &stripe : stripes)
-    // {
-    //     stripe.print();
-    // }
+    printf("stripes:\n");
+    for (auto &stripe : stripe_batch.pre_stripes)
+    {
+        stripe.print();
+    }
 
     // solutions and load distribution
     TransSolution trans_solution(code, settings);
@@ -62,7 +64,6 @@ int main(int argc, char *argv[])
     {
         // StripeMerge
         StripeMerge stripe_merge(random_generator);
-        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         stripe_merge.genTransSolution(stripe_batch, trans_solution);
         trans_solution.print();
     }
@@ -70,7 +71,6 @@ int main(int argc, char *argv[])
     {
         // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
-        StripeBatch stripe_batch(0, code, settings, random_generator, stripes);
         balanced_conversion.genTransSolution(stripe_batch, trans_solution);
         trans_solution.print();
 

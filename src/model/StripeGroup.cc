@@ -1,6 +1,6 @@
 #include "StripeGroup.hh"
 
-StripeGroup::StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_sg_stripes) : id(_id), code(_code), settings(_settings), sg_stripes(_sg_stripes)
+StripeGroup::StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_pre_stripes, Stripe *_post_stripe) : id(_id), code(_code), settings(_settings), pre_stripes(_pre_stripes), post_stripe(_post_stripe)
 {
     initDataDist();
     initParityDists();
@@ -12,17 +12,13 @@ StripeGroup::~StripeGroup()
 
 void StripeGroup::print()
 {
-    printf("Stripe group %u: [", id);
-    for (auto stripe : sg_stripes)
+    printf("Stripe group %u: ", id);
+    for (auto stripe : pre_stripes)
     {
         printf("%u, ", stripe->id);
+        // stripe->print();
     }
-    printf("]\n");
-
-    for (auto stripe : sg_stripes)
-    {
-        stripe->print();
-    }
+    printf("\n");
 }
 
 void StripeGroup::initDataDist()
@@ -31,7 +27,7 @@ void StripeGroup::initDataDist()
     // init data distribution
     data_dist.assign(settings.num_nodes, 0);
 
-    for (auto &stripe : sg_stripes)
+    for (auto &stripe : pre_stripes)
     {
         for (uint8_t block_id = 0; block_id < code.k_i; block_id++)
         {
@@ -49,7 +45,7 @@ void StripeGroup::initParityDists()
 
     for (uint8_t parity_id = 0; parity_id < code.m_i; parity_id++)
     {
-        for (auto &stripe : sg_stripes)
+        for (auto &stripe : pre_stripes)
         {
             uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
             parity_dists[parity_id][parity_node_id] += 1;
