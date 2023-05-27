@@ -51,6 +51,7 @@ public:
     vector<u16string> parity_dists;
 
     // nodes for parity block computation
+    EncodeMethod parity_comp_method;
     u16string parity_comp_nodes;
 
     // (for BalancedConversion only) load tables

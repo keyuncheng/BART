@@ -72,7 +72,8 @@ uint8_t StripeGroup::getMinTransBW()
     // }
 
     // NOTE: here we assume that bandwidth(pm) <= bandwith (re), thus we calculate pm bandwidth only
-    parity_update_bw = getMinPMBW();
+    // parity_update_bw = getMinPMBW();
+    parity_update_bw = getMinPMBWGreedy();
 
     // data relocation cost
     uint8_t data_reloc_bw = getDataRelocBW();

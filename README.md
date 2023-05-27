@@ -20,13 +20,13 @@ Balanced Code Conversion
     * Read stripe metadata (implemented, verified)
         * Placement
         * Block mapping
-    * Generate transition solution with BTS (implemented)
+    * Generate transition solution with BTS (implemented, verified)
     * Parse the transition solution from BTS into commands (on-going)
     * Distribute the transition commands to Agents (on-going)
     * Wait for all finish signals from all Agents (implemented)
         * Report the time
 
-* Balanced Transition Generator (implemented, partially verified)
+* Balanced Transition Generator (implemented, verified)
     * Read stripe placement
     * Generate transition solution
 

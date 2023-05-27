@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
+    trans_solution.print();
 
     // get load distribution
     vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();

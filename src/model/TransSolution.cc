@@ -38,7 +38,7 @@ void TransSolution::destroy()
 void TransSolution::print()
 {
     map<uint32_t, vector<TransTask *>> *task_list;
-    if (TRANSFER_TASKS_ONLY == false)
+    if (TRANSFER_TASKS_ONLY == true)
     {
         task_list = &sg_transfer_tasks;
     }
@@ -78,7 +78,28 @@ vector<u32string> TransSolution::getTransferLoadDist()
 
 bool TransSolution::isFinalBlockPlacementValid(StripeBatch &stripe_batch)
 {
-    // TO IMPLEMENT
+
+    for (auto &item : stripe_batch.selected_sgs)
+    {
+        StripeGroup &stripe_group = item.second;
+        u16string &final_block_placement = stripe_group.post_stripe->indices;
+
+        vector<bool> is_node_placed(settings.num_nodes, false);
+
+        for (uint8_t final_block_id = 0; final_block_id < code.n_f; final_block_id++)
+        {
+            uint16_t placed_node_id = final_block_placement[final_block_id];
+            if (is_node_placed[placed_node_id] == false)
+            { // mark the node as placed
+                is_node_placed[placed_node_id] = true;
+            }
+            else
+            { // more than one block placed at the node
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -87,11 +108,10 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
     ConvertibleCode &code = stripe_batch.code;
     for (auto &item : stripe_batch.selected_sgs)
     {
-        uint32_t sg_id = item.first;
         StripeGroup &stripe_group = item.second;
 
         // 1: generate tasks for parity computation
-        if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
+        if (stripe_group.parity_comp_method == EncodeMethod::RE_ENCODE)
         { // 1. Re-encoding
             uint16_t enc_node = stripe_group.parity_comp_nodes[0];
 
@@ -133,7 +153,7 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
                 sg_write_tasks[stripe_group.id].push_back(write_task);
             }
         }
-        else if (stripe_group.applied_lt.approach == EncodeMethod::PARITY_MERGE)
+        else if (stripe_group.parity_comp_method == EncodeMethod::PARITY_MERGE)
         { // 2. Parity Merging
             for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
             {
@@ -195,7 +215,8 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
             uint32_t stripe_id_global = INVALID_STRIPE_ID_GLOBAL;
             uint8_t stripe_id = INVALID_STRIPE_ID;
             uint8_t block_id = INVALID_BLK_ID;
-            if (block_id < code.k_f)
+
+            if (final_block_id < code.k_f)
             { // data block relocation
                 stripe_id = final_block_id / code.k_i;
                 block_id = final_block_id % code.k_i;
@@ -209,7 +230,7 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
             }
             dst_node_id = stripe_group.post_stripe->indices[final_block_id];
 
-            if (source_node_id != dst_node_id)
+            if (source_node_id == dst_node_id)
             {
                 continue;
             }

@@ -1,6 +1,7 @@
 #include "model/ConvertibleCode.hh"
 #include "model/ClusterSettings.hh"
 #include "util/StripeGenerator.hh"
+#include "model/StripeBatch.hh"
 #include "util/Utils.hh"
 
 int main(int argc, char *argv[])
@@ -39,10 +40,10 @@ int main(int argc, char *argv[])
     mt19937 random_generator = Utils::createRandomGenerator();
 
     // generate random stripes, and store in the placement file
-    vector<Stripe> stripes;
-    stripe_generator.genRandomStripes(code, settings, random_generator, stripes);
+    StripeBatch stripe_batch(0, code, settings, random_generator);
+    stripe_generator.genRandomStripes(code, settings, random_generator, stripe_batch.pre_stripes);
 
-    stripe_generator.storeStripes(stripes, placement_file);
+    stripe_generator.storeStripes(stripe_batch.pre_stripes, placement_file);
 
     // printf("stripes:\n");
     // for (auto &stripe : stripes)

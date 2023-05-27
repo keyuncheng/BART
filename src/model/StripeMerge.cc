@@ -26,11 +26,7 @@ void StripeMerge::genSolution(StripeBatch &stripe_batch)
 
     // Step 2: generate transition solutions from all stripe groups
     printf("Step 2: generate transition solution\n");
-
-    // create post-transition stripes
-    uint32_t num_post_stripes = stripe_batch.settings.num_stripes / stripe_batch.code.lambda_i;
-
-    for (auto item : stripe_batch.selected_sgs)
+    for (auto &item : stripe_batch.selected_sgs)
     {
         genSolution(item.second);
     }
@@ -108,6 +104,7 @@ void StripeMerge::genSolution(StripeGroup &stripe_group)
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
         uint16_t cur_placed_node_id = min_bw_pm_nodes[parity_id];
+        cur_block_placement[code.k_f + parity_id] = cur_placed_node_id;
         final_block_placement[code.k_f + parity_id] = cur_placed_node_id;
         final_block_dist[cur_placed_node_id]++;
     }
@@ -157,6 +154,7 @@ void StripeMerge::genSolution(StripeGroup &stripe_group)
     }
 
     // update stripe group metadata
+    stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
     stripe_group.parity_comp_nodes = min_bw_pm_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }

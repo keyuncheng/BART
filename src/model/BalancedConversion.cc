@@ -58,7 +58,7 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
     Utils::printVector(cur_lt.slt);
     printf("recv load: ");
     Utils::printVector(cur_lt.rlt);
-    printf("bandwidth : %u\n", cur_lt.bw);
+    printf("bandwidth: %u\n", cur_lt.bw);
 
     // obtain candidate load tables for parity generation by enumerating all encoding methods and nodes
     unordered_map<uint32_t, bool> is_sg_perfect_pm;
@@ -197,6 +197,7 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
     for (auto &item : stripe_batch.selected_sgs)
     {
         StripeGroup &stripe_group = item.second;
+        stripe_group.parity_comp_method = stripe_group.applied_lt.approach;
         stripe_group.parity_comp_nodes = stripe_group.applied_lt.enc_nodes;
 
         // clear the candidate load tables for memory saving
