@@ -43,22 +43,22 @@ void CtrlNode::gen_commands()
 
     mt19937 random_generator = Utils::createRandomGenerator();
 
-    if (config.approach == "SM")
-    {
-        // StripeMerge
-        StripeMerge stripe_merge(random_generator);
-        StripeBatch stripe_batch(0, config.code, config.settings, random_generator, stripes);
-        stripe_merge.genTransSolution(stripe_batch, trans_solution);
-        trans_solution.print();
-    }
-    else if (config.approach == "BT")
-    {
-        // Balanced Conversion
-        BalancedConversion balanced_conversion(random_generator);
-        StripeBatch stripe_batch(0, config.code, config.settings, random_generator, stripes);
-        balanced_conversion.genTransSolution(stripe_batch, trans_solution);
-        trans_solution.print();
-    }
+    // if (config.approach == "SM")
+    // {
+    //     // StripeMerge
+    //     StripeMerge stripe_merge(random_generator);
+    //     StripeBatch stripe_batch(0, config.code, config.settings, random_generator, stripes);
+    //     stripe_merge.genTransSolution(stripe_batch, trans_solution);
+    //     trans_solution.print();
+    // }
+    // else if (config.approach == "BT")
+    // {
+    //     // Balanced Conversion
+    //     BalancedConversion balanced_conversion(random_generator);
+    //     StripeBatch stripe_batch(0, config.code, config.settings, random_generator, stripes);
+    //     balanced_conversion.genTransSolution(stripe_batch, trans_solution);
+    //     trans_solution.print();
+    // }
 
     // TODO: parse the tran_solution into commands and add to cmd_distributor
     // read, write, transfer, delete, compute

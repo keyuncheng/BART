@@ -8,7 +8,7 @@ BalancedConversion::~BalancedConversion()
 {
 }
 
-void BalancedConversion::genTransSolution(StripeBatch &stripe_batch, TransSolution &trans_solution)
+void BalancedConversion::genSolution(StripeBatch &stripe_batch)
 {
     // Step 1: construct stripe groups
     printf("Step 1: construct stripe groups\n");
@@ -17,25 +17,27 @@ void BalancedConversion::genTransSolution(StripeBatch &stripe_batch, TransSoluti
     // stripe_batch.constructSGByRandomPick();
     stripe_batch.print();
 
-    // Step 2 - 3: select encoding method and parity generation nodes
-    printf("Step 2 - 3: select encoding method and parity generation nodes\n");
-    genParityGenerationLTs(stripe_batch);
+    // Step 2: generate parity computation scheme (parity computation method and nodes)
+    printf("Step 2: generate parity computation scheme\n");
+    genParityComputation(stripe_batch);
 
-    // Step 4: scheduling (data and parity) block relocation
-    printf("Step 4: scheduling (data and parity) block relocation\n");
-    genBlockRelocation(stripe_batch, trans_solution);
+    // Step 3: schedule (data and parity) block relocation
+    printf("Step 3: schedule block relocation\n");
+    genBlockRelocation(stripe_batch);
 }
 
-void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
+void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
 {
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
-    // maintain a dynamic load table for current stripe groups
+    // maintain a load table for currently selected stripe groups
     LoadTable cur_lt;
     cur_lt.slt.assign(num_nodes, 0);
     cur_lt.rlt.assign(num_nodes, 0);
 
-    // first, calculate the send load distribution for data relocation across all stripe groups, as given the data placement for each stripe group, the send load distribution is deterministic; at this point, the receive load for data relocation is not determined and can be scheduled
+    // initialize the slt with data relocation across all stripe groups
+    // given the selected stripe groups, the send load distribution for data relocation is deterministic, as we can obtain the data placement and know how many data blocks needs to be relocated
+    // Note: in this step, the receive load for data relocation is not determined, and will be scheduled in Step 4
     for (auto &item : stripe_batch.selected_sgs)
     {
         u16string &data_dist = item.second.data_dist;
@@ -47,6 +49,8 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
             }
         }
     }
+
+    // bw is calculated with data relocation
     cur_lt.bw = accumulate(cur_lt.slt.begin(), cur_lt.slt.end(), 0);
 
     printf("current_lt initialized with data relocation send load:\n");
@@ -56,7 +60,7 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     Utils::printVector(cur_lt.rlt);
     printf("bandwidth : %u\n", cur_lt.bw);
 
-    // obtain candidate load tables by enumerating encoding methods and nodes for parity generation
+    // obtain candidate load tables for parity generation by enumerating all encoding methods and nodes
     unordered_map<uint32_t, bool> is_sg_perfect_pm;
     for (auto &item : stripe_batch.selected_sgs)
     {
@@ -66,19 +70,18 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
         // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
         if (stripe_group.getMinPMBW() == 0)
         {
-            // generate partial load table for parity merging (with send load for data relocation only)
-            stripe_group.genParityGenScheme4PerfectPM();
+            // generate parity computation scheme for parity merging
+            stripe_group.genParityComputeScheme4PerfectPM();
             is_sg_perfect_pm[sg_id] = true;
             continue;
         }
 
-        // for other groups with non-zero parity generation bandwidth, generate all load tables
+        // for other stripe groups with non-zero parity computation bandwidth, generate all candidate load tables for parity computation
         vector<LoadTable> partial_lts;
-        stripe_group.genAllPartialLTs4ParityGen();
+        stripe_group.genAllPartialLTs4ParityCompute();
     }
 
     // use a while loop until the solution cannot be further optimized (i.e., cannot further improve load balance and then bandwidth)
-    // Q: Do we need to set a max_iter to avoid too much iteration?
     uint64_t iter = 0;
     uint32_t cur_max_load_iter = UINT32_MAX;
     uint32_t cur_bw_iter = UINT32_MAX;
@@ -190,10 +193,13 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
         printf("bandwidth: %u\n", cur_lt.bw);
     }
 
-    // clear the candidate load tables for memory saving
+    // update the metadata for stripe group
     for (auto &item : stripe_batch.selected_sgs)
     {
         StripeGroup &stripe_group = item.second;
+        stripe_group.parity_comp_nodes = stripe_group.applied_lt.enc_nodes;
+
+        // clear the candidate load tables for memory saving
         stripe_group.cand_partial_lts.clear();
     }
 
@@ -212,15 +218,15 @@ void BalancedConversion::genParityGenerationLTs(StripeBatch &stripe_batch)
     printf("number of re-encoding groups: (%u / %lu), num of parity merging groups: (%lu / %lu)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
 }
 
-void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolution &trans_solution)
+void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
 {
-    // NOTE: before this step, the solution of parity generation (encoding methods and nodes) are fixed; in this step, for each stripe group we schedule the nodes to relocate the data and parity blocks
+    // NOTE: before this step, the solution of parity computation (encoding methods and nodes) are fixed; in this step, for each stripe group we schedule the relocation of data and parity blocks by finding nodes to place them
 
     ConvertibleCode &code = stripe_batch.code;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
     // step 1: for each stripe group, find the data and parity blocks that needs to be relocated, and available nodes for relocation
-    unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement;          // for each stripe group, record the block placement (node where it placed) in the final stripe; size: code.n_f
+    unordered_map<uint32_t, u16string> sg_final_block_placement;                 // for each stripe group, record the block placement (node where it placed) in the final stripe; size: code.n_f
     unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc; // for each block in the final stripe that needs to be relocated, record <final_block_id, currently stored node>
     unordered_map<uint32_t, vector<uint16_t>> sg_avail_nodes;
 
@@ -230,8 +236,10 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
         StripeGroup &stripe_group = item.second;
 
         // init block placement
-        sg_final_block_placement[sg_id] = vector<uint16_t>(code.n_f, INVALID_NODE_ID);
-        vector<bool> is_node_relocated(num_nodes, false); // record is node relocated with a block
+        sg_final_block_placement[sg_id].assign(code.n_f, INVALID_NODE_ID);
+
+        // record is node relocated with a block
+        vector<bool> is_node_relocated(num_nodes, false);
 
         // find the blocks to be relocated
         for (uint8_t final_block_id = 0; final_block_id < code.n_f; final_block_id++)
@@ -242,16 +250,18 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
                 uint8_t stripe_id = final_block_id / code.k_i;
                 uint8_t block_id = final_block_id % code.k_i;
 
-                cur_placed_node_id = stripe_group.sg_stripes[stripe_id]->indices[block_id];
+                cur_placed_node_id = stripe_group.pre_stripes[stripe_id]->indices[block_id];
             }
             else
             { // parity block
                 uint8_t parity_id = final_block_id - code.k_f;
-                cur_placed_node_id = stripe_group.applied_lt.enc_nodes[parity_id]; // check the applied load table to find where the parity block is computed, then it's currently placed there
+                cur_placed_node_id = stripe_group.parity_comp_nodes[parity_id];
             }
+
+            // check if the node has been placed with a block
             if (is_node_relocated[cur_placed_node_id] == false)
             {
-                // directly place the block at the node to avoid extra bandwidth
+                // directly place the block at the node
                 sg_final_block_placement[sg_id][final_block_id] = cur_placed_node_id;
                 is_node_relocated[cur_placed_node_id] = true; // mark the node as relocated
             }
@@ -313,25 +323,13 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
 
     // bipartite.print();
 
-    // obtain the initial receive load from step 2 - 3: parity generation
+    // obtain the initial receive load from parity computation
     LoadTable lt;
     lt.rlt.assign(num_nodes, 0);
     for (auto &item : stripe_batch.selected_sgs)
     {
         StripeGroup &stripe_group = item.second;
-        if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
-        {
-            uint16_t enc_node = stripe_group.applied_lt.enc_nodes[0];
-            lt.rlt[enc_node] += code.k_f - stripe_group.data_dist[enc_node]; // require to receive # of data blocks
-        }
-        else if (stripe_group.applied_lt.approach == EncodeMethod::PARITY_MERGE)
-        {
-            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-            {
-                uint16_t enc_node = stripe_group.applied_lt.enc_nodes[parity_id];
-                lt.rlt[enc_node] += code.lambda_i - stripe_group.parity_dists[parity_id][enc_node]; // require to receive # of parity blocks
-            }
-        }
+        Utils::dotAddVectors(lt.rlt, stripe_group.applied_lt.rlt, lt.rlt);
     }
 
     // initialize bipartite right vertices in_degrees with the receive load of parity generation
@@ -356,181 +354,12 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch, TransSolu
         sg_final_block_placement[sg_id][final_block_id] = reloc_node_id; // record place node_id
     }
 
-    // step 4: build solution
-    buildTransTasks(stripe_batch, sg_blocks_to_reloc, sg_final_block_placement, trans_solution);
-}
-
-void BalancedConversion::buildTransTasks(StripeBatch &stripe_batch, unordered_map<uint32_t, vector<pair<uint8_t, uint16_t>>> sg_blocks_to_reloc, unordered_map<uint32_t, vector<uint16_t>> sg_final_block_placement, TransSolution &trans_solution)
-{
-    ConvertibleCode &code = stripe_batch.code;
+    // step 4: update placement metadata
     for (auto &item : stripe_batch.selected_sgs)
     {
         uint32_t sg_id = item.first;
         StripeGroup &stripe_group = item.second;
-
-        // 1 - 2: generate tasks for parity computation
-
-        // 1. Re-encoding
-        if (stripe_group.applied_lt.approach == EncodeMethod::RE_ENCODE)
-        {
-            uint16_t enc_node = stripe_group.applied_lt.enc_nodes[0];
-
-            // read code.k_f data blocks
-            for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
-            {
-                Stripe *stripe = stripe_group.sg_stripes[stripe_id];
-                for (uint8_t data_block_id = 0; data_block_id < code.k_i; data_block_id++)
-                {
-                    uint16_t data_node_id = stripe->indices[data_block_id];
-
-                    if (TRANSFER_TASKS_ONLY == false)
-                    {
-                        // 1.1 create data block read tasks
-                        TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe->id, stripe_id, data_block_id, data_node_id);
-                        trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
-                        trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
-                    }
-
-                    // 1.2 create transfer task
-                    // check if the parity block is not located at min_bw_node
-                    if (data_node_id != enc_node)
-                    {
-                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe->id, stripe_id, data_block_id, data_node_id);
-                        transfer_task->dst_node_id = enc_node;
-                        trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
-                        trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
-                    }
-                }
-
-                if (TRANSFER_TASKS_ONLY == false)
-                {
-                    // 1.3 create compute task
-                    for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-                    {
-                        TransTask *compute_task = new TransTask(TransTaskType::COMPUTE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
-                        trans_solution.sg_tasks[stripe_group.id].push_back(compute_task);
-                        trans_solution.sg_compute_tasks[stripe_group.id].push_back(compute_task);
-
-                        // 1.4 create write task
-                        TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
-                        trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
-                        trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
-                    }
-                }
-            }
-        }
-        else if (stripe_group.applied_lt.approach == EncodeMethod::PARITY_MERGE)
-        {
-            // 2. Parity Merging
-            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-            {
-                uint16_t enc_node = stripe_group.applied_lt.enc_nodes[parity_id];
-
-                for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
-                {
-                    Stripe *stripe = stripe_group.sg_stripes[stripe_id];
-                    uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
-
-                    if (TRANSFER_TASKS_ONLY == false)
-                    {
-                        // 2.1 create parity block read tasks
-                        TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe->id, stripe_id, code.k_i + parity_id, parity_node_id);
-                        trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
-                        trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
-                    }
-
-                    // 2.2 create transfer task
-                    // check if the parity block is not located at enc_node
-                    if (parity_node_id != enc_node)
-                    {
-                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe->id, stripe_id, code.k_i + parity_id, parity_node_id);
-                        transfer_task->dst_node_id = enc_node;
-                        trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
-                        trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
-                    }
-                }
-
-                if (TRANSFER_TASKS_ONLY == false)
-                {
-                    // 2.3 create compute task
-                    TransTask *compute_task = new TransTask(TransTaskType::COMPUTE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
-                    trans_solution.sg_tasks[stripe_group.id].push_back(compute_task);
-                    trans_solution.sg_compute_tasks[stripe_group.id].push_back(compute_task);
-
-                    // 2.4 create write task
-                    TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node);
-                    trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
-                    trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
-                }
-
-                if (TRANSFER_TASKS_ONLY == false)
-                {
-                    for (uint32_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
-                    {
-                        Stripe *stripe = stripe_group.sg_stripes[stripe_id];
-                        uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
-
-                        // 2.5 create parity block delete tasks
-                        TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, stripe->id, stripe_id, code.k_f + parity_id, parity_node_id);
-                        trans_solution.sg_tasks[stripe_group.id].push_back(delete_task);
-                        trans_solution.sg_delete_tasks[stripe_group.id].push_back(delete_task);
-                    }
-                }
-            }
-        }
-
-        // 3. generate tasks for (data and parity) block relocation
-        vector<pair<uint8_t, uint16_t>> &blocks_to_reloc = sg_blocks_to_reloc[sg_id];
-        vector<uint16_t> &final_block_placement = sg_final_block_placement[sg_id];
-
-        for (auto &item : blocks_to_reloc)
-        {
-            uint8_t final_block_id = item.first;
-            uint16_t source_node = item.second;
-            uint16_t dst_node = final_block_placement[final_block_id];
-
-            uint32_t stripe_id_global = INVALID_STRIPE_ID_GLOBAL;
-            uint8_t stripe_id = INVALID_STRIPE_ID;
-            uint8_t block_id = INVALID_BLK_ID;
-            if (final_block_id < code.k_f)
-            { // data block
-                stripe_id = final_block_id / code.k_i;
-                block_id = final_block_id % code.k_i;
-                stripe_id_global = stripe_group.sg_stripes[stripe_id]->id;
-            }
-            else
-            { // final parity block
-                block_id = final_block_id;
-            }
-
-            if (TRANSFER_TASKS_ONLY == false)
-            {
-                // 3.1 read tasks
-                TransTask *read_task = new TransTask(TransTaskType::READ_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, source_node);
-
-                trans_solution.sg_tasks[stripe_group.id].push_back(read_task);
-                trans_solution.sg_read_tasks[stripe_group.id].push_back(read_task);
-            }
-
-            // 3.2 transfer tasks
-            TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, source_node);
-            transfer_task->dst_node_id = dst_node;
-            trans_solution.sg_tasks[stripe_group.id].push_back(transfer_task);
-            trans_solution.sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
-
-            if (TRANSFER_TASKS_ONLY == false)
-            {
-                // 3.3 write tasks
-                TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, stripe_id_global, stripe_id, block_id, dst_node);
-                trans_solution.sg_tasks[stripe_group.id].push_back(write_task);
-                trans_solution.sg_write_tasks[stripe_group.id].push_back(write_task);
-
-                // 3.4 delete tasks
-                TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, stripe_group.sg_stripes[stripe_id]->id, stripe_id, block_id, source_node);
-                trans_solution.sg_tasks[stripe_group.id].push_back(delete_task);
-                trans_solution.sg_delete_tasks[stripe_group.id].push_back(delete_task);
-            }
-        }
+        stripe_group.post_stripe->indices = sg_final_block_placement[sg_id];
     }
 }
 

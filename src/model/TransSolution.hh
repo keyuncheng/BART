@@ -5,6 +5,7 @@
 #include "ConvertibleCode.hh"
 #include "ClusterSettings.hh"
 #include "TransTask.hh"
+#include "StripeBatch.hh"
 
 #define TRANSFER_TASKS_ONLY true
 
@@ -29,6 +30,9 @@ public:
 
     void init();
     void destroy();
+
+    bool isFinalBlockPlacementValid(StripeBatch &stripe_batch);
+    void buildTransTasks(StripeBatch &stripe_batch);
 
     vector<u32string> getTransferLoadDist();
 

@@ -8,7 +8,7 @@ StripeMerge::~StripeMerge()
 {
 }
 
-void StripeMerge::genTransSolution(StripeBatch &stripe_batch)
+void StripeMerge::genSolution(StripeBatch &stripe_batch)
 {
     // check whether the code is valid for SM
     if (stripe_batch.code.isValidForPM() == false)
@@ -30,14 +30,13 @@ void StripeMerge::genTransSolution(StripeBatch &stripe_batch)
     // create post-transition stripes
     uint32_t num_post_stripes = stripe_batch.settings.num_stripes / stripe_batch.code.lambda_i;
 
-    for (uint32_t post_stripe_id = 0; post_stripe_id < num_post_stripes; post_stripe_id++)
+    for (auto item : stripe_batch.selected_sgs)
     {
-        StripeGroup &stripe_group = stripe_batch.selected_sgs[post_stripe_id];
-        genTransSolution(stripe_group);
+        genSolution(item.second);
     }
 }
 
-void StripeMerge::genTransSolution(StripeGroup &stripe_group)
+void StripeMerge::genSolution(StripeGroup &stripe_group)
 {
     ConvertibleCode &code = stripe_group.code;
     uint16_t num_nodes = stripe_group.settings.num_nodes;
@@ -64,7 +63,7 @@ void StripeMerge::genTransSolution(StripeGroup &stripe_group)
     final_block_placement = cur_block_placement;
 
     /**
-     * @brief Step 1: parity generation
+     * @brief Step 2.1: parity generation
      * for each parity block, find the node with minimum bandwidth for parity generation
      */
 
@@ -114,7 +113,7 @@ void StripeMerge::genTransSolution(StripeGroup &stripe_group)
     }
 
     /**
-     * @brief Step 2: block relocation
+     * @brief Step 2.2: block relocation
      * for each node that placed with more than one block, relocate the corresponding blocks to other nodes without blocks
      */
 
@@ -157,7 +156,7 @@ void StripeMerge::genTransSolution(StripeGroup &stripe_group)
         final_block_placement[final_block_id] = dst_node;
     }
 
-    // record metadata
+    // update stripe group metadata
     stripe_group.parity_comp_nodes = min_bw_pm_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }

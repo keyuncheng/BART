@@ -5,8 +5,6 @@
 #include "model/StripeBatch.hh"
 #include "model/StripeMerge.hh"
 #include "model/BalancedConversion.hh"
-// #include "model/RecvBipartite.hh"
-// #include "util/Utils.hh"
 
 int main(int argc, char *argv[])
 {
@@ -64,44 +62,24 @@ int main(int argc, char *argv[])
     {
         // StripeMerge
         StripeMerge stripe_merge(random_generator);
-        stripe_merge.genTransSolution(stripe_batch, trans_solution);
-        trans_solution.print();
+        stripe_merge.genSolution(stripe_batch);
     }
     else if (approach == "BT")
     {
         // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
-        balanced_conversion.genTransSolution(stripe_batch, trans_solution);
-        trans_solution.print();
-
-        // // balanced_conversion.getSolutionForStripeBatchGlobal(stripe_batch, solutions, random_generator);
-
-        // // balanced_conversion.getSolutionForStripeBatchGreedy(stripe_batch, solutions, random_generator);
-
-        // // balanced_conversion.getSolutionForStripeBatchIter(stripe_batch, solutions, random_generator);
-
-        // balanced_conversion.getSolutionForStripeBatchAssigned(stripe_batch, solutions, random_generator);
-
-        // size_t num_sg = stripe_batch.getStripeGroups().size();
-        // size_t num_sg_re = 0;
-        // size_t num_sg_pm = 0;
-        // double re_percent = 0;
-        // double pm_percent = 0;
-        // for (auto &item : stripe_batch.getSGApproaches())
-        // {
-        //     if (item == EncodeMethod::RE_ENCODE)
-        //     {
-        //         num_sg_re++;
-        //     }
-        //     else
-        //     {
-        //         num_sg_pm++;
-        //     }
-        // }
-        // re_percent = 1.0 * num_sg_re / num_sg;
-        // pm_percent = 1.0 * num_sg_pm / num_sg;
-        // printf("approach distribution: re-encoding: %ld / %ld (%f), parity merging: %ld / %ld (%f)\n", num_sg_re, num_sg, re_percent, num_sg_pm, num_sg, pm_percent);
+        balanced_conversion.genSolution(stripe_batch);
     }
+
+    // validate block placement
+    if (trans_solution.isFinalBlockPlacementValid(stripe_batch) == false)
+    {
+        printf("error: invalid final block placements!\n");
+        return -1;
+    }
+
+    // build transition tasks
+    trans_solution.buildTransTasks(stripe_batch);
 
     // get load distribution
     vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();

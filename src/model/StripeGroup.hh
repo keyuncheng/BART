@@ -67,11 +67,11 @@ public:
     uint8_t getMinPMBW();
     uint8_t getMinPMBWGreedy();
 
-    // generate parity generation scheme for perfect parity merging (parity generation bandwidth = 0)
-    void genParityGenScheme4PerfectPM();
+    // generate parity computation scheme for perfect parity merging (parity generation bandwidth = 0)
+    void genParityComputeScheme4PerfectPM();
 
     // generate all candidate partial load tables for the stripe group, including re-encoding and parity merging
-    void genAllPartialLTs4ParityGen();
+    void genAllPartialLTs4ParityCompute();
 
     // // enumerate send load tables
     // vector<vector<size_t>> getCandSendLoadTables();

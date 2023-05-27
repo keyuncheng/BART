@@ -190,9 +190,9 @@ uint8_t StripeGroup::getMinPMBWGreedy()
     return sum_pm_bw;
 }
 
-void StripeGroup::genParityGenScheme4PerfectPM()
+void StripeGroup::genParityComputeScheme4PerfectPM()
 {
-    // for perfect parity merging, the partial load table contains send load of data block distribution only
+    // for perfect parity merging, parity generation generates zero transition bandwidth for
     applied_lt.approach = EncodeMethod::PARITY_MERGE;
 
     // find corresponding code.m_f nodes for perfect parity merging
@@ -205,7 +205,7 @@ void StripeGroup::genParityGenScheme4PerfectPM()
     }
 }
 
-void StripeGroup::genAllPartialLTs4ParityGen()
+void StripeGroup::genAllPartialLTs4ParityCompute()
 {
     uint16_t num_nodes = settings.num_nodes;
     // for re-encoding, there are <num_nodes> possible candidate load tables, as we can collect code.k_f data blocks and distribute code.m_f parity blocks at <num_nodes> possible nodes
@@ -224,11 +224,11 @@ void StripeGroup::genAllPartialLTs4ParityGen()
         LoadTable &lt = cand_partial_lts[lt_id];
         lt.approach = EncodeMethod::RE_ENCODE;
         lt.bw = code.k_f - data_dist[node_id] + code.m_f;
-        lt.enc_nodes.assign(code.m_f, node_id); // re-encoding nodes
-        lt.slt = data_dist;                     // send load table
-        lt.slt[node_id] = code.m_f;             // only need to send the data blocks at <node_id>
-        lt.rlt.assign(num_nodes, 0);            // recv load table
-        lt.rlt[node_id] = code.k_f - data_dist[node_id];
+        lt.enc_nodes.assign(code.m_f, node_id);              // re-encoding nodes
+        lt.slt = data_dist;                                  // send load table (send data blocks)
+        lt.slt[node_id] = code.m_f;                          // only need to send the **parity blocks** at <node_id>
+        lt.rlt.assign(num_nodes, 0);                         // recv load table
+        lt.rlt[node_id] = code.k_f - data_dist[node_id];     // recv data blocks at <node_id>
         lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
 
         lt_id++;
@@ -250,7 +250,7 @@ void StripeGroup::genAllPartialLTs4ParityGen()
             uint16_t parity_comp_node_id = pm_nodes[parity_id];
             // send load dist
             u16string parity_slt = parity_dists[parity_id];
-            parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at pm_nodes; if there is a data block located there, then need to relocate the generated parity block
+            parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
 
             // receive load dist
             u16string parity_rlt(num_nodes, 0);
@@ -263,10 +263,10 @@ void StripeGroup::genAllPartialLTs4ParityGen()
 
         lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
 
-        lt_id++;
-
         // get next permutation
         Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
+
+        lt_id++;
     }
 }
 

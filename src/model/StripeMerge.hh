@@ -16,8 +16,8 @@ public:
     StripeMerge(mt19937 &_random_generator);
     ~StripeMerge();
 
-    void genTransSolution(StripeBatch &stripe_batch);
-    void genTransSolution(StripeGroup &stripe_group);
+    void genSolution(StripeBatch &stripe_batch);
+    void genSolution(StripeGroup &stripe_group);
 };
 
 #endif // __STRIPE_MERGE_G_HH__
