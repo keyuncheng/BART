@@ -10,19 +10,24 @@ enum CommandType
      * @brief connection; acknowledge; stop connection;
      * format: <type | src_conn_id | dst_conn_id>
      */
+    CMD_UNKNOWN,
     CMD_CONN,
     CMD_ACK,
     CMD_STOP,
     /**
      * @brief block computation and transfer: computation; relocation (from Controller or from Agent);
-     * format: <type | src_conn_id | dst_conn_id | stripe_group_id | stripe_id_global | stripe_id | block_id | block_src_id | block_dst_id | block_path>
+     * format: <type | src_conn_id | dst_conn_id | post_stripe_id | post_block_id | pre_stripe_id_global | pre_stripe_id_relative | pre_block_id | src_node_id | dst_node_id | block_path>
      */
-    CMD_COMPUTE_BLOCK,
-    CMD_TRANSFER_COMPUTE_BLK,
+    CMD_READ_RE_BLK,
+    CMD_TRANSFER_COMPUTE_RE_BLK,
+    CMD_COMPUTE_RE_BLK,
+    CMD_READ_PM_BLK,
+    CMD_TRANSFER_COMPUTE_PM_BLK,
+    CMD_COMPUTE_PM_BLK,
+    CMD_READ_RELOC_BLK,
     CMD_TRANSFER_RELOC_BLK,
-    AGCMD_SEND_BLK,
-    AGCMD_ACK,
-    CMD_UNKNOWN
+    CMD_WRITE_BLK,
+    CMD_DELETE_BLK,
 };
 
 class Command
@@ -35,13 +40,15 @@ public:
     unsigned char content[MAX_CMD_LEN]; // content
     uint16_t src_conn_id;               // source connection id
     uint16_t dst_conn_id;               // dst connection id
-    uint32_t sg_id;                     // stripe group id
-    uint32_t stripe_id_global;          // global stripe id
-    uint8_t stripe_id;                  // stripe id in group
-    uint8_t block_id;                   // block id in group
-    uint16_t block_src_id;              // block source node id
-    uint16_t block_dst_id;              // block destination node id
-    string block_path;                  // block physical path
+
+    uint32_t post_stripe_id;        // post-transition stripe id (or stripe group id)
+    uint8_t post_block_id;          // block id in the post-transition stripe
+    uint32_t pre_stripe_id_global;  // pre-transition stripe in the stripe batch
+    uint8_t pre_stripe_id_relative; // pre-transition stripe id in the stripe group
+    uint8_t pre_block_id;           // block id in stripe group
+    uint16_t src_node_id;           // source node id
+    uint16_t dst_node_id;           // destination node id
+    string block_path;              // block physical path
 
     Command();
     ~Command();
@@ -53,7 +60,7 @@ public:
     unsigned int readUInt();
     void writeUInt16(uint16_t val);
     uint16_t readUInt16();
-    void writeString(string &s);
+    void writeString(string &val);
     string readString();
 
     // command types
@@ -63,7 +70,7 @@ public:
     void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id);
 
     // CMD_TRANSFER_COMPUTE_BLK, CMD_TRANSFER_RELOC_BLK, AGCMD_SEND_BLK, AGCMD_ACK
-    void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _sg_id, uint32_t _stripe_id_global, uint8_t _stripe_id, uint8_t _block_id, uint16_t _block_src_id, uint16_t _block_dst_id, string _block_path);
+    void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint32_t _pre_stripe_id_global, uint8_t _pre_stripe_id_relative, uint8_t _pre_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _block_path);
 };
 
 #endif // __COMMAND_HH__

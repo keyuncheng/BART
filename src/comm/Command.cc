@@ -23,12 +23,27 @@ void Command::print()
         printf("\n");
         break;
     }
-    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
+    case CommandType::CMD_READ_RE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_RE_BLK:
+    case CommandType::CMD_COMPUTE_RE_BLK:
+    case CommandType::CMD_READ_PM_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_PM_BLK:
+    case CommandType::CMD_COMPUTE_PM_BLK:
+    case CommandType::CMD_READ_RELOC_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
-    case CommandType::AGCMD_SEND_BLK:
-    case CommandType::AGCMD_ACK:
+    case CommandType::CMD_WRITE_BLK:
+    case CommandType::CMD_DELETE_BLK:
     {
-        printf(", sg_id: %u, stripe_id_global: %u, stripe_id: %u, block_id: %u, block_src_id: %u, block_dst_id: %u, block_path: %s\n", block_path.c_str());
+        post_stripe_id = readUInt();
+        post_block_id = readUInt16();
+        pre_stripe_id_global = readUInt();
+        pre_stripe_id_relative = readUInt16();
+        pre_block_id = readUInt16();
+        src_node_id = readUInt16();
+        dst_node_id = readUInt16();
+        block_path = readString();
+
+        printf(", post_stripe: (%u, %u), pre_stripe: (%u, %u, %u), src_node: %u, dst_node: %u, block_path: %s\n", post_stripe_id, post_block_id, pre_stripe_id_global, pre_stripe_id_relative, pre_block_id, src_node_id, dst_node_id, block_path.c_str());
         break;
     }
     }
@@ -64,13 +79,31 @@ uint16_t Command::readUInt16()
     return ntohs(val);
 }
 
-void Command::writeString(string &s)
+void Command::writeString(string &val)
 {
+    uint32_t slen = val.length();
+    writeUInt(slen);
+    // string
+    if (slen > 0)
+    {
+        memcpy(content + len, val.c_str(), slen);
+        len += slen;
+    }
 }
 
 string Command::readString()
 {
-    return "";
+    string val;
+    unsigned int slen = readUInt();
+    if (slen > 0)
+    {
+        char *raw_str = (char *)calloc(sizeof(char), slen + 1);
+        memcpy(raw_str, content + len, slen);
+        len += slen;
+        val = string(raw_str);
+        free(raw_str);
+    }
+    return val;
 }
 
 void Command::parse()
@@ -88,17 +121,24 @@ void Command::parse()
     {
         break;
     }
-    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
+    case CommandType::CMD_READ_RE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_RE_BLK:
+    case CommandType::CMD_COMPUTE_RE_BLK:
+    case CommandType::CMD_READ_PM_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_PM_BLK:
+    case CommandType::CMD_COMPUTE_PM_BLK:
+    case CommandType::CMD_READ_RELOC_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
-    case CommandType::AGCMD_SEND_BLK:
-    case CommandType::AGCMD_ACK:
+    case CommandType::CMD_WRITE_BLK:
+    case CommandType::CMD_DELETE_BLK:
     {
-        sg_id = readUInt();
-        stripe_id_global = readUInt();
-        stripe_id = readUInt16();
-        block_id = readUInt16();
-        block_src_id = readUInt16();
-        block_dst_id = readUInt16();
+        post_stripe_id = readUInt();
+        post_block_id = readUInt16();
+        pre_stripe_id_global = readUInt();
+        pre_stripe_id_relative = readUInt16();
+        pre_block_id = readUInt16();
+        src_node_id = readUInt16();
+        dst_node_id = readUInt16();
         block_path = readString();
         break;
     }
@@ -121,23 +161,25 @@ void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _d
     writeUInt16(dst_conn_id); // dst conn id
 }
 
-void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _sg_id, uint32_t _stripe_id_global, uint8_t _stripe_id, uint8_t _block_id, uint16_t _block_src_id, uint16_t _block_dst_id, string _block_path)
+void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint32_t _pre_stripe_id_global, uint8_t _pre_stripe_id_relative, uint8_t _pre_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _block_path)
 {
     buildCommand(_type, _src_conn_id, _dst_conn_id);
 
-    sg_id = _sg_id;
-    stripe_id_global = _stripe_id_global;
-    stripe_id = _stripe_id;
-    block_id = _block_id;
-    block_src_id = _block_src_id;
-    block_dst_id = _block_dst_id;
+    post_stripe_id = _post_stripe_id;
+    post_block_id = _post_block_id;
+    pre_stripe_id_global = _pre_stripe_id_global;
+    pre_stripe_id_relative = _pre_stripe_id_relative;
+    pre_block_id = _pre_block_id;
+    src_node_id = _src_node_id;
+    dst_node_id = _dst_node_id;
     block_path = _block_path;
 
-    writeUInt(sg_id);
-    writeUInt(stripe_id_global);
-    writeUInt16(stripe_id);
-    writeUInt16(block_id);
-    writeUInt16(block_src_id);
-    writeUInt16(block_dst_id);
+    writeUInt(post_stripe_id);
+    writeUInt16(post_block_id);
+    writeUInt(pre_stripe_id_global);
+    writeUInt16(pre_stripe_id_relative);
+    writeUInt16(pre_block_id);
+    writeUInt16(src_node_id);
+    writeUInt16(dst_node_id);
     writeString(block_path);
 }
