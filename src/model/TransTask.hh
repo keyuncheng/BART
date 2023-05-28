@@ -5,11 +5,16 @@
 
 enum TransTaskType
 {
-    READ_BLK,
+    READ_RE_BLK,
+    TRANSFER_COMPUTE_RE_BLK,
+    COMPUTE_RE_BLK,
+    READ_PM_BLK,
+    TRANSFER_COMPUTE_PM_BLK,
+    COMPUTE_PM_BLK,
+    READ_RELOC_BLK,
+    TRANSFER_RELOC_BLK,
     WRITE_BLK,
     DELETE_BLK,
-    TRANSFER_BLK,
-    COMPUTE_BLK,
     UNKNOWN
 };
 
@@ -18,17 +23,16 @@ class TransTask
 private:
     /* data */
 public:
-    TransTaskType type;
-    uint32_t sg_id;            // stripe group id
-    uint32_t stripe_id_global; // stripe id in stripe batch
-    uint8_t stripe_id;         // stripe id in stripe group
-    uint8_t block_id;          // block id in stripe group
-    uint16_t node_id;          // node id
+    TransTaskType type;             // task type
+    uint32_t post_stripe_id;        // post-transition stripe id (or stripe group id)
+    uint8_t post_block_id;          // block id in the post-transition stripe
+    uint32_t pre_stripe_id_global;  // pre-transition stripe in the stripe batch
+    uint8_t pre_stripe_id_relative; // pre-transition stripe id in the stripe group
+    uint8_t pre_block_id;           // block id in stripe group
+    uint16_t src_node_id;           // source node id
+    uint16_t dst_node_id;           // destination node id
 
-    // move block task
-    uint16_t dst_node_id;
-
-    TransTask(TransTaskType _type, uint32_t _sg_id, uint32_t _stripe_id_global, uint8_t _stripe_id, uint8_t _block_id, uint16_t _node_id);
+    TransTask(TransTaskType _type, uint32_t _post_stripe_id, uint8_t _post_block_id, uint32_t _pre_stripe_id_global, uint8_t _pre_stripe_id_relative, uint8_t _pre_block_id, uint16_t _src_node_id, uint16_t _dst_node_id);
     ~TransTask();
 
     void print();

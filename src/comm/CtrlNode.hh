@@ -17,16 +17,14 @@ private:
 public:
     CmdDist *cmd_distributor;
 
-    vector<Stripe> stripes;
-
     CtrlNode(uint16_t _self_conn_id, Config &_config);
     ~CtrlNode();
 
     void start();
     void stop();
 
-    void read_placement(string filename);
-    void gen_commands();
+    void genTransSolution();
+    void gen_commands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &stripe_placements, vector<Command> &commands);
 };
 
 #endif // __CTRL_NODE_HH__

@@ -3,7 +3,7 @@
 Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id), config(_config)
 {
     // init socket
-    sockpp::socket_initializer sock_init;
+    sockpp::socket_initializer::initialize();
 
     // add Controller
     if (self_conn_id != CTRL_NODE_ID)
@@ -23,20 +23,20 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
         }
     }
 
-    // add acceptor
-    acceptor = new sockpp::tcp_acceptor(config.port);
+    // // add acceptor
+    // acceptor = new sockpp::tcp_acceptor(config.port);
 
-    printf("Node %u: start connection\n", self_conn_id);
+    // printf("Node %u: start connection\n", self_conn_id);
 
-    // create ack connector threads
-    thread ack_conn_thread([&]
-                           { Node::ack_conn_all(); });
+    // // create ack connector threads
+    // thread ack_conn_thread([&]
+    //                        { Node::ack_conn_all(); });
 
-    // connect all nodes
-    connect_all();
+    // // connect all nodes
+    // connect_all();
 
-    // join ack connector threads
-    ack_conn_thread.join();
+    // // join ack connector threads
+    // ack_conn_thread.join();
 }
 
 Node::~Node()
@@ -99,7 +99,7 @@ void Node::connect_one(uint16_t conn_id, string ip, uint16_t port)
 
     // send the connection command
     Command cmd_conn;
-    cmd_conn.buildConn(self_conn_id, conn_id);
+    cmd_conn.buildCommand(CommandType::CMD_CONN, self_conn_id, conn_id);
 
     if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
     {
@@ -144,7 +144,7 @@ void Node::ack_conn_all()
         // send the ack command
         auto &connector = connectors_map[conn_id];
         Command cmd_ack;
-        cmd_ack.buildAck(self_conn_id, conn_id);
+        cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
         if (connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
             fprintf(stderr, "error send cmd_ack\n");
@@ -201,6 +201,6 @@ void Node::disconnect_one(uint16_t conn_id)
 
     // receive ack command
     Command cmd_disconnect;
-    cmd_disconnect.buildConn(self_conn_id, conn_id);
+    cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id);
     connector.write_n(cmd_disconnect.content, MAX_CMD_LEN * sizeof(unsigned char));
 }
