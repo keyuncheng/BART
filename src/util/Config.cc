@@ -27,8 +27,10 @@ Config::Config(string filename)
     // Controller
     inipp::get_value(ini.sections["Controller"], "ip", coord_ip);
     inipp::get_value(ini.sections["Controller"], "agent_ips", agent_ips_raw);
-    inipp::get_value(ini.sections["Controller"], "placement_filename", placement_filename);
-    inipp::get_value(ini.sections["Controller"], "block_mapping_filename", block_mapping_filename);
+    inipp::get_value(ini.sections["Controller"], "pre_placement_filename", pre_placement_filename);
+    inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
+    inipp::get_value(ini.sections["Controller"], "pre_placement_filename", pre_placement_filename);
+    inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
 
     char *raw_str = (char *)malloc(agent_ips_raw.size() * sizeof(char));
     memcpy(raw_str, agent_ips_raw.c_str(), agent_ips_raw.size() * sizeof(char));
@@ -69,8 +71,10 @@ void Config::print()
 
     printf("Controller:\n");
     printf("ip: %s:%u\n", coord_ip.c_str(), port);
-    printf("placement_filename: %s\n", placement_filename.c_str());
-    printf("block_mapping_filename: %s\n", block_mapping_filename.c_str());
+    printf("pre_placement_filename: %s\n", pre_placement_filename.c_str());
+    printf("pre_block_mapping_filename: %s\n", pre_block_mapping_filename.c_str());
+    printf("post_placement_filename: %s\n", post_placement_filename.c_str());
+    printf("post_block_mapping_filename: %s\n", post_block_mapping_filename.c_str());
     printf("===========================\n");
 
     printf("Agent (%lu):\n", agent_ip_map.size());

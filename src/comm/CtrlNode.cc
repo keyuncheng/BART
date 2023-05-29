@@ -43,8 +43,8 @@ void CtrlNode::genTransSolution()
     vector<vector<pair<uint16_t, string>>> post_stripe_placements;
 
     // load stripe placement and block mapping
-    generator.loadStripes(config.code, config.settings, config.placement_filename, stripe_batch.pre_stripes);
-    generator.loadBlockMapping(config.code, config.settings, config.block_mapping_filename, pre_stripe_placements);
+    generator.loadStripes(config.code, config.settings, config.pre_placement_filename, stripe_batch.pre_stripes);
+    generator.loadBlockMapping(config.code, config.settings, config.pre_block_mapping_filename, pre_stripe_placements);
 
     // generate transition solution
     if (config.approach == "SM")
@@ -63,7 +63,8 @@ void CtrlNode::genTransSolution()
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
 
-    // TODO: store placements for post-transition stripes
+    // store placements for post-transition stripes
+    generator.storeStripes(stripe_batch.post_stripes, config.post_placement_filename);
     // TODO: store block mapping for post-transition stripes
     // Question: what's the physical path of the newly generated parity blocks?
 

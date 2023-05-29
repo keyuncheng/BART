@@ -51,51 +51,51 @@ def main():
 
     # Controller
     agent_ips = config["Controller"]["agent_ips"].split(",")
-    placement_filename = config["Controller"]["placement_filename"]
-    block_mapping_filename = config["Controller"]["block_mapping_filename"]
+    pre_placement_filename = config["Controller"]["pre_placement_filename"]
+    pre_block_mapping_filename = config["Controller"]["pre_block_mapping_filename"]
 
-    print("agent_ips: {}; placement_filename: {}; block_mapping_filename: {}".format(agent_ips, placement_filename, block_mapping_filename))
+    print("agent_ips: {}; pre_placement_filename: {}; pre_block_mapping_filename: {}".format(agent_ips, pre_placement_filename, pre_block_mapping_filename))
 
     # Others
     root_dir = Path("..").absolute()
     metadata_dir = root_dir / "metadata"
     metadata_dir.mkdir(exist_ok=True, parents=True)
     bin_dir = root_dir / "build"
-    placement_path = metadata_dir / placement_filename
-    block_mapping_path = metadata_dir / block_mapping_filename
+    pre_placement_path = metadata_dir / pre_placement_filename
+    pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     data_dir = root_dir / "data"
 
     # Generate placement file
     if is_gen_meta == True:
-        print("generate placement placement file {}".format(str(placement_path)))
-        cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, placement_path)
+        print("generate pre-transition placement file {}".format(str(pre_placement_path)))
+        cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, pre_placement_path)
         exec_cmd(cmd, exec=True)
     
     # Read placement
-    placement = []
-    with open("{}".format(str(placement_path)), "r") as f:
+    pre_placement = []
+    with open("{}".format(str(pre_placement_path)), "r") as f:
         for line in f.readlines():
             stripe_indices = [int(block_id) for block_id in line.strip().split(" ")]
-            placement.append(stripe_indices)
+            pre_placement.append(stripe_indices)
     
-    # obtain block mapping from placement
-    block_mapping = []
-    for stripe_id, stripe_indices in enumerate(placement):
+    # obtain pre_block_mapping from pre_placement
+    pre_block_mapping = []
+    for stripe_id, stripe_indices in enumerate(pre_placement):
         for block_id, placed_node_id in enumerate(stripe_indices):
-            block_placement_path = ""
+            pre_block_placement_path = ""
             if enable_HDFS == False:
-                block_placement_path = data_dir / "block_{}_{}".format(stripe_id, block_id)
+                pre_block_placement_path = data_dir / "block_{}_{}".format(stripe_id, block_id)
             else:
                 pass # TO IMPLEMENT
-            block_mapping.append([stripe_id, block_id, placed_node_id, block_placement_path])
+            pre_block_mapping.append([stripe_id, block_id, placed_node_id, pre_block_placement_path])
 
     # Write block mapping file
     if is_gen_meta == True:
-        print("generate block mapping file {}".format(str(block_mapping_path)))
+        print("generate block mapping file {}".format(str(pre_block_mapping_path)))
 
-        with open("{}".format(str(block_mapping_path)), "w") as f:
-            for stripe_id, block_id, node_id, block_placement_path in block_mapping:
-                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(block_placement_path)))
+        with open("{}".format(str(pre_block_mapping_path)), "w") as f:
+            for stripe_id, block_id, node_id, pre_block_placement_path in pre_block_mapping:
+                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(pre_block_placement_path)))
 
     # Generate physical blocks (if HDFS not enabled)
     if (is_gen_data == True and enable_HDFS == False):
@@ -106,8 +106,8 @@ def main():
         for node_id in range(num_nodes):
             node_block_mapping[node_id] = []
 
-        for stripe_id, block_id, node_id, block_placement_path in block_mapping:
-            node_block_mapping[node_id].append(block_placement_path)
+        for stripe_id, block_id, node_id, pre_block_placement_path in pre_block_mapping:
+            node_block_mapping[node_id].append(pre_block_placement_path)
 
         for node_id in range(num_nodes):
             node_ip = agent_ips[node_id]
