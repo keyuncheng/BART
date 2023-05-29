@@ -1,18 +1,20 @@
-#include "StripeMerge.hh"
+#include "RandomSolution.hh"
 
-StripeMerge::StripeMerge(mt19937 &_random_generator) : random_generator(_random_generator)
+RandomSolution::RandomSolution(mt19937 &_random_generator) : random_generator(_random_generator)
 {
 }
 
-StripeMerge::~StripeMerge()
+RandomSolution::~RandomSolution()
 {
 }
 
-void StripeMerge::genSolution(StripeBatch &stripe_batch, string approach)
+void RandomSolution::genSolution(StripeBatch &stripe_batch, string approach)
 {
-    // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
+
+    // Step 1: randomly construct stripe groups (sequentially)
     printf("Step 1: construct stripe groups\n");
-    stripe_batch.constructSGByBW(approach);
+    stripe_batch.constructSGInSequence();
+    // stripe_batch.constructSGByRandomPick();
     stripe_batch.print();
 
     // Step 2: generate transition solutions from all stripe groups
@@ -23,7 +25,7 @@ void StripeMerge::genSolution(StripeBatch &stripe_batch, string approach)
     }
 }
 
-void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
+void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
 {
     ConvertibleCode &code = stripe_group.code;
     uint16_t num_nodes = stripe_group.settings.num_nodes;
@@ -45,56 +47,34 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
      * @brief Step 2.1: parity generation
      * for each parity block, find the node with minimum bandwidth for parity generation
      */
+    u16string rand_parity_comp_nodes;
 
-    // record minimum bw and corresponding placement
-    uint8_t min_bw = UINT8_MAX;
-    u16string min_bw_pm_nodes(code.m_f, INVALID_NODE_ID);
-
-    if (approach == "BWRE")
-    { // re-encoding only
-        // for re-encoding, find the node with most number of data blocks (at most code.lambda_i)
-        uint16_t parity_compute_node = distance(stripe_group.data_dist.begin(), max_element(stripe_group.data_dist.begin(), stripe_group.data_dist.end()));
-        min_bw_pm_nodes.assign(code.m_f, parity_compute_node);
+    if (approach == "RDRE")
+    {
+        size_t random_node = Utils::randomUInt(0, num_nodes - 1, random_generator);
+        rand_parity_comp_nodes.assign(code.m_f, random_node);
     }
-    else if (approach == "BWPM")
-    { // parity merging only
-        // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
-        uint32_t num_pm_choices = pow(num_nodes, code.m_f);
-
-        // enumerate m_f nodes for parity merging
-        u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
-
-        for (uint32_t perm_id = 0; perm_id < num_pm_choices; perm_id++)
+    else if (approach == "RDPM")
+    {
+        // randomly pick m_f nodes to do parity merging computation
+        u16string nodes(num_nodes, INVALID_NODE_ID);
+        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
         {
-            u16string relocated_nodes = stripe_group.data_dist; // mark the number of blocks relocated on the node
-            uint8_t cur_perm_bw = 0;                            // record current bw for perm_id
-            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-            {
-                u16string &parity_dist = stripe_group.parity_dists[parity_id];
-                uint16_t parity_compute_node = pm_nodes[parity_id];
-
-                uint8_t pm_bw = (code.alpha - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
-
-                relocated_nodes[parity_compute_node] += 1; // mark the node as relocated on the node
-                cur_perm_bw += pm_bw;                      // update bw
-            }
-
-            // update minimum bw
-            if (cur_perm_bw < min_bw)
-            {
-                min_bw = cur_perm_bw;
-                min_bw_pm_nodes = pm_nodes;
-            }
-
-            // get next permutation
-            Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
+            nodes[node_id] = node_id;
         }
+        shuffle(nodes.begin(), nodes.end(), random_generator);
+        rand_parity_comp_nodes = nodes.substr(0, code.m_f);
+    }
+    else
+    {
+        fprintf(stderr, "invalid approach: %s\n", approach.c_str());
+        return;
     }
 
     // update parity computation nodes, final block placement and block distribution
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        final_block_placement[code.k_f + parity_id] = min_bw_pm_nodes[parity_id];
+        final_block_placement[code.k_f + parity_id] = rand_parity_comp_nodes[parity_id];
     }
 
     /**
@@ -142,7 +122,14 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
     }
 
     // update stripe group metadata
-    stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
-    stripe_group.parity_comp_nodes = min_bw_pm_nodes;
+    if (approach == "RDRE")
+    {
+        stripe_group.parity_comp_method = EncodeMethod::RE_ENCODE;
+    }
+    else if (approach == "RDPM")
+    {
+        stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
+    }
+    stripe_group.parity_comp_nodes = rand_parity_comp_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }

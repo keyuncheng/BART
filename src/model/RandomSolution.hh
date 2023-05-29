@@ -1,23 +1,23 @@
-#ifndef __STRIPE_MERGE_G_HH__
-#define __STRIPE_MERGE_G_HH__
+#ifndef __RANDOM_SOLUTION_HH__
+#define __RANDOM_SOLUTION_HH__
 
 #include "../include/include.hh"
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
 #include "StripeGroup.hh"
 
-class StripeMerge
+class RandomSolution
 {
 private:
     /* data */
 public:
     mt19937 &random_generator;
 
-    StripeMerge(mt19937 &_random_generator);
-    ~StripeMerge();
+    RandomSolution(mt19937 &_random_generator);
+    ~RandomSolution();
 
     void genSolution(StripeBatch &stripe_batch, string approach);
     void genSolution(StripeGroup &stripe_group, string approach);
 };
 
-#endif // __STRIPE_MERGE_G_HH__
+#endif // __RANDOM_SOLUTION_HH__

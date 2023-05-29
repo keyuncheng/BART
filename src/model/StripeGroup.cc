@@ -13,10 +13,15 @@ StripeGroup::~StripeGroup()
 void StripeGroup::print()
 {
     printf("Stripe group %u: ", id);
+    // for (auto stripe : pre_stripes)
+    // {
+    //     printf("%u, ", stripe->id);
+    // }
+
+    printf("\n");
     for (auto stripe : pre_stripes)
     {
-        printf("%u, ", stripe->id);
-        // stripe->print();
+        stripe->print();
     }
     printf("\n");
 }
@@ -53,27 +58,33 @@ void StripeGroup::initParityDists()
     }
 }
 
-uint8_t StripeGroup::getMinTransBW()
+uint8_t StripeGroup::getMinTransBW(string approach)
 {
     uint8_t parity_update_bw = 0;
-    // // approach 1: re-encoding bandwidth
-    // uint8_t re_bw = getMinREBW();
-    // parity_update_bw = re_bw;
-
-    // // approach 2: parity merging
-    // if (code.isValidForPM() == true)
-    // {
-    //     uint8_t pm_bw = getMinPMBW();
-
-    //     if (pm_bw <= re_bw)
-    //     {
-    //         parity_update_bw = pm_bw;
-    //     }
-    // }
 
     // NOTE: here we assume that bandwidth(pm) <= bandwith (re), thus we calculate pm bandwidth only
-    // parity_update_bw = getMinPMBW();
-    parity_update_bw = getMinPMBWGreedy();
+
+    if (approach == "BWRE")
+    { // re-encoding only
+        parity_update_bw = getMinREBW();
+    }
+    else if (approach == "BWPM")
+    { // parity-merging only
+        // parity_update_bw = getMinPMBW();
+        parity_update_bw = getMinPMBWGreedy();
+    }
+    else if (approach == "BT")
+    { // both re-encoding and parity merging
+        // NOTE: here we assume that bandwidth(pm) <= bandwidth(re), thus we calculate pm bandwidth only
+
+        // parity_update_bw = getMinPMBW();
+        parity_update_bw = getMinPMBWGreedy();
+    }
+    else
+    {
+        fprintf(stderr, "invalid approach: %s\n", approach.c_str());
+        return UINT8_MAX;
+    }
 
     // data relocation cost
     uint8_t data_reloc_bw = getDataRelocBW();

@@ -62,7 +62,7 @@ public:
     ~StripeGroup();
     void print();
 
-    uint8_t getMinTransBW();
+    uint8_t getMinTransBW(string approach);
     uint8_t getDataRelocBW();
     uint8_t getMinREBW();
     uint8_t getMinPMBW();

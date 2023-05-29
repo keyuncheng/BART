@@ -3,6 +3,7 @@
 #include "model/ClusterSettings.hh"
 #include "util/StripeGenerator.hh"
 #include "model/StripeBatch.hh"
+#include "model/RandomSolution.hh"
 #include "model/StripeMerge.hh"
 #include "model/BalancedConversion.hh"
 
@@ -11,7 +12,7 @@ int main(int argc, char *argv[])
 
     if (argc != 9)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes placement_file approach[BT/SM]");
+        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes pre_placement_file approach[RDRE/RDPM/BWRE/BWPM/BT]");
         return -1;
     }
 
@@ -21,7 +22,7 @@ int main(int argc, char *argv[])
     uint8_t m_f = atoi(argv[4]);
     uint16_t num_nodes = atoi(argv[5]);
     uint32_t num_stripes = atoi(argv[6]);
-    string placement_file = argv[7];
+    string pre_placement_file = argv[7];
     string approach = argv[8];
 
     // random generator
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
     StripeGenerator stripe_generator;
 
     // load pre-transition stripes from placement file
-    stripe_generator.loadStripes(code, settings, placement_file, stripe_batch.pre_stripes);
+    stripe_generator.loadStripes(code, settings, pre_placement_file, stripe_batch.pre_stripes);
 
     printf("stripes:\n");
     for (auto &stripe : stripe_batch.pre_stripes)
@@ -58,17 +59,27 @@ int main(int argc, char *argv[])
     // solutions and load distribution
     TransSolution trans_solution(code, settings);
 
-    if (approach == "SM")
+    if (approach == "RDRE" || approach == "RDPM")
+    {
+        RandomSolution random_solution(random_generator);
+        random_solution.genSolution(stripe_batch, approach);
+    }
+    else if (approach == "BWRE" || approach == "BWPM")
     {
         // StripeMerge
         StripeMerge stripe_merge(random_generator);
-        stripe_merge.genSolution(stripe_batch);
+        stripe_merge.genSolution(stripe_batch, approach);
     }
     else if (approach == "BT")
     {
         // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
         balanced_conversion.genSolution(stripe_batch);
+    }
+    else
+    {
+        printf("invalid approach: %s\n", approach.c_str());
+        return -1;
     }
 
     // validate block placement

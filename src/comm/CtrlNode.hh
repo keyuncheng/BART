@@ -7,6 +7,7 @@
 #include "CmdDist.hh"
 #include "../util/StripeGenerator.hh"
 #include "../model/TransSolution.hh"
+#include "../model/RandomSolution.hh"
 #include "../model/StripeMerge.hh"
 #include "../model/BalancedConversion.hh"
 

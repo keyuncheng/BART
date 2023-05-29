@@ -88,7 +88,7 @@ void StripeBatch::constructSGByRandomPick()
     }
 }
 
-void StripeBatch::constructSGByCost()
+void StripeBatch::constructSGByBW(string approach)
 {
     uint32_t num_sgs = settings.num_stripes / code.lambda_i;
 
@@ -131,7 +131,7 @@ void StripeBatch::constructSGByCost()
         }
 
         StripeGroup stripe_group(0, code, settings, selected_pre_stripes, NULL);
-        uint8_t min_bw = stripe_group.getMinTransBW();
+        uint8_t min_bw = stripe_group.getMinTransBW(approach);
         bw_sgs_table[min_bw].push_back(sg_stripe_ids);
 
         // printf("candidate stripe group: %lu, minimum bandwidth: %u\n", cand_sg_id, min_bw);

@@ -24,7 +24,7 @@ public:
 
     void constructSGInSequence();
     void constructSGByRandomPick();
-    void constructSGByCost();
+    void constructSGByBW(string approach);
 
     // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 

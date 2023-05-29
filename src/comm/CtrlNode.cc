@@ -47,11 +47,17 @@ void CtrlNode::genTransSolution()
     generator.loadBlockMapping(config.code, config.settings, config.pre_block_mapping_filename, pre_stripe_placements);
 
     // generate transition solution
-    if (config.approach == "SM")
+    if (config.approach == "RDRE" || config.approach == "RDPM")
+    {
+        // StripeMerge
+        RandomSolution random_solution(random_generator);
+        random_solution.genSolution(stripe_batch, config.approach);
+    }
+    else if (config.approach == "BWRE" || config.approach == "BWPM")
     {
         // StripeMerge
         StripeMerge stripe_merge(random_generator);
-        stripe_merge.genSolution(stripe_batch);
+        stripe_merge.genSolution(stripe_batch, config.approach);
     }
     else if (config.approach == "BT")
     {

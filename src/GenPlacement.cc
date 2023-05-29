@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     if (argc != 8)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes placement_file");
+        printf("usage: ./GenPlacement k_i m_i k_f m_f num_nodes num_stripes placement_file");
         return -1;
     }
 
