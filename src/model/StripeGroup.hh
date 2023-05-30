@@ -71,8 +71,8 @@ public:
     // generate parity computation scheme for perfect parity merging (parity generation bandwidth = 0)
     void genParityComputeScheme4PerfectPM();
 
-    // generate all candidate partial load tables for the stripe group, including re-encoding and parity merging
-    void genAllPartialLTs4ParityCompute();
+    // generate candidate partial load tables for the stripe group with re-encoding and parity merging
+    void genPartialLTs4ParityCompute(string approach);
 
     // // enumerate send load tables
     // vector<vector<size_t>> getCandSendLoadTables();

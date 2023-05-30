@@ -8,23 +8,23 @@ BalancedConversion::~BalancedConversion()
 {
 }
 
-void BalancedConversion::genSolution(StripeBatch &stripe_batch)
+void BalancedConversion::genSolution(StripeBatch &stripe_batch, string approach)
 {
     // Step 1: construct stripe groups
     printf("Step 1: construct stripe groups\n");
-    stripe_batch.constructSGByBW("BT");
+    stripe_batch.constructSGByBW(approach);
     // stripe_batch.print();
 
     // Step 2: generate parity computation scheme (parity computation method and nodes)
     printf("Step 2: generate parity computation scheme\n");
-    genParityComputation(stripe_batch);
+    genParityComputation(stripe_batch, approach);
 
     // Step 3: schedule (data and parity) block relocation
     printf("Step 3: schedule block relocation\n");
     genBlockRelocation(stripe_batch);
 }
 
-void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
+void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string approach)
 {
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
@@ -76,7 +76,7 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
 
         // for other stripe groups with non-zero parity computation bandwidth, generate all candidate load tables for parity computation
         vector<LoadTable> partial_lts;
-        stripe_group.genAllPartialLTs4ParityCompute();
+        stripe_group.genPartialLTs4ParityCompute(approach);
     }
 
     // use a while loop until the solution cannot be further optimized (i.e., cannot further improve load balance and then bandwidth)

@@ -59,11 +59,11 @@ void CtrlNode::genTransSolution()
         StripeMerge stripe_merge(random_generator);
         stripe_merge.genSolution(stripe_batch, config.approach);
     }
-    else if (config.approach == "BT")
+    else if (config.approach == "BTRE" || config.approach == "BTPM" || config.approach == "BT")
     {
         // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
-        balanced_conversion.genSolution(stripe_batch);
+        balanced_conversion.genSolution(stripe_batch, config.approach);
     }
 
     // build transition tasks

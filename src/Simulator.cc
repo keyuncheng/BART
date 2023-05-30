@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 
     if (argc != 9)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes pre_placement_file approach[RDRE/RDPM/BWRE/BWPM/BT]");
+        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes pre_placement_file approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT]");
         return -1;
     }
 
@@ -70,11 +70,11 @@ int main(int argc, char *argv[])
         StripeMerge stripe_merge(random_generator);
         stripe_merge.genSolution(stripe_batch, approach);
     }
-    else if (approach == "BT")
+    else if (approach == "BTRE" || approach == "BTPM" || approach == "BT")
     {
         // Balanced Conversion
         BalancedConversion balanced_conversion(random_generator);
-        balanced_conversion.genSolution(stripe_batch);
+        balanced_conversion.genSolution(stripe_batch, approach);
     }
     else
     {

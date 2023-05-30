@@ -11,7 +11,7 @@ class BalancedConversion
 {
 private:
     /* data */
-    void genParityComputation(StripeBatch &stripe_batch);
+    void genParityComputation(StripeBatch &stripe_batch, string approach);
     void genBlockRelocation(StripeBatch &stripe_batch);
 
 public:
@@ -20,7 +20,7 @@ public:
     BalancedConversion(mt19937 &_random_generator);
     ~BalancedConversion();
 
-    void genSolution(StripeBatch &stripe_batch);
+    void genSolution(StripeBatch &stripe_batch, string approach);
 
     // void getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator);
 

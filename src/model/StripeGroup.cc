@@ -64,11 +64,11 @@ uint8_t StripeGroup::getMinTransBW(string approach)
 
     // NOTE: here we assume that bandwidth(pm) <= bandwith (re), thus we calculate pm bandwidth only
 
-    if (approach == "BWRE")
+    if (approach == "BWRE" || approach == "BTRE")
     { // re-encoding only
         parity_update_bw = getMinREBW();
     }
-    else if (approach == "BWPM")
+    else if (approach == "BWPM" || approach == "BTPM")
     { // parity-merging only
         // parity_update_bw = getMinPMBW();
         parity_update_bw = getMinPMBWGreedy();
@@ -217,7 +217,7 @@ void StripeGroup::genParityComputeScheme4PerfectPM()
     }
 }
 
-void StripeGroup::genAllPartialLTs4ParityCompute()
+void StripeGroup::genPartialLTs4ParityCompute(string approach)
 {
     uint16_t num_nodes = settings.num_nodes;
     // for re-encoding, there are <num_nodes> possible candidate load tables, as we can collect code.k_f data blocks and distribute code.m_f parity blocks at <num_nodes> possible nodes
@@ -225,15 +225,11 @@ void StripeGroup::genAllPartialLTs4ParityCompute()
     // for parity merging, there are <num_nodes ^ code.m_f> possible candidate load tables, as we can collect each of m_f parity blocks at num_nodes nodes
     uint32_t num_pm_lts = pow(num_nodes, code.m_f);
 
-    // create load tables
-    cand_partial_lts.clear();
-    cand_partial_lts.resize(num_re_lts + num_pm_lts);
-
     // enumerate partial load tables for re-encoding
-    uint16_t lt_id = 0;
+    vector<LoadTable> cand_re_lts(num_re_lts);
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
-        LoadTable &lt = cand_partial_lts[lt_id];
+        LoadTable &lt = cand_re_lts[node_id];
         lt.approach = EncodeMethod::RE_ENCODE;
         lt.bw = code.k_f - data_dist[node_id] + code.m_f;
         lt.enc_nodes.assign(code.m_f, node_id);              // re-encoding nodes
@@ -242,15 +238,14 @@ void StripeGroup::genAllPartialLTs4ParityCompute()
         lt.rlt.assign(num_nodes, 0);                         // recv load table
         lt.rlt[node_id] = code.k_f - data_dist[node_id];     // recv data blocks at <node_id>
         lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
-
-        lt_id++;
     }
 
     // enumerate partial load tables for parity merging
+    vector<LoadTable> cand_pm_lts(num_pm_lts);
     u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
     for (uint32_t perm_id = 0; perm_id < num_pm_lts; perm_id++)
     {
-        LoadTable &lt = cand_partial_lts[lt_id];
+        LoadTable &lt = cand_pm_lts[perm_id];
         lt.approach = EncodeMethod::PARITY_MERGE;
         lt.enc_nodes = pm_nodes;     // re-encoding node
         lt.slt.assign(num_nodes, 0); // send load table
@@ -277,8 +272,23 @@ void StripeGroup::genAllPartialLTs4ParityCompute()
 
         // get next permutation
         Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
+    }
 
-        lt_id++;
+    // create load tables
+    cand_partial_lts.clear();
+    if (approach == "BTRE")
+    { // use re-encoding only
+        cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_re_lts.begin()), make_move_iterator(cand_re_lts.end()));
+    }
+    else if (approach == "BTPM")
+    { // use parity merging only
+        cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_pm_lts.begin()), make_move_iterator(cand_pm_lts.end()));
+    }
+    else if (approach == "BT")
+    { // use both
+        cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_re_lts.begin()), make_move_iterator(cand_re_lts.end()));
+        cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_pm_lts.begin()), make_move_iterator(cand_pm_lts.end()));
+        printf("haha\n");
     }
 }
 
