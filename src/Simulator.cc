@@ -50,11 +50,11 @@ int main(int argc, char *argv[])
     // load pre-transition stripes from placement file
     stripe_generator.loadStripes(code, settings, pre_placement_file, stripe_batch.pre_stripes);
 
-    printf("stripes:\n");
-    for (auto &stripe : stripe_batch.pre_stripes)
-    {
-        stripe.print();
-    }
+    // printf("stripes:\n");
+    // for (auto &stripe : stripe_batch.pre_stripes)
+    // {
+    //     stripe.print();
+    // }
 
     // solutions and load distribution
     TransSolution trans_solution(code, settings);
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
-    trans_solution.print();
+    // trans_solution.print();
 
     // get load distribution
     vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     u32string &recv_load_dist = transfer_load_dist[1];
 
     // get bandwidth
-    size_t total_bandwidth = 0;
+    uint64_t total_bandwidth = 0;
     for (auto item : send_load_dist)
     {
         total_bandwidth += item;
@@ -108,18 +108,18 @@ int main(int argc, char *argv[])
 
     // in-degree
     // min, max
-    double min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
-    double max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
+    uint32_t min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
+    uint32_t max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
     // mean, stddev, cv
-    double mean_in_degree = std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
+    double mean_in_degree = 1.0 * std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
     double sq_sum_in_degree = std::inner_product(send_load_dist.begin(), send_load_dist.end(), send_load_dist.begin(), 0.0);
     double stddev_in_degree = std::sqrt(sq_sum_in_degree / send_load_dist.size() - mean_in_degree * mean_in_degree);
     double cv_in_degree = stddev_in_degree / mean_in_degree;
 
     // out-degree
     // min max
-    double min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-    double max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    uint32_t min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    uint32_t max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
     // mean, stddev, cv
     double mean_out_degree = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
     double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
@@ -132,9 +132,12 @@ int main(int argc, char *argv[])
     printf("recv load: ");
     Utils::printVector(recv_load_dist);
 
-    printf("send load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
+    printf("send load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
 
-    printf("recv load: bandwidth: %ld, min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", total_bandwidth, min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
+    printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
+
+    printf("bandwidth: %lu\n", total_bandwidth);
+    printf("max_load: %u\n", max(max_in_degree, max_out_degree));
 
     return 0;
 }

@@ -108,7 +108,7 @@ void StripeBatch::constructSGByBW(string approach)
      *  bandwidth n_f: ...
      */
 
-    uint8_t max_bw = code.n_f + 1;                  // allowed maximum bandwidth
+    uint8_t max_bw = code.n_f + code.k_f;           // allowed maximum bandwidth
     vector<vector<u32string>> bw_sgs_table(max_bw); // record sg_stripe_ids for each candidate stripe group
 
     // current stripe ids

@@ -13,7 +13,7 @@ void BalancedConversion::genSolution(StripeBatch &stripe_batch)
     // Step 1: construct stripe groups
     printf("Step 1: construct stripe groups\n");
     stripe_batch.constructSGByBW("BT");
-    stripe_batch.print();
+    // stripe_batch.print();
 
     // Step 2: generate parity computation scheme (parity computation method and nodes)
     printf("Step 2: generate parity computation scheme\n");
@@ -51,12 +51,12 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
     // bw is calculated with data relocation
     cur_lt.bw = accumulate(cur_lt.slt.begin(), cur_lt.slt.end(), 0);
 
-    printf("current_lt initialized with data relocation send load:\n");
-    printf("send load: ");
-    Utils::printVector(cur_lt.slt);
-    printf("recv load: ");
-    Utils::printVector(cur_lt.rlt);
-    printf("bandwidth: %u\n", cur_lt.bw);
+    // printf("current_lt initialized with data relocation send load:\n");
+    // printf("send load: ");
+    // Utils::printVector(cur_lt.slt);
+    // printf("recv load: ");
+    // Utils::printVector(cur_lt.rlt);
+    // printf("bandwidth: %u\n", cur_lt.bw);
 
     // obtain candidate load tables for parity generation by enumerating all encoding methods and nodes
     unordered_map<uint32_t, bool> is_sg_perfect_pm;
@@ -183,12 +183,13 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch)
             // the solution cannot be further optimized
             break;
         }
-        printf("cur_lt after iteration %lu:\n", iter);
-        printf("send load: ");
-        Utils::printVector(cur_lt.slt);
-        printf("recv load: ");
-        Utils::printVector(cur_lt.rlt);
-        printf("bandwidth: %u\n", cur_lt.bw);
+
+        // printf("cur_lt after iteration %lu:\n", iter);
+        // printf("send load: ");
+        // Utils::printVector(cur_lt.slt);
+        // printf("recv load: ");
+        // Utils::printVector(cur_lt.rlt);
+        // printf("bandwidth: %u\n", cur_lt.bw);
     }
 
     // update the metadata for stripe group

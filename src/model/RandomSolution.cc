@@ -15,7 +15,7 @@ void RandomSolution::genSolution(StripeBatch &stripe_batch, string approach)
     printf("Step 1: construct stripe groups\n");
     stripe_batch.constructSGInSequence();
     // stripe_batch.constructSGByRandomPick();
-    stripe_batch.print();
+    // stripe_batch.print();
 
     // Step 2: generate transition solutions from all stripe groups
     printf("Step 2: generate transition solution\n");

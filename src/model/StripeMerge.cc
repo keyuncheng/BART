@@ -13,7 +13,7 @@ void StripeMerge::genSolution(StripeBatch &stripe_batch, string approach)
     // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
     printf("Step 1: construct stripe groups\n");
     stripe_batch.constructSGByBW(approach);
-    stripe_batch.print();
+    // stripe_batch.print();
 
     // Step 2: generate transition solutions from all stripe groups
     printf("Step 2: generate transition solution\n");
@@ -142,7 +142,18 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
     }
 
     // update stripe group metadata
-    stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
+    if (approach == "BWRE")
+    {
+        stripe_group.parity_comp_method = EncodeMethod::RE_ENCODE;
+    }
+    else if (approach == "BWPM")
+    {
+        stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
+    }
+    else
+    {
+        stripe_group.parity_comp_method = EncodeMethod::UNKNOWN_METHOD;
+    }
     stripe_group.parity_comp_nodes = min_bw_pm_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }

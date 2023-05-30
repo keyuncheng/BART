@@ -4,14 +4,12 @@ import itertools
 import subprocess
 
 def main():
-    # ks = [2,3,4,5,6,8,16]
-    ks = [16]
+    ks = [2,3,4,5,6,8,16]
     ms = [2,3,4]
-    # lambdas = [2,3,4]
-    lambdas = [3]
-    methods = ["SM", "BT"]
-    num_runs = 3
-    num_stripes = [300]
+    lambdas = [2,3,4]
+    methods = ["RDRE", "RDPM", "BWRE", "BWPM", "BT"]
+    num_runs = 5
+    num_stripes = [1000]
     num_nodes_times = [2]
     placement = "placement"
     root_dir = "/home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion"
@@ -25,6 +23,10 @@ def main():
 
         if (k < m):
             continue
+
+        # num_stripe
+        if num_stripe % lambda_ > 0:
+            num_stripe = (int(num_stripe / lambda_) + 1) * lambda_
 
         for i in range(num_runs):
             # generate placement
