@@ -1,0 +1,941 @@
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 2 8 2 20 1000 placement
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4885
+max_load: 317
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 2665
+max_load: 155
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 4500
+max_load: 785
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 285
+max_load: 26
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+number of re-encoding groups: (499 / 500), num of parity merging groups: (1 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 285
+max_load: 20
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BT
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (1 / 500), num of parity merging groups: (499 / 500)
+Step 3: schedule block relocation
+bandwidth: 294
+max_load: 19
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 2 8 2 20 1000 placement
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4879
+max_load: 323
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 2639
+max_load: 170
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 4500
+max_load: 759
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 289
+max_load: 29
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (498 / 500), num of parity merging groups: (2 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 289
+max_load: 19
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BT
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 289
+max_load: 19
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 2 8 2 20 1000 placement
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4865
+max_load: 285
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 2697
+max_load: 163
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 4500
+max_load: 737
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 283
+max_load: 28
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+iteration: 6
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 284
+max_load: 18
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BT
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 284
+max_load: 18
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 2 8 2 20 1000 placement
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4905
+max_load: 297
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 2696
+max_load: 154
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 4500
+max_load: 872
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 255
+max_load: 27
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (499 / 500), num of parity merging groups: (1 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 255
+max_load: 18
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BT
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+number of re-encoding groups: (1 / 500), num of parity merging groups: (499 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 2 8 2 20 1000 placement
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4884
+max_load: 333
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement RDPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 2666
+max_load: 168
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 4500
+max_load: 874
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BWPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 271
+max_load: 27
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTRE
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (499 / 500), num of parity merging groups: (1 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BTPM
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 271
+max_load: 18
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 2 8 2 20 1000 placement BT
+ConvertibleCode: (4, 2) -> (8, 2), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 20, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 272
+max_load: 18
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 3 8 3 22 1000 placement
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5359
+max_load: 332
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 3762
+max_load: 191
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5000
+max_load: 846
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 620
+max_load: 52
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+iteration: 6
+iteration: 7
+iteration: 8
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 624
+max_load: 35
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BT
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (2 / 500), num of parity merging groups: (498 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 3 8 3 22 1000 placement
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5335
+max_load: 340
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 3734
+max_load: 196
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5000
+max_load: 808
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 620
+max_load: 44
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (499 / 500), num of parity merging groups: (1 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 623
+max_load: 37
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BT
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (3 / 500), num of parity merging groups: (497 / 500)
+Step 3: schedule block relocation
+bandwidth: 647
+max_load: 35
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 3 8 3 22 1000 placement
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5359
+max_load: 314
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 3755
+max_load: 205
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5000
+max_load: 759
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 622
+max_load: 49
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 628
+max_load: 35
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BT
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (1 / 500), num of parity merging groups: (499 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 3 8 3 22 1000 placement
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5327
+max_load: 298
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 3710
+max_load: 196
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5001
+max_load: 779
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 618
+max_load: 49
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+iteration: 6
+iteration: 7
+iteration: 8
+iteration: 9
+iteration: 10
+iteration: 11
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 621
+max_load: 33
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BT
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 619
+max_load: 33
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 3 8 3 22 1000 placement
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5317
+max_load: 309
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement RDPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 3706
+max_load: 192
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5000
+max_load: 815
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BWPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 626
+max_load: 49
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTRE
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+iteration: 6
+iteration: 7
+iteration: 8
+iteration: 9
+iteration: 10
+iteration: 11
+iteration: 12
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BTPM
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 628
+max_load: 33
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 3 8 3 22 1000 placement BT
+ConvertibleCode: (4, 3) -> (8, 3), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 22, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+number of re-encoding groups: (0 / 500), num of parity merging groups: (500 / 500)
+Step 3: schedule block relocation
+bandwidth: 630
+max_load: 34
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./GenPlacement 4 4 8 4 24 1000 placement
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished storing 1000 stripes in placement
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement RDRE
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 5804
+max_load: 344
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement RDPM
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+Step 2: generate transition solution
+bandwidth: 4714
+max_load: 229
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement BWRE
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 5500
+max_load: 710
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement BWPM
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate transition solution
+bandwidth: 1038
+max_load: 80
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement BTRE
+ConvertibleCode: (4, 4) -> (8, 4), alpha: 2, beta: 0, theta: 8, lambda_i: 2, lambda_f: 1
+ClusterSettings: num_nodes: 24, num_stripes: 1000
+finished loading 1000 stripes from placement
+Step 1: construct stripe groups
+candidates stripe groups: 499500
+stripe groups (0 / 499500) bandwidth calculated
+Step 2: generate parity computation scheme
+iteration: 1
+iteration: 2
+iteration: 3
+iteration: 4
+iteration: 5
+iteration: 6
+iteration: 7
+iteration: 8
+iteration: 9
+number of re-encoding groups: (500 / 500), num of parity merging groups: (0 / 500)
+Step 3: schedule block relocation
+error: invalid final block placements!
+cd /home/kycheng/Documents/projects/redundancy-transition/load-balance/BalancedConversion/build; ./Simulator 4 4 8 4 24 1000 placement BTPM

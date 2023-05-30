@@ -288,7 +288,6 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     { // use both
         cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_re_lts.begin()), make_move_iterator(cand_re_lts.end()));
         cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_pm_lts.begin()), make_move_iterator(cand_pm_lts.end()));
-        printf("haha\n");
     }
 }
 

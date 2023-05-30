@@ -95,6 +95,9 @@ bool TransSolution::isFinalBlockPlacementValid(StripeBatch &stripe_batch)
             }
             else
             { // more than one block placed at the node
+                printf("invalid final block placement, stripe_group id: %u, placement: ", stripe_group.id);
+                Utils::printVector(final_block_placement);
+                printf("\n");
                 return false;
             }
         }

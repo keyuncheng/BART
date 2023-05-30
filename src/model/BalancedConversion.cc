@@ -59,19 +59,22 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
     // printf("bandwidth: %u\n", cur_lt.bw);
 
     // obtain candidate load tables for parity generation by enumerating all encoding methods and nodes
-    unordered_map<uint32_t, bool> is_sg_perfect_pm;
+    vector<bool> is_sg_perfect_pm(stripe_batch.selected_sgs.size(), false);
     for (auto &item : stripe_batch.selected_sgs)
     {
         uint32_t sg_id = item.first;
         StripeGroup &stripe_group = item.second;
 
-        // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
-        if (stripe_group.getMinPMBW() == 0)
+        if (approach == "BTPM" || approach == "BT")
         {
-            // generate parity computation scheme for parity merging
-            stripe_group.genParityComputeScheme4PerfectPM();
-            is_sg_perfect_pm[sg_id] = true;
-            continue;
+            // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
+            if (stripe_group.getMinPMBW() == 0)
+            {
+                // generate parity computation scheme for parity merging
+                stripe_group.genParityComputeScheme4PerfectPM();
+                is_sg_perfect_pm[sg_id] = true;
+                continue;
+            }
         }
 
         // for other stripe groups with non-zero parity computation bandwidth, generate all candidate load tables for parity computation
@@ -209,12 +212,12 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
         num_re_groups += (item.second.applied_lt.approach == EncodeMethod::RE_ENCODE ? 1 : 0);
     }
 
-    printf("final load table with data relocation (send load only), parity generation (both send and receive load) and parity relocation (send load only):\n");
-    printf("send load: ");
-    Utils::printVector(cur_lt.slt);
-    printf("recv load: ");
-    Utils::printVector(cur_lt.rlt);
-    printf("bandwidth: %u\n", cur_lt.bw);
+    // printf("final load table with data relocation (send load only), parity generation (both send and receive load) and parity relocation (send load only):\n");
+    // printf("send load: ");
+    // Utils::printVector(cur_lt.slt);
+    // printf("recv load: ");
+    // Utils::printVector(cur_lt.rlt);
+    // printf("bandwidth: %u\n", cur_lt.bw);
     printf("number of re-encoding groups: (%u / %lu), num of parity merging groups: (%lu / %lu)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
 }
 
@@ -258,11 +261,12 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
                 cur_placed_node_id = stripe_group.parity_comp_nodes[parity_id];
             }
 
+            sg_final_block_placement[sg_id][final_block_id] = cur_placed_node_id;
+
             // check if the node has been placed with a block
             if (is_node_relocated[cur_placed_node_id] == false)
             {
                 // directly place the block at the node
-                sg_final_block_placement[sg_id][final_block_id] = cur_placed_node_id;
                 is_node_relocated[cur_placed_node_id] = true; // mark the node as relocated
             }
             else
@@ -281,6 +285,12 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
             }
         }
     }
+
+    printf("sg1:\n");
+    Utils::printVector(sg_final_block_placement[0]);
+
+    printf("available nodes:\n");
+    Utils::printVector(sg_avail_nodes[0]);
 
     // step 2: construct bipartite graph
     Bipartite bipartite;

@@ -4,10 +4,12 @@ import itertools
 import subprocess
 
 def main():
-    ks = [2,3,4,5,6,8,16]
+    # ks = [4,6,8,12,16,32]
+    ks = [4]
     ms = [2,3,4]
-    lambdas = [2,3,4]
-    methods = ["RDRE", "RDPM", "BWRE", "BWPM", "BT"]
+    # lambdas = [2,3,4]
+    lambdas = [2]
+    methods = ["RDRE", "RDPM", "BWRE", "BWPM", "BTRE", "BTPM", "BT"]
     num_runs = 5
     num_stripes = [1000]
     num_nodes_times = [2]
@@ -30,7 +32,7 @@ def main():
 
         for i in range(num_runs):
             # generate placement
-            cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(bin_dir, k, m, lambda_ * k, m, num_stripe, num_nodes_time * (lambda_ * k + m), placement)
+            cmd = "cd {}; ./GenPlacement {} {} {} {} {} {} {}".format(bin_dir, k, m, lambda_ * k, m, num_nodes_time * (lambda_ * k + m), num_stripe, placement)
             print(cmd)
 
             return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
@@ -38,7 +40,7 @@ def main():
             print(msg)
 
             for method in methods:
-                cmd = "cd {}; ./Simulator {} {} {} {} {} {} {} {}".format(bin_dir, k, m, lambda_ * k, m, num_stripe, num_nodes_time * (lambda_ * k + m), placement, method)
+                cmd = "cd {}; ./Simulator {} {} {} {} {} {} {} {}".format(bin_dir, k, m, lambda_ * k, m, num_nodes_time * (lambda_ * k + m), num_stripe, placement, method)
                 print(cmd)
 
                 return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
