@@ -121,19 +121,18 @@ vector<uint64_t> Bipartite::findOptSemiMatching(unordered_map<uint64_t, pair<uin
                     // find an unmatched edge
                     if (cur_sm_matrix[vtx.id * num_rvtxes + rvtx_id] == false)
                     {
-                        // we don't allow the root lvtx connect to a rvtx which is already connected with a lvtx of the same stripe group
+                        // we don't allow the lvtx connect to a rvtx which is already connected with a lvtx of the same stripe group, as alternating the paths within the two lvtxes in the same stripe group doesn't help reducing the load
                         bool is_rvtx_valid = true;
-                        if (vtx.id == root_lvtx.id) // it's a root vertex
+
+                        for (auto sg_lvtx : sg_lvtxes)
                         {
-                            for (auto sg_lvtx : sg_lvtxes)
+                            if (cur_sm_matrix[sg_lvtx * num_rvtxes + rvtx_id] == true) // rvtx already been matched by sg_lvtx of the same stripe group
                             {
-                                if (cur_sm_matrix[sg_lvtx * num_rvtxes + rvtx_id] == true) // rvtx already been matched by sg_lvtx of the same stripe group
-                                {
-                                    is_rvtx_valid = false; // mark the edge as not valid
-                                    break;
-                                }
+                                is_rvtx_valid = false; // mark the edge as not valid
+                                break;
                             }
                         }
+
                         // if the edge is unmatched
                         if (is_rvtx_valid == true)
                         {

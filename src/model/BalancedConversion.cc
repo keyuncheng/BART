@@ -286,11 +286,16 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
         }
     }
 
-    printf("sg1:\n");
-    Utils::printVector(sg_final_block_placement[0]);
+    // for (auto &item : stripe_batch.selected_sgs)
+    // {
+    //     uint32_t sg_id = item.first;
 
-    printf("available nodes:\n");
-    Utils::printVector(sg_avail_nodes[0]);
+    //     printf("sg %u:\n", sg_id);
+    //     Utils::printVector(sg_final_block_placement[sg_id]);
+
+    //     printf("available nodes:\n");
+    //     Utils::printVector(sg_avail_nodes[sg_id]);
+    // }
 
     // step 2: construct bipartite graph
     Bipartite bipartite;
