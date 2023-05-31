@@ -256,16 +256,31 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
         {
             uint16_t parity_comp_node_id = pm_nodes[parity_id];
             // send load dist
-            u16string parity_slt = parity_dists[parity_id];
-            parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
 
-            // receive load dist
-            u16string parity_rlt(num_nodes, 0);
-            parity_rlt[parity_comp_node_id] = code.lambda_i - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
+            // collect parity block
+            for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            {
+                uint16_t parity_node_id = pre_stripes[stripe_id]->indices[code.k_i + parity_id];
+                if (parity_node_id != parity_comp_node_id)
+                {
+                    lt.slt[parity_node_id]++;
+                }
+            }
 
-            // accumulate the loads for all parities
-            Utils::dotAddVectors(lt.slt, parity_slt, lt.slt);
-            Utils::dotAddVectors(lt.rlt, parity_rlt, lt.rlt);
+            lt.slt[parity_comp_node_id] += (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+
+            lt.rlt[parity_comp_node_id] += code.lambda_i - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
+
+            // u16string parity_slt = parity_dists[parity_id];
+            // parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+
+            // // receive load dist
+            // u16string parity_rlt(num_nodes, 0);
+            // parity_rlt[parity_comp_node_id] = code.lambda_i - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
+
+            // // accumulate the loads for all parities
+            // Utils::dotAddVectors(lt.slt, parity_slt, lt.slt);
+            // Utils::dotAddVectors(lt.rlt, parity_rlt, lt.rlt);
         }
 
         lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)

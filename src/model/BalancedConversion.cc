@@ -76,10 +76,6 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
                 continue;
             }
         }
-
-        // for other stripe groups with non-zero parity computation bandwidth, generate all candidate load tables for parity computation
-        vector<LoadTable> partial_lts;
-        stripe_group.genPartialLTs4ParityCompute(approach);
     }
 
     // use a while loop until the solution cannot be further optimized (i.e., cannot further improve load balance and then bandwidth)
@@ -100,6 +96,9 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
             {
                 continue;
             }
+
+            // for other stripe groups with non-zero parity computation bandwidth, generate all candidate load tables for parity computation
+            stripe_group.genPartialLTs4ParityCompute(approach);
 
             // based on the send load from data relocation, for each stripe group, generate all possible load tables (for re-encoding and parity merging) and finds the most load-balanced load table, which determines the parity generation method and node
 
@@ -157,6 +156,10 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
 
             // apply the load table for stripe group
             stripe_group.applied_lt = *selected_lt;
+
+            // free up the memory
+            stripe_group.cand_partial_lts.resize(0);
+            stripe_group.cand_partial_lts.shrink_to_fit();
 
             // printf("applied_lt for stripe group %u:\n", stripe_group.id);
             // printf("send load: ");
