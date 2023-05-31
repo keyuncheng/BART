@@ -53,7 +53,21 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
     if (approach == "BWRE")
     { // re-encoding only
         // for re-encoding, find the node with most number of data blocks (at most code.lambda_i)
-        uint16_t parity_compute_node = distance(stripe_group.data_dist.begin(), max_element(stripe_group.data_dist.begin(), stripe_group.data_dist.end()));
+        uint8_t max_num_placed_data_blocks = *max_element(stripe_group.data_dist.begin(), stripe_group.data_dist.end());
+
+        // randomly find a node with max_num_placed_data_blocks
+        vector<uint16_t> valid_parity_compute_nodes;
+        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+        {
+            if (stripe_group.data_dist[node_id] == max_num_placed_data_blocks)
+            {
+                valid_parity_compute_nodes.push_back(node_id);
+            }
+        }
+
+        // randomly find a solution
+        size_t rand_pos = Utils::randomUInt(0, valid_parity_compute_nodes.size() - 1, random_generator);
+        uint16_t parity_compute_node = valid_parity_compute_nodes[rand_pos];
         min_bw_pm_nodes.assign(code.m_f, parity_compute_node);
     }
     else if (approach == "BWPM")
@@ -63,6 +77,8 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
 
         // enumerate m_f nodes for parity merging
         u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
+
+        vector<u16string> valid_pm_nodes;
 
         for (uint32_t perm_id = 0; perm_id < num_pm_choices; perm_id++)
         {
@@ -83,12 +99,23 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
             if (cur_perm_bw < min_bw)
             {
                 min_bw = cur_perm_bw;
-                min_bw_pm_nodes = pm_nodes;
+
+                // reset best solution
+                valid_pm_nodes.clear();
+                valid_pm_nodes.push_back(pm_nodes);
+            }
+            else if (cur_perm_bw == min_bw)
+            {
+                valid_pm_nodes.push_back(pm_nodes);
             }
 
             // get next permutation
             Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
         }
+
+        // randomly find a valid solution
+        size_t rand_pos = Utils::randomUInt(0, valid_pm_nodes.size() - 1, random_generator);
+        min_bw_pm_nodes = valid_pm_nodes[rand_pos];
     }
 
     // update parity computation nodes, final block placement and block distribution
