@@ -1,6 +1,6 @@
 # sm_g tasks
  if (T) {
-     x1<-read.table("../../data/simulation/230530/sim_m2_l2.dat", header=TRUE)
+     x1<-read.table("../../data/simulation/230530/sim_m2_l3.dat", header=TRUE)
      library(ggplot2)
      library(grid)
      library(extrafont)
@@ -29,5 +29,5 @@
      theme(legend.text = element_text(size=10)) +
      theme(legend.background=element_rect(fill = alpha("white", 0.0))) + 
      theme(legend.position=c(0.4,0.85), legend.direction="vertical", legend.key=element_blank())
-     ggsave("../../pdf/simulation/230530/sim_m2_l2.pdf", width=4, height=2.7,device=cairo_pdf)
+     ggsave("../../pdf/simulation/230530/sim_m2_l3.pdf", width=4, height=2.7,device=cairo_pdf)
  }

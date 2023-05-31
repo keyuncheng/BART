@@ -1,6 +1,6 @@
 /log
 */*.log
-*/log.txt
+*/*.txt
 /data/
 /metadata/
 
