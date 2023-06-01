@@ -1,11 +1,11 @@
 code_param_id	code_param	method_id	method	bandwidth	max_load
 a	(4,4),3	a	RDRE	5468.2	241.0
 a	(4,4),3	b	BWRE	5011.2	238.2
-a	(4,4),3	c	BTRE	0	0
+a	(4,4),3	c	BTRE	5017.8	173.8
 a	(4,4),3	d	RDPM	4779.4	185.0
 a	(4,4),3	e	BWPM	1463.4	73.6
-a	(4,4),3	f	BTPM	0	0
-a	(4,4),3	g	BT	0	0
+a	(4,4),3	f	BTPM	1482.4	58.2
+a	(4,4),3	g	BT	1499.2	56.0
 b	(6,4),3	a	RDRE	7791.8	293.4
 b	(6,4),3	b	BWRE	7016.2	245.4
 b	(6,4),3	c	BTRE	0	0

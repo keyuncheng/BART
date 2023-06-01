@@ -13,6 +13,7 @@ void BalancedConversion::genSolution(StripeBatch &stripe_batch, string approach)
     // Step 1: construct stripe groups
     printf("Step 1: construct stripe groups\n");
     stripe_batch.constructSGByBW(approach);
+    // stripe_batch.constructSGByBWGreedy(approach);
     // stripe_batch.print();
 
     // Step 2: generate parity computation scheme (parity computation method and nodes)

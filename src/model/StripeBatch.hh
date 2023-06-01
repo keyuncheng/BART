@@ -26,6 +26,8 @@ public:
     void constructSGByRandomPick();
     void constructSGByBW(string approach);
 
+    void constructSGByBWGreedy(string approach);
+
     // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 
     // bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
