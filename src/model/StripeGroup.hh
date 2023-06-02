@@ -74,6 +74,8 @@ public:
     // generate candidate partial load tables for the stripe group with re-encoding and parity merging
     void genPartialLTs4ParityCompute(string approach);
 
+    LoadTable genPartialLT4ParityCompute(EncodeMethod enc_method, u16string enc_nodes);
+
     // // enumerate send load tables
     // vector<vector<size_t>> getCandSendLoadTables();
     // int constructInitSLTWithDataRelocation(vector<size_t> &send_load_table);

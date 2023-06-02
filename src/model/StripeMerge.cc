@@ -114,8 +114,11 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
             Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
         }
 
-        // randomly find a valid solution
-        size_t rand_pos = Utils::randomUInt(0, valid_pm_nodes.size() - 1, random_generator);
+        // // randomly find a valid solution
+        // size_t rand_pos = Utils::randomUInt(0, valid_pm_nodes.size() - 1, random_generator);
+
+        // choose the first solution (following the implementation of the StripeMerge paper, which generates load imbalance)
+        size_t rand_pos = 0;
         min_bw_pm_nodes = valid_pm_nodes[rand_pos];
     }
 

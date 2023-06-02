@@ -12,6 +12,8 @@ class BalancedConversion
 private:
     /* data */
     void genParityComputation(StripeBatch &stripe_batch, string approach);
+    void genParityComputationOptimized(StripeBatch &stripe_batch, string approach);
+
     void genBlockRelocation(StripeBatch &stripe_batch);
 
 public:

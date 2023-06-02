@@ -230,10 +230,6 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
 {
     uint16_t num_nodes = settings.num_nodes;
 
-    uint8_t num_pre_stripes = pre_stripes.size();
-    uint8_t num_final_data_blocks = num_pre_stripes * code.k_i;
-    uint8_t num_required_parity_blocks = num_pre_stripes;
-
     // for re-encoding, there are <num_nodes> possible candidate load tables, as we can collect num_final_data_blocks data blocks and distribute code.m_f parity blocks at <num_nodes> possible nodes
     uint32_t num_re_lts = num_nodes;
     // for parity merging, there are <num_nodes ^ code.m_f> possible candidate load tables, as we can collect each of m_f parity blocks at num_nodes nodes
@@ -243,15 +239,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     vector<LoadTable> cand_re_lts(num_re_lts);
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
-        LoadTable &lt = cand_re_lts[node_id];
-        lt.approach = EncodeMethod::RE_ENCODE;
-        lt.bw = num_final_data_blocks - data_dist[node_id] + code.m_f;
-        lt.enc_nodes.assign(code.m_f, node_id);                       // re-encoding nodes
-        lt.slt = data_dist;                                           // send load table (send data blocks)
-        lt.slt[node_id] = code.m_f;                                   // only need to send the **parity blocks** at <node_id>
-        lt.rlt.assign(num_nodes, 0);                                  // recv load table
-        lt.rlt[node_id] = num_final_data_blocks - data_dist[node_id]; // recv data blocks at <node_id>
-        lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0);          // update bandwidth (for send load)
+        cand_re_lts[node_id] = genPartialLT4ParityCompute(EncodeMethod::RE_ENCODE, u16string(code.m_f, node_id));
     }
 
     // enumerate partial load tables for parity merging
@@ -259,45 +247,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
     for (uint32_t perm_id = 0; perm_id < num_pm_lts; perm_id++)
     {
-        LoadTable &lt = cand_pm_lts[perm_id];
-        lt.approach = EncodeMethod::PARITY_MERGE;
-        lt.enc_nodes = pm_nodes;     // re-encoding node
-        lt.slt.assign(num_nodes, 0); // send load table
-        lt.rlt.assign(num_nodes, 0); // recv load table
-
-        // obtain the load distribution for parity blocks
-        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-        {
-            uint16_t parity_comp_node_id = pm_nodes[parity_id];
-            // send load dist
-
-            // collect parity block
-            for (uint8_t stripe_id = 0; stripe_id < num_pre_stripes; stripe_id++)
-            {
-                uint16_t parity_node_id = pre_stripes[stripe_id]->indices[code.k_i + parity_id];
-                if (parity_node_id != parity_comp_node_id)
-                {
-                    lt.slt[parity_node_id]++;
-                }
-            }
-
-            lt.slt[parity_comp_node_id] += (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
-
-            lt.rlt[parity_comp_node_id] += num_required_parity_blocks - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
-
-            // u16string parity_slt = parity_dists[parity_id];
-            // parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
-
-            // // receive load dist
-            // u16string parity_rlt(num_nodes, 0);
-            // parity_rlt[parity_comp_node_id] = code.lambda_i - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
-
-            // // accumulate the loads for all parities
-            // Utils::dotAddVectors(lt.slt, parity_slt, lt.slt);
-            // Utils::dotAddVectors(lt.rlt, parity_rlt, lt.rlt);
-        }
-
-        lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
+        cand_pm_lts[perm_id] = genPartialLT4ParityCompute(EncodeMethod::PARITY_MERGE, pm_nodes);
 
         // get next permutation
         Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
@@ -318,6 +268,65 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
         cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_re_lts.begin()), make_move_iterator(cand_re_lts.end()));
         cand_partial_lts.insert(cand_partial_lts.end(), make_move_iterator(cand_pm_lts.begin()), make_move_iterator(cand_pm_lts.end()));
     }
+}
+
+LoadTable StripeGroup::genPartialLT4ParityCompute(EncodeMethod enc_method, u16string enc_nodes)
+{
+    uint16_t num_nodes = settings.num_nodes;
+
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_final_data_blocks = num_pre_stripes * code.k_i;
+    uint8_t num_required_parity_blocks = num_pre_stripes;
+
+    LoadTable lt;
+    lt.approach = enc_method;
+    lt.enc_nodes = enc_nodes;
+    if (enc_method == EncodeMethod::RE_ENCODE)
+    {
+        uint16_t enc_node = enc_nodes[0];                               // encode node
+        lt.slt = data_dist;                                             // send load table (send data blocks)
+        lt.slt[enc_node] = code.m_f;                                    // only need to send the **parity blocks** at <node_id>
+        lt.rlt.assign(num_nodes, 0);                                    // recv load table
+        lt.rlt[enc_node] = num_final_data_blocks - data_dist[enc_node]; // recv data blocks at <node_id>
+        lt.bw = num_final_data_blocks - data_dist[enc_node] + code.m_f;
+    }
+    else if (enc_method == EncodeMethod::PARITY_MERGE)
+    {
+        lt.slt.assign(num_nodes, 0); // send load table
+        lt.rlt.assign(num_nodes, 0); // recv load table
+
+        // obtain temp block placement (with data blocks and newly computed parity blocks)
+        u16string temp_block_placement = data_dist;
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            temp_block_placement[enc_nodes[parity_id]]++;
+        }
+
+        // obtain the load distribution for parity blocks
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            uint16_t parity_comp_node_id = enc_nodes[parity_id];
+            // send load dist
+
+            // collect parity block
+            for (uint8_t stripe_id = 0; stripe_id < num_pre_stripes; stripe_id++)
+            {
+                uint16_t parity_node_id = pre_stripes[stripe_id]->indices[code.k_i + parity_id];
+                if (parity_node_id != parity_comp_node_id)
+                {
+                    lt.slt[parity_node_id]++;
+                }
+            }
+
+            lt.slt[parity_comp_node_id] += (temp_block_placement[parity_comp_node_id] > 1) ? 1 : 0; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+
+            lt.rlt[parity_comp_node_id] += num_required_parity_blocks - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
+        }
+
+        lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
+    }
+
+    return lt;
 }
 
 // vector<vector<size_t>> StripeGroup::getCandSendLoadTables()
