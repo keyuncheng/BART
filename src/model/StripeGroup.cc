@@ -117,11 +117,14 @@ uint8_t StripeGroup::getMinREBW()
     vector<size_t> sorted_idx = Utils::argsortVector(data_dist);
     reverse(sorted_idx.begin(), sorted_idx.end());
 
-    // it targets at general parameters (for each of lambda_f converted stripes, we should collect k_f data blocks to a node, no matter where they come from)
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_final_data_blocks = num_pre_stripes * code.k_i;
+
+    // it targets at general parameters (for each of lambda_f converted stripes, we should collect num_final_data_blocks data blocks to a node, no matter where they come from)
     for (uint8_t final_sid = 0; final_sid < code.lambda_f; final_sid++)
     {
         // parity generation bw + parity relocation bw
-        re_bw += (code.k_f - data_dist[sorted_idx[final_sid]]) + code.m_f;
+        re_bw += (num_final_data_blocks - data_dist[sorted_idx[final_sid]]) + code.m_f;
     }
 
     return re_bw;
@@ -132,6 +135,9 @@ uint8_t StripeGroup::getMinPMBW()
     uint16_t num_nodes = settings.num_nodes;
     // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
     uint32_t num_pm_choices = pow(num_nodes, code.m_f);
+
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_required_parity_blocks = num_pre_stripes;
 
     uint8_t min_bw = UINT8_MAX; // record minimum bw
     // enumerate m_f nodes for parity merging
@@ -145,7 +151,7 @@ uint8_t StripeGroup::getMinPMBW()
             u16string &parity_dist = parity_dists[parity_id];
             uint16_t parity_compute_node = pm_nodes[parity_id];
 
-            uint8_t pm_bw = (code.alpha - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
+            uint8_t pm_bw = (num_required_parity_blocks - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
 
             relocated_nodes[parity_compute_node] += 1; // mark the node as relocated on the node
             cur_perm_bw += pm_bw;                      // update bw
@@ -169,6 +175,9 @@ uint8_t StripeGroup::getMinPMBWGreedy()
     uint8_t sum_pm_bw = 0;
     u16string relocated_nodes = data_dist; // mark if nodes are relocated
 
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_required_parity_blocks = num_pre_stripes;
+
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
         // candidate nodes for parity merging
@@ -180,7 +189,7 @@ uint8_t StripeGroup::getMinPMBWGreedy()
         for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
         {
             // parity generation bw + parity relocation bw (check if the node already stores a block)
-            uint8_t pm_bw = (code.alpha - parity_dist[node_id]) + (relocated_nodes[node_id] > 0 ? 1 : 0);
+            uint8_t pm_bw = (num_required_parity_blocks - parity_dist[node_id]) + (relocated_nodes[node_id] > 0 ? 1 : 0);
 
             if (pm_bw < min_bw)
             {
@@ -220,7 +229,12 @@ void StripeGroup::genParityComputeScheme4PerfectPM()
 void StripeGroup::genPartialLTs4ParityCompute(string approach)
 {
     uint16_t num_nodes = settings.num_nodes;
-    // for re-encoding, there are <num_nodes> possible candidate load tables, as we can collect code.k_f data blocks and distribute code.m_f parity blocks at <num_nodes> possible nodes
+
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_final_data_blocks = num_pre_stripes * code.k_i;
+    uint8_t num_required_parity_blocks = num_pre_stripes;
+
+    // for re-encoding, there are <num_nodes> possible candidate load tables, as we can collect num_final_data_blocks data blocks and distribute code.m_f parity blocks at <num_nodes> possible nodes
     uint32_t num_re_lts = num_nodes;
     // for parity merging, there are <num_nodes ^ code.m_f> possible candidate load tables, as we can collect each of m_f parity blocks at num_nodes nodes
     uint32_t num_pm_lts = pow(num_nodes, code.m_f);
@@ -231,13 +245,13 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     {
         LoadTable &lt = cand_re_lts[node_id];
         lt.approach = EncodeMethod::RE_ENCODE;
-        lt.bw = code.k_f - data_dist[node_id] + code.m_f;
-        lt.enc_nodes.assign(code.m_f, node_id);              // re-encoding nodes
-        lt.slt = data_dist;                                  // send load table (send data blocks)
-        lt.slt[node_id] = code.m_f;                          // only need to send the **parity blocks** at <node_id>
-        lt.rlt.assign(num_nodes, 0);                         // recv load table
-        lt.rlt[node_id] = code.k_f - data_dist[node_id];     // recv data blocks at <node_id>
-        lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0); // update bandwidth (for send load)
+        lt.bw = num_final_data_blocks - data_dist[node_id] + code.m_f;
+        lt.enc_nodes.assign(code.m_f, node_id);                       // re-encoding nodes
+        lt.slt = data_dist;                                           // send load table (send data blocks)
+        lt.slt[node_id] = code.m_f;                                   // only need to send the **parity blocks** at <node_id>
+        lt.rlt.assign(num_nodes, 0);                                  // recv load table
+        lt.rlt[node_id] = num_final_data_blocks - data_dist[node_id]; // recv data blocks at <node_id>
+        lt.bw = accumulate(lt.slt.begin(), lt.slt.end(), 0);          // update bandwidth (for send load)
     }
 
     // enumerate partial load tables for parity merging
@@ -258,7 +272,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
             // send load dist
 
             // collect parity block
-            for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+            for (uint8_t stripe_id = 0; stripe_id < num_pre_stripes; stripe_id++)
             {
                 uint16_t parity_node_id = pre_stripes[stripe_id]->indices[code.k_i + parity_id];
                 if (parity_node_id != parity_comp_node_id)
@@ -269,7 +283,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
 
             lt.slt[parity_comp_node_id] += (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
 
-            lt.rlt[parity_comp_node_id] += code.lambda_i - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
+            lt.rlt[parity_comp_node_id] += num_required_parity_blocks - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
 
             // u16string parity_slt = parity_dists[parity_id];
             // parity_slt[parity_comp_node_id] = (data_dist[parity_comp_node_id] == 0) ? 0 : 1; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block

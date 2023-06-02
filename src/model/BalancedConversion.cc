@@ -12,8 +12,8 @@ void BalancedConversion::genSolution(StripeBatch &stripe_batch, string approach)
 {
     // Step 1: construct stripe groups
     printf("Step 1: construct stripe groups\n");
-    stripe_batch.constructSGByBW(approach);
-    // stripe_batch.constructSGByBWGreedy(approach);
+    // stripe_batch.constructSGByBW(approach);
+    stripe_batch.constructSGByBWGreedy(approach);
     // stripe_batch.print();
 
     // Step 2: generate parity computation scheme (parity computation method and nodes)
@@ -222,7 +222,7 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
     // printf("recv load: ");
     // Utils::printVector(cur_lt.rlt);
     // printf("bandwidth: %u\n", cur_lt.bw);
-    printf("number of re-encoding groups: (%u / %lu), num of parity merging groups: (%lu / %lu)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
+    printf("number of re-encoding groups: (%u / %lu), number of parity merging groups: (%lu / %lu)\n", num_re_groups, stripe_batch.selected_sgs.size(), (stripe_batch.selected_sgs.size() - num_re_groups), stripe_batch.selected_sgs.size());
 }
 
 void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)

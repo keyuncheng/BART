@@ -136,8 +136,7 @@ int main(int argc, char *argv[])
 
     printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
 
-    printf("bandwidth: %lu\n", total_bandwidth);
-    printf("max_load: %u\n", max(max_in_degree, max_out_degree));
+    printf("max_load: %u, bandwidth: %lu\n", max(max_in_degree, max_out_degree), total_bandwidth);
 
     return 0;
 }

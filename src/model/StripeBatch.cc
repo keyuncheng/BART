@@ -165,7 +165,7 @@ void StripeBatch::constructSGByBW(string approach)
             // auto cand_sg_id = bw_sgs_table[bw][idx];
             // u32string sg_stripe_ids = Utils::getCombFromPosition(settings.num_stripes, code.lambda_i, cand_sg_id);
 
-            // check whether the stripe group is valid (TODO: check why the performance is bad here)
+            // check whether the stripe group is valid
             bool is_cand_sg_valid = true;
             for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
             {
@@ -204,15 +204,15 @@ void StripeBatch::constructSGByBW(string approach)
         total_bw_selected_sgs += bw_num_selected_sgs[bw] * bw;
     }
 
-    printf("selected %u stripe groups, total bandwidth: %u\n", num_sgs, total_bw_selected_sgs);
-    printf("bw_num_selected_sgs:\n");
-    for (uint8_t bw = 0; bw < max_bw; bw++)
-    {
-        if (bw_num_selected_sgs[bw] > 0)
-        {
-            printf("bandwidth = %u: %u stripe groups\n", bw, bw_num_selected_sgs[bw]);
-        }
-    }
+    // printf("selected %u stripe groups, total bandwidth: %u\n", num_sgs, total_bw_selected_sgs);
+    // printf("bw_num_selected_sgs:\n");
+    // for (uint8_t bw = 0; bw < max_bw; bw++)
+    // {
+    //     if (bw_num_selected_sgs[bw] > 0)
+    //     {
+    //         printf("bandwidth = %u: %u stripe groups\n", bw, bw_num_selected_sgs[bw]);
+    //     }
+    // }
 }
 
 void StripeBatch::constructSGByBWGreedy(string approach)
@@ -226,20 +226,76 @@ void StripeBatch::constructSGByBWGreedy(string approach)
     // no need to build all candidate stripe groups; build group size from 2 to code.lambda_i
 
     // current partial stripe group
-    vector<u32string> cur_partial_sgs;                       // store currently selected partial stripe groups
-    vector<uint8_t> cur_bw_num_partial_sgs_table(max_bw, 0); // record the bandwidth stats
-
-    // initialize partial stripe group as size = 1 (stripe 0 to num_stripes - 1);
-    for (uint32_t pre_stripe_id = 0; pre_stripe_id < settings.num_stripes - 1; pre_stripe_id++)
-    {
-        cur_partial_sgs.push_back(u32string(1, pre_stripe_id));
-    }
-
-    printf("cur_partial_sgs: %lu\n", cur_partial_sgs.size());
+    vector<u32string> cur_partial_sgs;                        // store currently selected partial stripe groups
+    vector<uint64_t> cur_bw_num_partial_sgs_table(max_bw, 0); // record the bandwidth stats
 
     // we execute the pairing for code.lambda_i - 1 iterations; every time after pairing, we keep <num_sgs> non-overlapped partial stripe groups with ascending order of bandwidth, which will be paired with remaining stripes in the next iteration; finally, we obtain <num_sgs> stripe groups
     for (uint8_t iter = 0; iter < code.lambda_i - 1; iter++)
     {
+
+        vector<u32string> updated_partial_sgs; // updated partial stripe groups (by adding pre_stripe into current partial stripe group; max_size: num_stripes * (num_stripes - 1) / 2)
+
+        // construct candidate partial stripe groups
+        if (iter == 0)
+        {
+            // initialize partial stripe group as all stripe groups in size = 2
+            u32string partial_sg(2, INVALID_STRIPE_ID_GLOBAL);
+            for (uint32_t pre_stripe_x = 0; pre_stripe_x < settings.num_stripes - 1; pre_stripe_x++)
+            {
+                for (uint32_t pre_stripe_y = pre_stripe_x + 1; pre_stripe_y < settings.num_stripes; pre_stripe_y++)
+                {
+                    partial_sg[0] = pre_stripe_x;
+                    partial_sg[1] = pre_stripe_y;
+                    updated_partial_sgs.push_back(partial_sg);
+                }
+            }
+        }
+        else
+        {
+            // match <cur_partial_sgs> with the remaining stripes
+
+            // first, make sure that the partial stripes are correctly chosen
+            vector<bool> is_pre_stripe_selected(settings.num_stripes, false); // mark if stripe is selected
+            for (auto &partial_sg : cur_partial_sgs)
+            {
+                for (auto pre_stripe_id : partial_sg)
+                {
+                    is_pre_stripe_selected[pre_stripe_id] = true;
+                }
+            }
+            uint32_t num_selected_stripes = accumulate(is_pre_stripe_selected.begin(), is_pre_stripe_selected.end(), 0);
+            if (num_selected_stripes != num_sgs * (iter + 1))
+            {
+                printf("error: invalid partial stripe group selection!\n");
+                exit(EXIT_FAILURE);
+            }
+
+            for (auto &partial_sg : cur_partial_sgs)
+            {
+                for (uint32_t pre_stripe_id = 0; pre_stripe_id < settings.num_stripes; pre_stripe_id++)
+                {
+                    if (is_pre_stripe_selected[pre_stripe_id] == true)
+                    {
+                        continue;
+                    }
+
+                    // construct updated_partial_sg
+                    u32string updated_partial_sg = partial_sg;
+                    updated_partial_sg.push_back(pre_stripe_id);
+                    sort(updated_partial_sg.begin(), updated_partial_sg.end());
+
+                    // add the updated_partial_sg
+                    updated_partial_sgs.push_back(updated_partial_sg);
+                }
+            }
+        }
+
+        // printf("updated_partial_sgs: %lu\n", updated_partial_sgs.size());
+        // for (auto &partial_sg : updated_partial_sgs)
+        // {
+        //     Utils::printVector(partial_sg);
+        // }
+
         /**
          * @brief bandwidth table for all stripe groups
          *  bandwidth 0: sg_0; sg_1; ...
@@ -249,64 +305,39 @@ void StripeBatch::constructSGByBWGreedy(string approach)
          */
         vector<vector<uint64_t>> bw_partial_sgs_table(max_bw); // record partial_sg_id for each candidate stripe group
 
-        vector<u32string> updated_partial_sgs; // updated partial stripe groups (by adding pre_stripe into current partial stripe group; max_size: num_stripes * (num_stripes - 1) / 2)
-
-        uint64_t partial_sg_id = 0; // cand partial stripe group id
-        for (auto &partial_sg : cur_partial_sgs)
+        for (uint64_t partial_sg_id = 0; partial_sg_id < updated_partial_sgs.size(); partial_sg_id++)
         {
-            for (uint32_t pre_stripe_id = partial_sg[0] + 1; pre_stripe_id < settings.num_stripes; pre_stripe_id++)
-            { // start from the 2nd stripe
-
-                // check whether the pre_stripe has been added
-                if (find(partial_sg.begin(), partial_sg.end(), pre_stripe_id) != partial_sg.end())
-                {
-                    continue;
-                }
-
-                // construct updated_partial_sg
-                u32string updated_partial_sg = partial_sg;
-                updated_partial_sg.push_back(pre_stripe_id);
-                sort(updated_partial_sg.begin(), updated_partial_sg.end());
-
-                vector<Stripe *> updated_partial_pre_stripes;
-                for (auto pre_stripe_id : updated_partial_sg)
-                {
-                    updated_partial_pre_stripes.push_back(&pre_stripes[pre_stripe_id]);
-                }
-
-                // calculate bandwidth
-                StripeGroup partial_stripe_group(partial_sg_id, code, settings, updated_partial_pre_stripes, NULL);
-                uint8_t min_bw = partial_stripe_group.getMinTransBW(approach);
-
-                // add the partial sg
-                updated_partial_sgs.push_back(updated_partial_sg);
-                // update bw table
-                bw_partial_sgs_table[min_bw].push_back(partial_sg_id);
-                partial_sg_id++;
-            }
-        }
-
-        printf("bw_partial_sgs_table:\n");
-        for (uint8_t bw = 0; bw < max_bw; bw++)
-        {
-            if (bw_partial_sgs_table[bw].size() > 0)
+            u32string &partial_sg = updated_partial_sgs[partial_sg_id];
+            vector<Stripe *> updated_partial_pre_stripes;
+            for (auto pre_stripe_id : partial_sg)
             {
-                printf("bandwidth = %u: %lu stripe groups\n", bw, bw_partial_sgs_table[bw].size());
-                for (auto &partial_sg_id : bw_partial_sgs_table[bw])
-                {
-                    Utils::printVector(updated_partial_sgs[partial_sg_id]);
-                }
+                updated_partial_pre_stripes.push_back(&pre_stripes[pre_stripe_id]);
             }
+
+            // calculate bandwidth
+            StripeGroup partial_stripe_group(partial_sg_id, code, settings, updated_partial_pre_stripes, NULL);
+            uint8_t min_bw = partial_stripe_group.getMinTransBW(approach);
+
+            // update bw table
+            bw_partial_sgs_table[min_bw].push_back(partial_sg_id);
         }
 
-        // problematic!! how to choose from updated_partial_sgs
+        // printf("bw_partial_sgs_table:\n");
+        // for (uint8_t bw = 0; bw < max_bw; bw++)
+        // {
+        //     if (bw_partial_sgs_table[bw].size() > 0)
+        //     {
+        //         printf("bandwidth = %u: %lu stripe groups\n", bw, bw_partial_sgs_table[bw].size());
+        //         for (auto &partial_sg_id : bw_partial_sgs_table[bw])
+        //         {
+        //             Utils::printVector(updated_partial_sgs[partial_sg_id]);
+        //         }
+        //     }
+        // }
 
         // reset the current selection
-        uint32_t selected_partial_sg_id = 0;
         cur_partial_sgs.clear();
-        cur_bw_num_partial_sgs_table.clear();
-
-        // choose stripe groups
+        cur_bw_num_partial_sgs_table.assign(max_bw, 0);
         vector<bool> is_pre_stripe_selected(settings.num_stripes, false); // mark if pre_stripe is selected
 
         // choose partial_sgs with lowest bandwidth
@@ -315,7 +346,8 @@ void StripeBatch::constructSGByBWGreedy(string approach)
             for (auto partial_sg_id : bw_partial_sgs_table[bw])
             {
                 u32string &partial_sg = updated_partial_sgs[partial_sg_id];
-                // check whether the stripe group is valid (TODO: check why the performance is bad here)
+
+                // check whether the stripe group is valid
                 bool is_partial_sg_valid = true;
                 for (auto pre_stripe_id : partial_sg)
                 {
@@ -332,35 +364,40 @@ void StripeBatch::constructSGByBWGreedy(string approach)
                     continue;
                 }
 
-                // select these stripes for the partial stripe group
+                // add the partial stripe group
+                cur_partial_sgs.push_back(partial_sg);
+                cur_bw_num_partial_sgs_table[bw]++;
                 for (auto pre_stripe_id : partial_sg)
-                {
+                { // mark the stripes as selected
                     is_pre_stripe_selected[pre_stripe_id] = true;
                 }
 
-                cur_partial_sgs.push_back(partial_sg);
-                cur_bw_num_partial_sgs_table[bw]++;
-                selected_partial_sg_id++;
-
-                if (selected_partial_sg_id >= num_sgs)
-                {
+                if (cur_partial_sgs.size() >= num_sgs)
+                { // only select <num_sgs> partial stripe groups
                     break;
                 }
             }
 
-            if (selected_partial_sg_id >= num_sgs)
-            {
+            if (cur_partial_sgs.size() >= num_sgs)
+            { // only select <num_sgs> partial stripe groups
                 break;
             }
         }
 
-        uint32_t total_bw_selected_sgs = 0;
+        uint32_t total_bw_selected_partial_sgs = 0;
         for (uint8_t bw = 0; bw < max_bw; bw++)
         {
-            total_bw_selected_sgs += cur_bw_num_partial_sgs_table[bw] * bw;
+            total_bw_selected_partial_sgs += cur_bw_num_partial_sgs_table[bw] * bw;
         }
 
-        printf("iter %u: selected (%lu / %lu) partial stripe groups\n", iter, cur_partial_sgs.size(), updated_partial_sgs.size());
+        printf("iter %u: selected (%lu / %lu) partial stripe groups, bandwidth: %u\n", iter, cur_partial_sgs.size(), updated_partial_sgs.size(), total_bw_selected_partial_sgs);
+
+        // printf("cur_partial_sgs:\n");
+        // for (auto &partial_sg : cur_partial_sgs)
+        // {
+        //     Utils::printVector(partial_sg);
+        // }
+
         printf("cur_bw_num_partial_sgs_table:\n");
         for (uint8_t bw = 0; bw < max_bw; bw++)
         {
@@ -369,14 +406,9 @@ void StripeBatch::constructSGByBWGreedy(string approach)
                 printf("bandwidth = %u: %lu stripe groups\n", bw, cur_bw_num_partial_sgs_table[bw]);
             }
         }
-
-        for (auto &partial_sg : cur_partial_sgs)
-        {
-            Utils::printVector(partial_sg);
-        }
     }
 
-    // choose stripe groups
+    // choose stripe groups from cur_partial_sgs in the last iteration
     vector<bool> stripe_selected(settings.num_stripes, false); // mark if stripe is selected
     uint32_t selected_sg_id = 0;
     for (auto &sg_stripe_ids : cur_partial_sgs)
@@ -385,15 +417,9 @@ void StripeBatch::constructSGByBWGreedy(string approach)
         for (auto pre_stripe_id : sg_stripe_ids)
         {
             selected_pre_stripes.push_back(&pre_stripes[pre_stripe_id]);
-        }
-
-        selected_sgs.insert(pair<uint32_t, StripeGroup>(selected_sg_id, StripeGroup(selected_sg_id, code, settings, selected_pre_stripes, &post_stripes[selected_sg_id])));
-
-        for (auto pre_stripe_id : sg_stripe_ids)
-        {
             stripe_selected[pre_stripe_id] = true;
         }
-
+        selected_sgs.insert(pair<uint32_t, StripeGroup>(selected_sg_id, StripeGroup(selected_sg_id, code, settings, selected_pre_stripes, &post_stripes[selected_sg_id])));
         selected_sg_id++;
     }
 
@@ -401,6 +427,7 @@ void StripeBatch::constructSGByBWGreedy(string approach)
     if (num_selected_stripes != settings.num_stripes)
     {
         printf("error: invalid stripe group selection!\n");
+        exit(EXIT_FAILURE);
     }
 }
 
