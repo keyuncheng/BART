@@ -335,7 +335,12 @@ LoadTable StripeGroup::genPartialLT4ParityCompute(EncodeMethod enc_method, u16st
                 }
             }
 
-            lt.slt[parity_comp_node_id] += (temp_block_placement[parity_comp_node_id] > 1) ? 1 : 0; // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+            // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+            if (temp_block_placement[parity_comp_node_id] > 1)
+            {
+                lt.slt[parity_comp_node_id]++;
+                temp_block_placement[parity_comp_node_id]--; // mark the block has been transferred out
+            }
 
             lt.rlt[parity_comp_node_id] += num_required_parity_blocks - parity_dists[parity_id][parity_comp_node_id]; // number of required parity block for parity generation
         }
