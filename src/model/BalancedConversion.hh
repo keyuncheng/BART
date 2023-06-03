@@ -14,6 +14,8 @@ private:
     void genParityComputation(StripeBatch &stripe_batch, string approach);
     void genParityComputationOptimized(StripeBatch &stripe_batch, string approach);
 
+    void genParityComputationGreedyOptimized(StripeBatch &stripe_batch, string approach);
+
     void genBlockRelocation(StripeBatch &stripe_batch);
 
 public:
