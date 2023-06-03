@@ -218,12 +218,14 @@ void StripeBatch::constructSGByBW(string approach)
 void StripeBatch::constructSGByBWGreedy(string approach)
 {
     uint32_t num_sgs = settings.num_stripes / code.lambda_i;
-
     uint8_t max_bw = code.n_f + code.k_f; // allowed maximum bandwidth
 
     selected_sgs.clear();
 
-    // no need to build all candidate stripe groups; build group size from 2 to code.lambda_i
+    // benchmarking
+    double finish_time = 0.0;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
 
     // current partial stripe group
     vector<u32string> cur_partial_sgs;                        // store currently selected partial stripe groups
@@ -429,6 +431,11 @@ void StripeBatch::constructSGByBWGreedy(string approach)
         printf("error: invalid stripe group selection!\n");
         exit(EXIT_FAILURE);
     }
+
+    gettimeofday(&end_time, nullptr);
+    finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                  (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished constructing %lu stripe groups, time: %f ms\n", selected_sgs.size(), finish_time);
 }
 
 // bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator)

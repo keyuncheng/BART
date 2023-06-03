@@ -59,6 +59,11 @@ int main(int argc, char *argv[])
     // solutions and load distribution
     TransSolution trans_solution(code, settings);
 
+    // benchmarking
+    double finish_time = 0.0;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
+
     if (approach == "RDRE" || approach == "RDPM")
     {
         RandomSolution random_solution(random_generator);
@@ -81,6 +86,11 @@ int main(int argc, char *argv[])
         printf("invalid approach: %s\n", approach.c_str());
         return -1;
     }
+
+    gettimeofday(&end_time, nullptr);
+    finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                  (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished generating solution, time: %f ms\n", finish_time);
 
     // validate block placement
     if (trans_solution.isFinalBlockPlacementValid(stripe_batch) == false)

@@ -211,6 +211,23 @@ uint8_t StripeGroup::getMinPMBWGreedy()
     return sum_pm_bw;
 }
 
+bool StripeGroup::isPerfectParityMerging()
+{
+    uint8_t num_required_parity_blocks = pre_stripes.size();
+
+    for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+    {
+        // candidate nodes for parity merging
+        u16string &parity_dist = parity_dists[parity_id];
+        if (*max_element(parity_dist.begin(), parity_dist.end()) != num_required_parity_blocks)
+        { // requires that there are num_required_parity_blocks parity blocks placed at a node
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void StripeGroup::genParityComputeScheme4PerfectPM()
 {
     // for perfect parity merging, parity generation generates zero transition bandwidth for

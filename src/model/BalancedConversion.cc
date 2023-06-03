@@ -231,6 +231,10 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
     ConvertibleCode &code = stripe_batch.code;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
+    double finish_time = 0.0;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
+
     // maintain a load table for currently selected stripe groups
     LoadTable cur_lt;
     cur_lt.slt.assign(num_nodes, 0);
@@ -271,7 +275,7 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
             StripeGroup &stripe_group = item.second;
 
             // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
-            if (stripe_group.getMinPMBW() == 0)
+            if (stripe_group.isPerfectParityMerging() == true)
             {
                 // generate parity computation scheme for parity merging
                 stripe_group.genParityComputeScheme4PerfectPM();
@@ -293,14 +297,13 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
         {
             uint32_t sg_id = item.first;
             StripeGroup &stripe_group = item.second;
-
             // skip perfect merging stripe groups
             if (is_sg_perfect_pm[sg_id] == true)
             {
                 continue;
             }
 
-            printf("iter %lu, checking stripe group: %u\n", iter, sg_id);
+            // printf("iter %lu, checking stripe group: %u\n", iter, sg_id);
 
             // based on the send load from data relocation, for each stripe group, generate all possible solutions for parity computation (for re-encoding and/or parity merging) and finds the most load-balanced solution (which determines the parity generation method and node)
 
@@ -308,7 +311,7 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
 
             // uint32_t max_send_load_cur_lt = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
             // uint32_t max_recv_load_cur_lt = *max_element(cur_lt.rlt.begin(), cur_lt.rlt.end());
-            uint32_t min_max_load = UINT8_MAX;
+            uint32_t min_max_load = UINT32_MAX;
             uint32_t min_bw = UINT8_MAX;
             vector<LoadTable> best_lts;
 
@@ -368,7 +371,6 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
 
             if (approach == "BTPM" || approach == "BT")
             { // parity merging
-
                 // base load table for parity merging (after adding to cur_lt)
                 LoadTable cur_lt_after_pm_base = cur_lt_after;
 
@@ -449,11 +451,11 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
                 }
             }
 
-            if (best_lts.size() == 0)
-            {
-                printf("no better solution for this stripe group\n");
-                continue;
-            }
+            // if (best_lts.size() == 0)
+            // {
+            //     printf("no better solution for this stripe group\n");
+            //     continue;
+            // }
 
             // randomly choose a best load table
             size_t random_pos = Utils::randomUInt(0, best_lts.size() - 1, random_generator);
@@ -533,6 +535,11 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
         num_re_groups += (item.second.applied_lt.approach == EncodeMethod::RE_ENCODE ? 1 : 0);
     }
 
+    gettimeofday(&end_time, nullptr);
+    finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                  (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished finding parity computation scheme for %lu stripe groups, time: %f ms\n", stripe_batch.selected_sgs.size(), finish_time);
+
     printf("final load table with data relocation (send load only), parity generation (both send and receive load) and parity relocation (send load only):\n");
     printf("send load: ");
     Utils::printVector(cur_lt.slt);
@@ -548,6 +555,10 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
 
     ConvertibleCode &code = stripe_batch.code;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
+
+    double finish_time = 0.0;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
 
     // step 1: for each stripe group, find the data and parity blocks that needs to be relocated, and available nodes for relocation
     unordered_map<uint32_t, u16string> sg_final_block_placement;                 // for each stripe group, record the block placement (node where it placed) in the final stripe; size: code.n_f
@@ -675,8 +686,15 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
         rvtx.in_degree = lt.rlt[node_id];
     }
 
+    printf("finished constructing bipartite graph\n");
+
+    printf("bipartite.left_vertices (size: %ld):\n", bipartite.left_vertices_map.size());
+    printf("bipartite.right_vertices (size: %ld):\n", bipartite.right_vertices_map.size());
+
     // step 3: find optimal semi-matching (based on the initial receive load)
     vector<uint64_t> sm_edges = bipartite.findOptSemiMatching(lvtx2sg_map, sg2lvtx_map);
+
+    printf("finished finding semi-matching solutions\n");
 
     // update the final_block_placement from chosen edges
     for (auto edge_id : sm_edges)
@@ -697,6 +715,11 @@ void BalancedConversion::genBlockRelocation(StripeBatch &stripe_batch)
         StripeGroup &stripe_group = item.second;
         stripe_group.post_stripe->indices = sg_final_block_placement[sg_id];
     }
+
+    gettimeofday(&end_time, nullptr);
+    finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                  (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished finding block relocation scheme for %lu stripe groups, time: %f ms\n", stripe_batch.selected_sgs.size(), finish_time);
 }
 
 // void BalancedConversion::getSolutionForStripeBatchGlobal(StripeBatch &stripe_batch, vector<vector<size_t>> &solutions, mt19937 random_generator)
