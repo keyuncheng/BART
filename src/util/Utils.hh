@@ -1,6 +1,7 @@
 #ifndef __UTILS_HH__
 #define __UTILS_HH__
 
+#include <iterator>
 #include "../include/include.hh"
 
 class Utils
@@ -17,21 +18,7 @@ public:
     template <typename T>
     static void printVector(T &vec)
     {
-        for (size_t idx = 0; idx < vec.size(); idx++)
-        {
-            if (typeid(T) == typeid(u16string) || typeid(T) == typeid(u32string) || typeid(T) == typeid(vector<uint8_t>) || typeid(T) == typeid(vector<uint16_t>) || typeid(T) == typeid(vector<uint32_t>))
-            {
-                printf("%u ", vec[idx]);
-            }
-            else if (typeid(T) == typeid(vector<size_t>) || typeid(T) == typeid(vector<uint64_t>))
-            {
-                printf("%lu ", vec[idx]);
-            }
-            else if (typeid(T) == typeid(vector<int>))
-            {
-                printf("%d ", vec[idx]);
-            }
-        }
+        std::copy(vec.cbegin(), vec.cend(), std::ostream_iterator<typename T::value_type>(std::cout, " "));
         printf("\n");
     }
 
