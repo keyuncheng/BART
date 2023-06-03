@@ -333,17 +333,27 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
                 // add data distribution to form the base re-encoding solution
                 Utils::dotAddVectors(cur_lt_after_re_base.slt, stripe_group.data_dist, cur_lt_after_re_base.slt);
 
+                // // add all data blocks to form the base re-encoding solution
+                // for (auto &stripe : stripe_group.pre_stripes)
+                // {
+                //     for (uint8_t data_block_id = 0; data_block_id < code.k_i; data_block_id++)
+                //     {
+                //         uint16_t data_block_placed_node = stripe->indices[data_block_id];
+                //         cur_lt_after_re_base.slt[data_block_placed_node]++;
+                //     }
+                // }
+
                 // maximum send load with base solution for re-encoding
                 uint32_t max_send_load_re_base = *max_element(cur_lt_after_re_base.slt.begin(), cur_lt_after_re_base.slt.end());
                 uint32_t max_recv_load_re_base = *max_element(cur_lt_after_re_base.rlt.begin(), cur_lt_after_re_base.rlt.end());
 
                 for (uint16_t encode_node_id = 0; encode_node_id < num_nodes; encode_node_id++)
                 {
-                    // substract the locally stored data blocks to send; add the parity blocks to send
+                    // send load: subtract the locally stored data blocks to send, and add the parity blocks for distribution
                     uint8_t num_transferred_data_blocks = code.k_f - stripe_group.data_dist[encode_node_id];
                     uint32_t send_load_at_node = cur_lt_after_re_base.slt[encode_node_id] - stripe_group.data_dist[encode_node_id] + code.m_f;
 
-                    // add the data blocks received
+                    // recv load: add the data blocks received
                     uint32_t recv_load_at_node = cur_lt_after_re_base.rlt[encode_node_id] + num_transferred_data_blocks;
 
                     // maximum load and bandwidth
@@ -374,10 +384,16 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
                 // base load table for parity merging (after adding to cur_lt)
                 LoadTable cur_lt_after_pm_base = cur_lt_after;
 
-                // add parity distribution to form the base pm solution
+                // add all parity blocks to form the base pm solution
                 for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
                 {
                     Utils::dotAddVectors(cur_lt_after_pm_base.slt, stripe_group.parity_dists[parity_id], cur_lt_after_pm_base.slt);
+
+                    // for (auto &stripe : stripe_group.pre_stripes)
+                    // {
+                    //     uint16_t parity_placed_node = stripe->indices[code.k_i + parity_id];
+                    //     cur_lt_after_pm_base.slt[parity_placed_node]++;
+                    // }
                 }
 
                 uint32_t num_pm_lts = pow(num_nodes, code.m_f);
@@ -399,20 +415,11 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
                     {
                         uint16_t parity_compute_node = pm_nodes[parity_id];
 
+                        // update the base send load table
                         // subtract the parity blocks locally stored at the node
-                        for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
-                        {
-                            uint16_t parity_stored_node = stripe_group.pre_stripes[pre_stripe_id]->indices[code.k_i + parity_id];
-                            // a parity block stored at the node
-                            if (parity_stored_node == parity_compute_node)
-                            { // no need to send out
-                                cur_lt_after_pm.slt[parity_compute_node]--;
-                                bandwidth--;
-                            }
-                        }
-
-                        // add the number of parity blocks received
-                        cur_lt_after_pm.rlt[parity_compute_node] += (code.lambda_i - stripe_group.parity_dists[parity_id][parity_compute_node]);
+                        uint8_t num_stored_parity_cmp_node = stripe_group.parity_dists[parity_id][parity_compute_node];
+                        cur_lt_after_pm.slt[parity_compute_node] -= num_stored_parity_cmp_node;
+                        bandwidth -= num_stored_parity_cmp_node;
 
                         // check if parity block relocation is needed
                         if (temp_block_placement[parity_compute_node] > 1)
@@ -420,6 +427,10 @@ void BalancedConversion::genParityComputationOptimized(StripeBatch &stripe_batch
                             cur_lt_after_pm.slt[parity_compute_node]++;
                             bandwidth++;
                         }
+
+                        // update the base recv load table
+                        // add the number of parity blocks received
+                        cur_lt_after_pm.rlt[parity_compute_node] += (code.lambda_i - stripe_group.parity_dists[parity_id][parity_compute_node]);
                     }
 
                     // maximum send load with base solution for parity merging
