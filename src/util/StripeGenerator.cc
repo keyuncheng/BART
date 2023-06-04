@@ -27,7 +27,7 @@ void StripeGenerator::genRandomStripes(ConvertibleCode &code, ClusterSettings &s
     }
 }
 
-void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_file)
+void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_filename)
 {
     if (stripes.size() == 0)
     {
@@ -37,7 +37,7 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
 
     ofstream of;
 
-    of.open(placement_file, ios::out);
+    of.open(placement_filename, ios::out);
 
     for (auto stripe : stripes)
     {
@@ -51,16 +51,16 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
 
     of.close();
 
-    printf("finished storing %lu stripes in %s\n", stripes.size(), placement_file.c_str());
+    printf("finished storing %lu stripes in %s\n", stripes.size(), placement_filename.c_str());
 }
 
-bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_file, vector<Stripe> &stripes)
+bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_filename, vector<Stripe> &stripes)
 {
-    ifstream ifs(placement_file.c_str());
+    ifstream ifs(placement_filename.c_str());
 
     if (ifs.fail())
     {
-        printf("invalid placement file: %s\n", placement_file.c_str());
+        printf("invalid placement file: %s\n", placement_filename.c_str());
         return false;
     }
 
@@ -85,18 +85,18 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
 
     ifs.close();
 
-    printf("finished loading %lu stripes from %s\n", stripes.size(), placement_file.c_str());
+    printf("finished loading %lu stripes from %s\n", stripes.size(), placement_filename.c_str());
 
     return true;
 }
 
-bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &settings, string block_mapping_file, vector<vector<pair<uint16_t, string>>> &stripe_placements)
+bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &settings, string block_mapping_filename, vector<vector<pair<uint16_t, string>>> &stripe_placements)
 {
-    ifstream ifs(block_mapping_file.c_str());
+    ifstream ifs(block_mapping_filename.c_str());
 
     if (ifs.fail())
     {
-        printf("invalid block mapping file: %s\n", block_mapping_file.c_str());
+        printf("invalid block mapping file: %s\n", block_mapping_filename.c_str());
         return false;
     }
 
@@ -144,7 +144,7 @@ bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &s
     //     }
     // }
 
-    printf("finished loading %ld blocks metadata from %s\n", record_id, block_mapping_file.c_str());
+    printf("finished loading %ld blocks metadata from %s\n", record_id, block_mapping_filename.c_str());
 
     return true;
 }

@@ -438,6 +438,44 @@ void StripeBatch::constructSGByBWGreedy(string approach)
     printf("finished constructing %lu stripe groups, time: %f ms\n", selected_sgs.size(), finish_time);
 }
 
+void StripeBatch::storeSGMetadata(string sg_meta_filename)
+{
+    if (selected_sgs.size() == 0)
+    {
+        printf("invalid number of stripe groups\n");
+        return;
+    }
+
+    ofstream of;
+
+    of.open(sg_meta_filename, ios::out);
+
+    for (auto &item : selected_sgs)
+    {
+        // of << item.first << " ";
+        StripeGroup &stripe_group = item.second;
+
+        // store pre-stripe ids
+        for (auto &stripe : stripe_group.pre_stripes)
+        {
+            of << stripe->id << " ";
+        }
+        // store parity computation method
+        of << stripe_group.parity_comp_method << " ";
+
+        // store parity computation nodes
+        for (auto parity_compute_node : stripe_group.parity_comp_nodes)
+        {
+            of << parity_compute_node << " ";
+        }
+        of << endl;
+    }
+
+    of.close();
+
+    printf("finished storing %lu stripe groups in %s\n", selected_sgs.size(), sg_meta_filename.c_str());
+}
+
 // bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator)
 // {
 

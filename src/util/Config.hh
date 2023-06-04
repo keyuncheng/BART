@@ -27,6 +27,7 @@ public:
     string pre_block_mapping_filename;  // pre-transition block mapping
     string post_placement_filename;     // post-transition placement
     string post_block_mapping_filename; // post-transition block mapping
+    string sg_meta_filename;            // stripe group metadata
 
     // Agent
     uint16_t agent_id;

@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     if (argc != 8)
     {
-        printf("usage: ./GenPlacement k_i m_i k_f m_f num_nodes num_stripes placement_file");
+        printf("usage: ./GenPrePlacement k_i m_i k_f m_f num_nodes num_stripes pre_placement_filename");
         return -1;
     }
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     uint8_t m_f = atoi(argv[4]);
     uint16_t num_nodes = atoi(argv[5]);
     uint32_t num_stripes = atoi(argv[6]);
-    string placement_file = argv[7];
+    string pre_placement_filename = argv[7];
 
     StripeGenerator stripe_generator;
 
@@ -43,13 +43,7 @@ int main(int argc, char *argv[])
     StripeBatch stripe_batch(0, code, settings, random_generator);
     stripe_generator.genRandomStripes(code, settings, random_generator, stripe_batch.pre_stripes);
 
-    stripe_generator.storeStripes(stripe_batch.pre_stripes, placement_file);
-
-    // printf("stripes:\n");
-    // for (auto &stripe : stripes)
-    // {
-    //     stripe.print();
-    // }
+    stripe_generator.storeStripes(stripe_batch.pre_stripes, pre_placement_filename);
 
     return 0;
 }

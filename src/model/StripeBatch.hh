@@ -25,8 +25,10 @@ public:
     void constructSGInSequence();
     void constructSGByRandomPick();
     void constructSGByBW(string approach);
-
     void constructSGByBWGreedy(string approach);
+
+    // store selected stripe group metadata into sg_meta_filename
+    void storeSGMetadata(string sg_meta_filename);
 
     // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 

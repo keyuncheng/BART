@@ -10,9 +10,9 @@
 int main(int argc, char *argv[])
 {
 
-    if (argc != 9)
+    if (argc != 11)
     {
-        printf("usage: ./Simulator k_i m_i k_f m_f num_nodes num_stripes pre_placement_file approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT]");
+        printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT] pre_placement_filename post_placement_filename sg_meta_filename");
         return -1;
     }
 
@@ -22,8 +22,10 @@ int main(int argc, char *argv[])
     uint8_t m_f = atoi(argv[4]);
     uint16_t num_nodes = atoi(argv[5]);
     uint32_t num_stripes = atoi(argv[6]);
-    string pre_placement_file = argv[7];
-    string approach = argv[8];
+    string approach = argv[7];
+    string pre_placement_filename = argv[8];
+    string post_placement_filename = argv[9];
+    string sg_meta_filename = argv[10];
 
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
@@ -48,7 +50,7 @@ int main(int argc, char *argv[])
     StripeGenerator stripe_generator;
 
     // load pre-transition stripes from placement file
-    stripe_generator.loadStripes(code, settings, pre_placement_file, stripe_batch.pre_stripes);
+    stripe_generator.loadStripes(code, settings, pre_placement_filename, stripe_batch.pre_stripes);
 
     // printf("stripes:\n");
     // for (auto &stripe : stripe_batch.pre_stripes)
@@ -102,6 +104,12 @@ int main(int argc, char *argv[])
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
     // trans_solution.print();
+
+    // store post-transition stripes to placement file
+    stripe_generator.storeStripes(stripe_batch.post_stripes, post_placement_filename);
+
+    // store stripe group metadata to sg_meta_filename metadata file
+    stripe_batch.storeSGMetadata(sg_meta_filename);
 
     // get load distribution
     vector<u32string> transfer_load_dist = trans_solution.getTransferLoadDist();

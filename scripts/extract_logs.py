@@ -15,9 +15,7 @@ def exec_cmd(cmd, exec=False):
     print("Execute Command: {}".format(cmd))
     msg = ""
     if exec == True:
-        return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE
-
-        ).communicate()
+        return_str, stderr = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()
         msg = return_str.decode().strip()
         print(msg)
     return msg
@@ -28,12 +26,13 @@ def main():
         exit()
 
     ks = [4,6,8,12,16]
-    # ms = [2,3,4]
-    ms = [4]
-    # lambdas = [2,3,4]
-    lambdas = [3]
-    # methods = ["RDRE", "RDPM", "BWRE", "BWPM", "BTRE", "BTPM", "BT"]
-    methods = ["RDRE", "RDPM", "BWRE", "BWPM"]
+    ms = [2,3,4]
+    lambdas = [2,3,4]
+    methods = ["RDRE", "BWRE", "BTRE", "RDPM", "BWPM", "BTPM", "BT"]
+    # ks = [4,6]
+    # ms = [4]
+    # lambdas = [3]
+    # methods = ["RDRE", "RDPM", "BWRE", "BWPM"]
     # methods = ["BTRE", "BTPM", "BT"]
     num_runs = 5
     num_nodes_times = [2]
