@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     StripeGenerator stripe_generator;
 
     // load pre-transition stripes from placement file
-    stripe_generator.loadStripes(code, settings, pre_placement_filename, stripe_batch.pre_stripes);
+    stripe_generator.loadStripes(code.n_i, pre_placement_filename, stripe_batch.pre_stripes);
 
     // printf("stripes:\n");
     // for (auto &stripe : stripe_batch.pre_stripes)

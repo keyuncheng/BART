@@ -31,6 +31,9 @@ void CtrlNode::genTransSolution()
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
 
+    ConvertibleCode &code = config.code;
+    ClusterSettings &settings = config.settings;
+
     StripeGenerator generator;
 
     StripeBatch stripe_batch(0, config.code, config.settings, random_generator);
@@ -42,37 +45,21 @@ void CtrlNode::genTransSolution()
     // store block mapping file for post stripe placement
     vector<vector<pair<uint16_t, string>>> post_stripe_placements;
 
-    // load stripe placement and block mapping
-    generator.loadStripes(config.code, config.settings, config.pre_placement_filename, stripe_batch.pre_stripes);
-    generator.loadBlockMapping(config.code, config.settings, config.pre_block_mapping_filename, pre_stripe_placements);
+    // load pre-stripe placement and block mapping
+    generator.loadStripes(code.n_i, config.pre_placement_filename, stripe_batch.pre_stripes);
+    generator.loadBlockMapping(code.n_i, settings.num_stripes, config.pre_block_mapping_filename, pre_stripe_placements);
 
-    // generate transition solution
-    if (config.approach == "RDRE" || config.approach == "RDPM")
-    {
-        // StripeMerge
-        RandomSolution random_solution(random_generator);
-        random_solution.genSolution(stripe_batch, config.approach);
-    }
-    else if (config.approach == "BWRE" || config.approach == "BWPM")
-    {
-        // StripeMerge
-        StripeMerge stripe_merge(random_generator);
-        stripe_merge.genSolution(stripe_batch, config.approach);
-    }
-    else if (config.approach == "BTRE" || config.approach == "BTPM" || config.approach == "BT")
-    {
-        // Balanced Conversion
-        BalancedConversion balanced_conversion(random_generator);
-        balanced_conversion.genSolution(stripe_batch, config.approach);
-    }
+    // load post-stripe placement and block mapping
+    generator.loadStripes(code.n_f, config.post_placement_filename, stripe_batch.post_stripes);
+    generator.loadBlockMapping(code.n_f, settings.num_stripes / code.lambda_i, config.post_block_mapping_filename, post_stripe_placements);
+
+    // load stripe group metadata
+    stripe_batch.loadSGMetadata(config.sg_meta_filename);
+    // stripe_batch.print();
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
-
-    // store placements for post-transition stripes
-    generator.storeStripes(stripe_batch.post_stripes, config.post_placement_filename);
-    // TODO: store block mapping for post-transition stripes
-    // Question: what's the physical path of the newly generated parity blocks?
+    trans_solution.print();
 
     vector<Command> commands;
     gen_commands(trans_solution, pre_stripe_placements, commands);

@@ -30,6 +30,9 @@ public:
     // store selected stripe group metadata into sg_meta_filename
     void storeSGMetadata(string sg_meta_filename);
 
+    // load selected stripe group metadata from sg_meta_filename
+    bool loadSGMetadata(string sg_meta_filename);
+
     // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
 
     // bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);

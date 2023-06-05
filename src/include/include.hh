@@ -19,6 +19,7 @@
 #include <queue>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 #include <sys/time.h>
 
 using namespace std;

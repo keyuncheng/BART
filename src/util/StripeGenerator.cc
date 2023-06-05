@@ -54,7 +54,7 @@ void StripeGenerator::storeStripes(vector<Stripe> &stripes, string placement_fil
     printf("finished storing %lu stripes in %s\n", stripes.size(), placement_filename.c_str());
 }
 
-bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settings, string placement_filename, vector<Stripe> &stripes)
+bool StripeGenerator::loadStripes(uint8_t ecn, string placement_filename, vector<Stripe> &stripes)
 {
     ifstream ifs(placement_filename.c_str());
 
@@ -73,7 +73,7 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
 
         // get indices
         istringstream iss(line);
-        for (uint8_t block_id = 0; block_id < code.n_i; block_id++)
+        for (uint8_t block_id = 0; block_id < ecn; block_id++)
         {
             uint16_t idx;
             iss >> idx;
@@ -90,7 +90,7 @@ bool StripeGenerator::loadStripes(ConvertibleCode &code, ClusterSettings &settin
     return true;
 }
 
-bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &settings, string block_mapping_filename, vector<vector<pair<uint16_t, string>>> &stripe_placements)
+bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string block_mapping_filename, vector<vector<pair<uint16_t, string>>> &stripe_placements)
 {
     ifstream ifs(block_mapping_filename.c_str());
 
@@ -102,7 +102,7 @@ bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &s
 
     // init stripe placement
     stripe_placements.clear();
-    stripe_placements.assign(settings.num_stripes, vector<pair<uint16_t, string>>(code.n_i, pair<uint16_t, string>(0, "")));
+    stripe_placements.assign(num_stripes, vector<pair<uint16_t, string>>(ecn, pair<uint16_t, string>(0, "")));
 
     string line;
     uint64_t record_id = 0;
@@ -135,6 +135,12 @@ bool StripeGenerator::loadBlockMapping(ConvertibleCode &code, ClusterSettings &s
     }
 
     ifs.close();
+
+    if (record_id != ecn * num_stripes)
+    {
+        fprintf(stderr, "error: invalid number of records %lu\n", record_id);
+        return false;
+    }
 
     // for (uint32_t stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
     // {

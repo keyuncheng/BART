@@ -479,6 +479,64 @@ void StripeBatch::storeSGMetadata(string sg_meta_filename)
     printf("finished storing %lu stripe groups in %s\n", selected_sgs.size(), sg_meta_filename.c_str());
 }
 
+bool StripeBatch::loadSGMetadata(string sg_meta_filename)
+{
+    selected_sgs.clear();
+
+    ifstream ifs(sg_meta_filename.c_str());
+
+    if (ifs.fail())
+    {
+        printf("invalid sg_meta file: %s\n", sg_meta_filename.c_str());
+        return false;
+    }
+
+    string line;
+    uint32_t sg_id = 0;
+    while (getline(ifs, line))
+    {
+
+        // get indices
+        istringstream iss(line);
+
+        unsigned int val;
+
+        vector<Stripe *> selected_pre_stripes(code.lambda_i, NULL);
+
+        // load pre-stripe ids
+        for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
+        {
+            iss >> val;
+            uint32_t pre_stripe_id_global = val;
+            selected_pre_stripes[pre_stripe_id] = &pre_stripes[pre_stripe_id_global];
+        }
+
+        selected_sgs.insert(pair<uint32_t, StripeGroup>(sg_id, StripeGroup(sg_id, code, settings, selected_pre_stripes, &post_stripes[sg_id])));
+
+        StripeGroup &stripe_group = selected_sgs.find(sg_id)->second;
+
+        // load parity computation method
+        iss >> val;
+        stripe_group.parity_comp_method = (EncodeMethod)val;
+
+        // load parity computation nodes
+        stripe_group.parity_comp_nodes.assign(code.m_f, INVALID_NODE_ID);
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            iss >> val;
+            stripe_group.parity_comp_nodes[parity_id] = val;
+        }
+
+        sg_id++;
+    }
+
+    ifs.close();
+
+    printf("finished loading %lu stripes group metadata from %s\n", selected_sgs.size(), sg_meta_filename.c_str());
+
+    return true;
+}
+
 // bool StripeBatch::constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator)
 // {
 

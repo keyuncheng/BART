@@ -29,8 +29,8 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Controller"], "agent_ips", agent_ips_raw);
     inipp::get_value(ini.sections["Controller"], "pre_placement_filename", pre_placement_filename);
     inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
-    inipp::get_value(ini.sections["Controller"], "pre_placement_filename", pre_placement_filename);
-    inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
+    inipp::get_value(ini.sections["Controller"], "post_placement_filename", post_placement_filename);
+    inipp::get_value(ini.sections["Controller"], "post_block_mapping_filename", post_block_mapping_filename);
     inipp::get_value(ini.sections["Controller"], "sg_meta_filename", sg_meta_filename);
 
     char *raw_str = (char *)malloc(agent_ips_raw.size() * sizeof(char));
