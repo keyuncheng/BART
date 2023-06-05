@@ -71,7 +71,7 @@ void BalancedConversion::genParityComputation(StripeBatch &stripe_batch, string 
         if (approach == "BTPM" || approach == "BT")
         {
             // before the enumeration, check the bandwidth for parity computation; if parity generation satisfy perfect parity merging (bw = 0), then directly apply the scheme
-            if (stripe_group.getMinPMBW() == 0)
+            if (stripe_group.isPerfectParityMerging() == true)
             {
                 // generate parity computation scheme for parity merging
                 stripe_group.genParityComputeScheme4PerfectPM();

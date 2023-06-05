@@ -48,7 +48,6 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
      */
 
     // record minimum bw and corresponding placement
-    uint8_t min_bw = UINT8_MAX;
     u16string min_bw_pm_nodes(code.m_f, INVALID_NODE_ID);
 
     if (approach == "BWRE")
@@ -73,53 +72,58 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
     }
     else if (approach == "BWPM")
     { // parity merging only
-        // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
-        uint32_t num_pm_choices = pow(num_nodes, code.m_f);
 
-        // enumerate m_f nodes for parity merging
-        u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
+        // uint8_t min_pm_bw = UINT8_MAX;
+        // // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
+        // uint32_t num_pm_choices = pow(num_nodes, code.m_f);
 
-        vector<u16string> valid_pm_nodes;
+        // // enumerate m_f nodes for parity merging
+        // u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
 
-        for (uint32_t perm_id = 0; perm_id < num_pm_choices; perm_id++)
-        {
-            u16string relocated_nodes = stripe_group.data_dist; // mark the number of blocks relocated on the node
-            uint8_t cur_perm_bw = 0;                            // record current bw for perm_id
-            for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
-            {
-                u16string &parity_dist = stripe_group.parity_dists[parity_id];
-                uint16_t parity_compute_node = pm_nodes[parity_id];
+        // vector<u16string> valid_pm_nodes;
 
-                uint8_t pm_bw = (code.alpha - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
+        // for (uint32_t perm_id = 0; perm_id < num_pm_choices; perm_id++)
+        // {
+        //     u16string relocated_nodes = stripe_group.data_dist; // mark the number of blocks relocated on the node
+        //     uint8_t cur_perm_bw = 0;                            // record current bw for perm_id
+        //     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        //     {
+        //         u16string &parity_dist = stripe_group.parity_dists[parity_id];
+        //         uint16_t parity_compute_node = pm_nodes[parity_id];
 
-                relocated_nodes[parity_compute_node] += 1; // mark the node as relocated on the node
-                cur_perm_bw += pm_bw;                      // update bw
-            }
+        //         uint8_t pm_bw = (code.alpha - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
 
-            // update minimum bw
-            if (cur_perm_bw < min_bw)
-            {
-                min_bw = cur_perm_bw;
+        //         relocated_nodes[parity_compute_node] += 1; // mark the node as relocated on the node
+        //         cur_perm_bw += pm_bw;                      // update bw
+        //     }
 
-                // reset best solution
-                valid_pm_nodes.clear();
-                valid_pm_nodes.push_back(pm_nodes);
-            }
-            else if (cur_perm_bw == min_bw)
-            {
-                valid_pm_nodes.push_back(pm_nodes);
-            }
+        //     // update minimum bw
+        //     if (cur_perm_bw < min_pm_bw)
+        //     {
+        //         min_pm_bw = cur_perm_bw;
 
-            // get next permutation
-            Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
-        }
+        //         // reset best solution
+        //         valid_pm_nodes.clear();
+        //         valid_pm_nodes.push_back(pm_nodes);
+        //     }
+        //     else if (cur_perm_bw == min_pm_bw)
+        //     {
+        //         valid_pm_nodes.push_back(pm_nodes);
+        //     }
 
-        // // randomly find a valid solution
-        // size_t rand_pos = Utils::randomUInt(0, valid_pm_nodes.size() - 1, random_generator);
+        //     // get next permutation
+        //     Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
+        // }
 
-        // choose the first solution (following the implementation of the StripeMerge paper, which generates load imbalance)
-        size_t rand_pos = 0;
-        min_bw_pm_nodes = valid_pm_nodes[rand_pos];
+        // // // randomly find a valid solution
+        // // size_t rand_pos = Utils::randomUInt(0, valid_pm_nodes.size() - 1, random_generator);
+
+        // // choose the first solution (following the implementation of the StripeMerge paper, which generates load imbalance)
+        // size_t rand_pos = 0;
+        // min_bw_pm_nodes = valid_pm_nodes[rand_pos];
+
+        // find encode nodes
+        stripe_group.getMinPMBWOptimized(min_bw_pm_nodes);
     }
 
     // update parity computation nodes, final block placement and block distribution

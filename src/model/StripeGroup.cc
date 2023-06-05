@@ -58,7 +58,7 @@ void StripeGroup::initParityDists()
     }
 }
 
-uint8_t StripeGroup::getMinTransBW(string approach)
+uint8_t StripeGroup::getMinTransBW(string approach, u16string &enc_nodes)
 {
     uint8_t parity_update_bw = 0;
 
@@ -66,19 +66,21 @@ uint8_t StripeGroup::getMinTransBW(string approach)
 
     if (approach == "BWRE" || approach == "BTRE")
     { // re-encoding only
-        parity_update_bw = getMinREBW();
+        parity_update_bw = getMinREBW(enc_nodes);
     }
     else if (approach == "BWPM" || approach == "BTPM")
     { // parity-merging only
-        // parity_update_bw = getMinPMBW();
-        parity_update_bw = getMinPMBWGreedy();
+        // parity_update_bw = getMinPMBW(enc_nodes);
+        parity_update_bw = getMinPMBWOptimized(enc_nodes);
+        // parity_update_bw = getMinPMBWGreedy();
     }
     else if (approach == "BT")
     { // both re-encoding and parity merging
         // NOTE: here we assume that bandwidth(pm) <= bandwidth(re), thus we calculate pm bandwidth only
 
         // parity_update_bw = getMinPMBW();
-        parity_update_bw = getMinPMBWGreedy();
+        parity_update_bw = getMinPMBWOptimized(enc_nodes);
+        // parity_update_bw = getMinPMBWGreedy();
     }
     else
     {
@@ -109,7 +111,7 @@ uint8_t StripeGroup::getDataRelocBW()
     return data_reloc_bw;
 }
 
-uint8_t StripeGroup::getMinREBW()
+uint8_t StripeGroup::getMinREBW(u16string &enc_nodes)
 {
     uint8_t re_bw = 0;
 
@@ -123,14 +125,21 @@ uint8_t StripeGroup::getMinREBW()
     // it targets at general parameters (for each of lambda_f converted stripes, we should collect num_final_data_blocks data blocks to a node, no matter where they come from)
     for (uint8_t final_sid = 0; final_sid < code.lambda_f; final_sid++)
     {
+        uint16_t parity_comp_node = sorted_idx[final_sid];
         // parity generation bw + parity relocation bw
-        re_bw += (num_final_data_blocks - data_dist[sorted_idx[final_sid]]) + code.m_f;
+        re_bw += (num_final_data_blocks - data_dist[parity_comp_node]) + code.m_f;
+
+        // assign encode node
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            enc_nodes[final_sid * code.m_f + parity_id] = parity_comp_node;
+        }
     }
 
     return re_bw;
 }
 
-uint8_t StripeGroup::getMinPMBW()
+uint8_t StripeGroup::getMinPMBW(u16string &enc_nodes)
 {
     uint16_t num_nodes = settings.num_nodes;
     // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
@@ -157,10 +166,19 @@ uint8_t StripeGroup::getMinPMBW()
             cur_perm_bw += pm_bw;                      // update bw
         }
 
-        // update minimum bw
+        // find a better bandwidth
         if (cur_perm_bw < min_bw)
         {
+            // update minimum bw
             min_bw = cur_perm_bw;
+            // assign encode nodes
+            enc_nodes = pm_nodes;
+
+            // no need to search if min_bw = 0
+            if (min_bw == 0)
+            {
+                break;
+            }
         }
 
         // get next permutation
@@ -170,7 +188,81 @@ uint8_t StripeGroup::getMinPMBW()
     return min_bw;
 }
 
-uint8_t StripeGroup::getMinPMBWGreedy()
+uint8_t StripeGroup::getMinPMBWOptimized(u16string &enc_nodes)
+{
+    uint8_t num_pre_stripes = pre_stripes.size();
+    uint8_t num_required_parity_blocks = num_pre_stripes;
+
+    vector<vector<uint16_t>> cand_pm_nodes(code.m_f); // candidate nodes for parity merging
+
+    // check which node stores parity blocks
+    uint32_t num_pm_choices = 1;
+    vector<uint32_t> parity_period(code.m_f, 1); // parity rotation period
+    for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+    {
+        vector<uint16_t> &cand_pm_nodes_parity = cand_pm_nodes[parity_id];
+        for (auto &pre_stripe : pre_stripes)
+        {
+            uint16_t parity_stored_node = pre_stripe->indices[code.k_i + parity_id];
+
+            if (find(cand_pm_nodes_parity.begin(), cand_pm_nodes_parity.end(), parity_stored_node) == cand_pm_nodes_parity.end())
+            {
+                cand_pm_nodes_parity.push_back(parity_stored_node);
+            }
+        }
+        uint32_t pm_choice_parity = cand_pm_nodes_parity.size();
+        num_pm_choices *= pm_choice_parity;
+
+        for (uint8_t idx = parity_id; idx < code.m_f; idx++)
+        {
+            parity_period[idx] *= pm_choice_parity;
+        }
+    }
+
+    uint8_t min_bw = UINT8_MAX; // record minimum bw
+    // enumerate m_f nodes for parity merging
+    u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
+    for (uint32_t perm_id = 0; perm_id < num_pm_choices; perm_id++)
+    {
+        // obtain the permutation
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            uint32_t parity_rot_idx = (parity_id == 0 ? perm_id % cand_pm_nodes[parity_id].size() : (perm_id / parity_period[parity_id - 1] % cand_pm_nodes[parity_id].size()));
+            pm_nodes[parity_id] = cand_pm_nodes[parity_id][parity_rot_idx];
+        }
+
+        u16string relocated_nodes = data_dist; // mark the number of blocks relocated on the node
+        uint8_t cur_perm_bw = 0;               // record current bw for perm_id
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            u16string &parity_dist = parity_dists[parity_id];
+            uint16_t parity_compute_node = pm_nodes[parity_id];
+
+            uint8_t pm_bw = (num_required_parity_blocks - parity_dist[parity_compute_node]) + (relocated_nodes[parity_compute_node] > 0 ? 1 : 0); // required number of parity blocks + parity relocation bw
+
+            relocated_nodes[parity_compute_node] += 1; // mark the node as relocated on the node
+            cur_perm_bw += pm_bw;                      // update bw
+        }
+
+        if (cur_perm_bw < min_bw)
+        {
+            // update minimum bw
+            min_bw = cur_perm_bw;
+            // assign encode nodes
+            enc_nodes = pm_nodes;
+
+            // no need to search if min_bw = 0
+            if (min_bw == 0)
+            {
+                break;
+            }
+        }
+    }
+
+    return min_bw;
+}
+
+uint8_t StripeGroup::getMinPMBWGreedy(u16string &enc_nodes)
 {
     uint8_t sum_pm_bw = 0;
     u16string relocated_nodes = data_dist; // mark if nodes are relocated
@@ -191,6 +283,7 @@ uint8_t StripeGroup::getMinPMBWGreedy()
             // parity generation bw + parity relocation bw (check if the node already stores a block)
             uint8_t pm_bw = (num_required_parity_blocks - parity_dist[node_id]) + (relocated_nodes[node_id] > 0 ? 1 : 0);
 
+            // find better bandwidth
             if (pm_bw < min_bw)
             {
                 min_bw = pm_bw;
@@ -204,6 +297,8 @@ uint8_t StripeGroup::getMinPMBWGreedy()
             }
         }
 
+        // assign encode node
+        enc_nodes[parity_id] = min_bw_node;
         relocated_nodes[min_bw_node] += 1; // mark the node as relocated
         sum_pm_bw += min_bw;               // update bw
     }
@@ -241,6 +336,13 @@ void StripeGroup::genParityComputeScheme4PerfectPM()
         uint16_t min_bw_node_id = distance(parity_dist.begin(), max_element(parity_dist.begin(), parity_dist.end()));
         applied_lt.enc_nodes[parity_id] = min_bw_node_id;
     }
+
+    // assign load tables
+    applied_lt.slt.assign(settings.num_nodes, 0);
+    applied_lt.rlt.assign(settings.num_nodes, 0);
+
+    // bandwidth
+    applied_lt.bw = 0;
 }
 
 void StripeGroup::genPartialLTs4ParityCompute(string approach)

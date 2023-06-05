@@ -62,11 +62,13 @@ public:
     ~StripeGroup();
     void print();
 
-    uint8_t getMinTransBW(string approach);
+    uint8_t getMinTransBW(string approach, u16string &enc_nodes);
     uint8_t getDataRelocBW();
-    uint8_t getMinREBW();
-    uint8_t getMinPMBW();
-    uint8_t getMinPMBWGreedy();
+    uint8_t getMinREBW(u16string &enc_nodes);
+
+    uint8_t getMinPMBW(u16string &enc_nodes);
+    uint8_t getMinPMBWOptimized(u16string &enc_nodes);
+    uint8_t getMinPMBWGreedy(u16string &enc_nodes);
     bool isPerfectParityMerging();
 
     // generate parity computation scheme for perfect parity merging (parity generation bandwidth = 0)
