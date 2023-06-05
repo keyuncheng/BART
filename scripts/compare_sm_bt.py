@@ -22,8 +22,8 @@ def main():
     # ms = [2]
     # lambdas = [3]
     # methods = ["BTRE", "BTPM", "BT"]
-    num_stripes = [10000]
     num_nodes_times = [2]
+    num_stripes = [10000]
     num_runs = 5
     pre_placement_filename = "pre_placement"
     post_placement_filename = "post_placement"
@@ -39,7 +39,7 @@ def main():
     # cmd = "rm -rf {}/*".format(log_dir)
     # exec_cmd(cmd)
 
-    for k, m, lambda_, num_stripe, num_nodes_time in itertools.product(ks, ms, lambdas, num_stripes, num_nodes_times):
+    for k, m, lambda_, num_nodes_time, num_stripe in itertools.product(ks, ms, lambdas, num_nodes_times, num_stripes):
 
         if (k < m):
             continue

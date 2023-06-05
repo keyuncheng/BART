@@ -36,8 +36,8 @@ def main():
     m_i = int(config["Common"]["m_i"])
     k_f = int(config["Common"]["k_f"])
     m_f = int(config["Common"]["m_f"])
-    num_stripes = int(config["Common"]["num_stripes"])
     num_nodes = int(config["Common"]["num_nodes"])
+    num_stripes = int(config["Common"]["num_stripes"])
     enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
     block_size = int(config["Common"]["block_size"])
 
@@ -66,7 +66,7 @@ def main():
     # Generate pre-transition stripe placement file
     print("generate pre-transition placement file {}".format(str(pre_placement_path)))
 
-    cmd = "cd {}; ./GenPrePlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, pre_placement_path)
+    cmd = "cd {}; ./GenPrePlacement {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, str(pre_placement_path))
     exec_cmd(cmd, exec=True)
     
     # Read pre-transition stripe placement file

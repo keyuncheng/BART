@@ -36,8 +36,9 @@ def main():
     m_i = int(config["Common"]["m_i"])
     k_f = int(config["Common"]["k_f"])
     m_f = int(config["Common"]["m_f"])
-    num_stripes = int(config["Common"]["num_stripes"])
     num_nodes = int(config["Common"]["num_nodes"])
+    num_stripes = int(config["Common"]["num_stripes"])
+    approach = config["Common"]["approach"]
     enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
 
     # Controller
@@ -45,16 +46,20 @@ def main():
     pre_block_mapping_filename = config["Controller"]["pre_block_mapping_filename"]
     post_placement_filename = config["Controller"]["post_placement_filename"]
     post_block_mapping_filename = config["Controller"]["post_block_mapping_filename"]
+    sg_meta_filename = config["Controller"]["sg_meta_filename"]
 
-    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; enable_HDFS: {}".format(k_i, m_i, num_stripes, num_nodes, enable_HDFS))
+    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; approach: {}, enable_HDFS: {}".format(k_i, m_i, num_stripes, num_nodes, approach, enable_HDFS))
 
-    print("pre_placement_filename: {}; pre_block_mapping_filename: {}; post_placement_filename: {}; post_block_mapping_filename: {}".format(pre_placement_filename, pre_block_mapping_filename, post_placement_filename, post_block_mapping_filename))
+    print("pre_placement_filename: {}; pre_block_mapping_filename: {}; post_placement_filename: {}; post_block_mapping_filename: {}, sg_meta_filename: {}".format(pre_placement_filename, pre_block_mapping_filename, post_placement_filename, post_block_mapping_filename, sg_meta_filename))
 
     if enable_HDFS == True:
         print("pre-transition placement and block mapping should be obtained from HDFS; skipped")
         return
 
     # Others
+    lambda_ = int(k_f / k_i)
+    num_post_stripes = int(num_stripes / lambda_)
+
     root_dir = Path("..").absolute()
     metadata_dir = root_dir / "metadata"
     metadata_dir.mkdir(exist_ok=True, parents=True)
@@ -63,6 +68,7 @@ def main():
     pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     post_placement_path = metadata_dir / post_placement_filename
     post_block_mapping_path = metadata_dir / post_block_mapping_filename
+    sg_meta_path = metadata_dir / sg_meta_filename
     data_dir = root_dir / "data"
     
     # Read placement
@@ -73,56 +79,68 @@ def main():
             pre_placement.append(stripe_indices)
     
     # Read pre-stripe block mapping
-    pre_block_mapping = []
+    pre_block_mapping = [None] * num_stripes
+    for pre_stripe_id in range(num_stripes):
+        pre_block_mapping[pre_stripe_id] = [None] * (k_i + m_i)
+
     with open("{}".format(str(pre_block_mapping_path)), "r") as f:
         for line in f.readlines():
-            print(line)
+            line = line.split()
+            pre_stripe_id = int(line[0])
+            pre_block_id = int(line[1])
+            pre_node_id = int(line[2])
+            pre_block_placement_path = line[3]
+            pre_block_mapping[pre_stripe_id][pre_block_id] = pre_block_placement_path
 
 
-    # for stripe_id, stripe_indices in enumerate(pre_placement):
-    #     for block_id, placed_node_id in enumerate(stripe_indices):
-    #         pre_block_placement_path = ""
-    #         if enable_HDFS == False:
-    #             pre_block_placement_path = data_dir / "block_{}_{}".format(stripe_id, block_id)
-    #         else:
-    #             pass # TO IMPLEMENT
-    #         pre_block_mapping.append([stripe_id, block_id, placed_node_id, pre_block_placement_path])
+    # Perform transition
+    print("generate transition solution, post-transition placement file: {}".format(str(post_placement_path)))
+    cmd = "cd {}; ./BTSGenerator {} {} {} {} {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, num_nodes, num_stripes, approach,  str(pre_placement_path), str(post_placement_path), str(sg_meta_path))
+    exec_cmd(cmd, exec=True)
 
-    # # Write block mapping file
-    # if is_gen_meta == True:
-    #     print("generate block mapping file {}".format(str(pre_block_mapping_path)))
+    # Read post placement
+    post_placement = []
+    with open("{}".format(str(post_placement_path)), "r") as f:
+        for line in f.readlines():
+            stripe_indices = [int(block_id) for block_id in line.strip().split(" ")]
+            post_placement.append(stripe_indices)
 
-    #     with open("{}".format(str(pre_block_mapping_path)), "w") as f:
-    #         for stripe_id, block_id, node_id, pre_block_placement_path in pre_block_mapping:
-    #             f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(pre_block_placement_path)))
+    # Read stripe group metadata
+    sg_meta = []
+    with open("{}".format(str(sg_meta_path)), "r") as f:
+        for line in f.readlines():
+            line_int = [int(item) for item in line.split()]
+            sg_record = {}
+            sg_record["pre_stripe_ids"] = line_int[0:lambda_]
+            sg_record["enc_method"] = line_int[lambda_]
+            sg_record["enc_nodes"] = line_int[lambda_+1:]
+            sg_meta.append(sg_record)
 
-    # # Generate physical blocks (if HDFS not enabled)
-    # if (is_gen_data == True and enable_HDFS == False):
-    #     print("generate physical blocks on storage nodes")
+    # Generate post-transition block mapping
+    post_block_mapping = []
+    for post_stripe_id, post_stripe_indices in enumerate(post_placement):
+        for post_block_id, placed_node_id in enumerate(post_stripe_indices):
+            post_block_placement_path = None
+            if post_block_id < k_f:
+                # data block: read from pre_block_mapping
+                pre_stripe_id = int(post_block_id / k_i)
+                pre_block_id = int(post_block_id % k_i)
+                pre_stripe_id_global = sg_meta[post_stripe_id]["pre_stripe_ids"][pre_stripe_id]
+                post_block_placement_path = pre_block_mapping[pre_stripe_id_global][pre_block_id]
+            else:
+                if enable_HDFS:
+                    pass # TO IMPLEMENT
+                else:
+                    # parity block: generate new filename
+                    post_block_placement_path = data_dir / "post_block_{}_{}".format(post_stripe_id, post_block_id)
+            post_block_mapping.append([post_stripe_id, post_block_id, placed_node_id, post_block_placement_path])
 
-    #     # obtain node to block mapping
-    #     node_block_mapping = {}
-    #     for node_id in range(num_nodes):
-    #         node_block_mapping[node_id] = []
+    # Write block mapping file
+    print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
 
-    #     for stripe_id, block_id, node_id, pre_block_placement_path in pre_block_mapping:
-    #         node_block_mapping[node_id].append(pre_block_placement_path)
-
-    #     for node_id in range(num_nodes):
-    #         node_ip = agent_ips[node_id]
-    #         blocks_to_gen = node_block_mapping[node_id]
-    #         print("Generate {} blocks at Node {} ({})".format(len(blocks_to_gen), node_id, node_ip))
-
-    #         cmd = "ssh {} \"mkdir -p {}\"".format(node_ip, str(data_dir))
-    #         exec_cmd(cmd, exec=False)
-
-    #         cmd = "ssh {} \"rm -f {}/*\"".format(node_ip, str(data_dir))
-    #         exec_cmd(cmd, exec=False)
-
-    #         for block_path in blocks_to_gen:
-    #             block_size_MB = int(block_size / (1024 * 1024))
-    #             cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, str(block_path), block_size_MB)
-    #             exec_cmd(cmd, exec=False)
+    with open("{}".format(str(post_block_mapping_path)), "w") as f:
+        for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
+            f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)))
         
 
 if __name__ == '__main__':
