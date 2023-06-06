@@ -19,5 +19,7 @@ int main(int argc, char **argv)
 
     ctrl_node.genTransSolution();
 
-    // ctrl_node.start();
+    ctrl_node.start();
+
+    ctrl_node.stop();
 }

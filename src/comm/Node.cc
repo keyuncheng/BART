@@ -13,7 +13,7 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
     }
 
     // add Agent
-    for (auto &item : config.agent_ip_map)
+    for (auto &item : config.agent_addr_map)
     {
         uint16_t conn_id = item.first;
         if (self_conn_id != conn_id)
@@ -53,16 +53,19 @@ void Node::connect_all()
     {
         uint16_t conn_id = item.first;
         string ip;
+        unsigned int port;
         if (conn_id == CTRL_NODE_ID)
         {
-            ip = config.coord_ip;
+            ip = config.controller_ip;
+            port = config.controller_port;
         }
         else
         {
-            ip = config.agent_ip_map[conn_id];
+            ip = config.agent_addr_map[conn_id].first;
+            port = config.agent_addr_map[conn_id].second;
         }
 
-        conn_threads[conn_id] = new thread(&Node::connect_one, this, conn_id, ip, config.port);
+        conn_threads[conn_id] = new thread(&Node::connect_one, this, conn_id, ip, port);
     }
 
     for (auto &item : conn_threads)

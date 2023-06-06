@@ -15,7 +15,7 @@ public:
     unsigned int num_threads; // number of threads
     std::thread *threads;     // threads
     atomic<bool> is_finished; // check whether the tasks has been finished
-    MessageQueue<T> *queue;   // task queue
+    MessageQueue<T> *queue;   // message queue
 
     ThreadPool(unsigned int _num_threads = 1)
     {
@@ -58,6 +58,11 @@ public:
     bool finished()
     {
         return (is_finished == true && queue->IsEmpty() == true);
+    }
+
+    void set_finished()
+    {
+        is_finished = true;
     }
 };
 

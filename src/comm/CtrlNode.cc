@@ -20,10 +20,7 @@ void CtrlNode::start()
 void CtrlNode::stop()
 {
     // wait cmd_distributor finish
-    if (cmd_distributor->finished())
-    {
-        cmd_distributor->wait();
-    }
+    cmd_distributor->wait();
 }
 
 void CtrlNode::genTransSolution()
@@ -65,8 +62,10 @@ void CtrlNode::genTransSolution()
 
     for (auto &command : commands)
     {
-        command.print();
+        // command.print();
+        cmd_distributor->queue->Push(command);
     }
+    cmd_distributor->set_finished();
 }
 
 void CtrlNode::gen_commands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)

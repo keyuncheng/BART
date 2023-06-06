@@ -21,7 +21,7 @@ CmdDist::~CmdDist()
 void CmdDist::run()
 {
     Command cmd;
-    while (true)
+    while (finished() == false)
     {
         if (queue->Pop(cmd) == true)
         {
@@ -29,12 +29,13 @@ void CmdDist::run()
             unique_lock<mutex> lck(*mtxs_map[dst_node_id]); // add lock
             auto &connector = connectors_map[dst_node_id];
 
-            // send the command
-            if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-            {
-                fprintf(stderr, "error send cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
-                exit(EXIT_FAILURE);
-            }
+            cmd.print();
+            // // send the command
+            // if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+            // {
+            //     fprintf(stderr, "error send cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
+            //     exit(EXIT_FAILURE);
+            // }
         }
     }
 }
