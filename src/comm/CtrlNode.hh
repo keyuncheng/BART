@@ -25,7 +25,7 @@ public:
     void stop();
 
     void genTransSolution();
-    void gen_commands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &stripe_placements, vector<Command> &commands);
+    void gen_commands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands);
 };
 
 #endif // __CTRL_NODE_HH__

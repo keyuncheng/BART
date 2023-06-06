@@ -5,15 +5,20 @@
 
 enum TransTaskType
 {
+    // parity computation: re-encoding
     READ_RE_BLK,
     TRANSFER_COMPUTE_RE_BLK,
     COMPUTE_RE_BLK,
+    // parity computation: parity merging
     READ_PM_BLK,
     TRANSFER_COMPUTE_PM_BLK,
     COMPUTE_PM_BLK,
+    // block relocation
     READ_RELOC_BLK,
     TRANSFER_RELOC_BLK,
+    // write
     WRITE_BLK,
+    // delete
     DELETE_BLK,
     UNKNOWN
 };

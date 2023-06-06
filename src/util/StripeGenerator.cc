@@ -90,7 +90,7 @@ bool StripeGenerator::loadStripes(uint8_t ecn, string placement_filename, vector
     return true;
 }
 
-bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string block_mapping_filename, vector<vector<pair<uint16_t, string>>> &stripe_placements)
+bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string block_mapping_filename, vector<vector<pair<uint16_t, string>>> &block_mapping)
 {
     ifstream ifs(block_mapping_filename.c_str());
 
@@ -100,9 +100,9 @@ bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string
         return false;
     }
 
-    // init stripe placement
-    stripe_placements.clear();
-    stripe_placements.assign(num_stripes, vector<pair<uint16_t, string>>(ecn, pair<uint16_t, string>(0, "")));
+    // init block mapping
+    block_mapping.clear();
+    block_mapping.assign(num_stripes, vector<pair<uint16_t, string>>(ecn, pair<uint16_t, string>(0, "")));
 
     string line;
     uint64_t record_id = 0;
@@ -128,8 +128,8 @@ bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string
 
         iss >> placed_path; // get placed_path
 
-        stripe_placements[stripe_id][block_id].first = placed_node_id;
-        stripe_placements[stripe_id][block_id].second = placed_path;
+        block_mapping[stripe_id][block_id].first = placed_node_id;
+        block_mapping[stripe_id][block_id].second = placed_path;
 
         record_id++;
     }
@@ -142,11 +142,11 @@ bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string
         return false;
     }
 
-    // for (uint32_t stripe_id = 0; stripe_id < settings.num_stripes; stripe_id++)
+    // for (uint32_t stripe_id = 0; stripe_id < num_stripes; stripe_id++)
     // {
-    //     for (uint8_t block_id = 0; block_id < code.n_i; block_id++)
+    //     for (uint8_t block_id = 0; block_id < ecn; block_id++)
     //     {
-    //         printf("stripe_id: %u, block_id: %u, placed_node_id: %u, placed_path: %s\n", stripe_id, block_id, stripe_placements[stripe_id][block_id].first, stripe_placements[stripe_id][block_id].second.c_str());
+    //         printf("stripe_id: %u, block_id: %u, placed_node_id: %u, placed_path: %s\n", stripe_id, block_id, block_mapping[stripe_id][block_id].first, block_mapping[stripe_id][block_id].second.c_str());
     //     }
     // }
 

@@ -12,7 +12,7 @@ Command::~Command()
 
 void Command::print()
 {
-    printf("Command type: %u, src_conn_id: %u, dst_conn_id: %u");
+    printf("Command %u, conn: (%u -> %u)", type, src_conn_id, dst_conn_id);
     switch (type)
     {
     case CommandType::CMD_CONN:
@@ -23,27 +23,13 @@ void Command::print()
         printf("\n");
         break;
     }
-    case CommandType::CMD_READ_RE_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_RE_BLK:
-    case CommandType::CMD_COMPUTE_RE_BLK:
-    case CommandType::CMD_READ_PM_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_PM_BLK:
-    case CommandType::CMD_COMPUTE_PM_BLK:
-    case CommandType::CMD_READ_RELOC_BLK:
+    case CommandType::CMD_LOCAL_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
-    case CommandType::CMD_WRITE_BLK:
     case CommandType::CMD_DELETE_BLK:
     {
-        post_stripe_id = readUInt();
-        post_block_id = readUInt16();
-        pre_stripe_id_global = readUInt();
-        pre_stripe_id_relative = readUInt16();
-        pre_block_id = readUInt16();
-        src_node_id = readUInt16();
-        dst_node_id = readUInt16();
-        block_path = readString();
-
-        printf(", post_stripe: (%u, %u), pre_stripe: (%u, %u, %u), src_node: %u, dst_node: %u, block_path: %s\n", post_stripe_id, post_block_id, pre_stripe_id_global, pre_stripe_id_relative, pre_block_id, src_node_id, dst_node_id, block_path.c_str());
+        printf(", post_stripe: (%u, %u), transfer(%u, %u)\n", post_stripe_id, post_block_id, src_node_id, dst_node_id);
+        // printf(", post_stripe: (%u, %u), transfer(%u, %u), src_block_path: %s, dst_block_path: %s\n", post_stripe_id, post_block_id, src_node_id, dst_node_id, src_block_path.c_str(), dst_block_path.c_str());
         break;
     }
     }
@@ -121,25 +107,17 @@ void Command::parse()
     {
         break;
     }
-    case CommandType::CMD_READ_RE_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_RE_BLK:
-    case CommandType::CMD_COMPUTE_RE_BLK:
-    case CommandType::CMD_READ_PM_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_PM_BLK:
-    case CommandType::CMD_COMPUTE_PM_BLK:
-    case CommandType::CMD_READ_RELOC_BLK:
+    case CommandType::CMD_LOCAL_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
-    case CommandType::CMD_WRITE_BLK:
     case CommandType::CMD_DELETE_BLK:
     {
         post_stripe_id = readUInt();
         post_block_id = readUInt16();
-        pre_stripe_id_global = readUInt();
-        pre_stripe_id_relative = readUInt16();
-        pre_block_id = readUInt16();
         src_node_id = readUInt16();
         dst_node_id = readUInt16();
-        block_path = readString();
+        src_block_path = readString();
+        dst_block_path = readString();
         break;
     }
     case CommandType::CMD_UNKNOWN:
@@ -161,25 +139,21 @@ void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _d
     writeUInt16(dst_conn_id); // dst conn id
 }
 
-void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint32_t _pre_stripe_id_global, uint8_t _pre_stripe_id_relative, uint8_t _pre_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _block_path)
+void Command::buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _src_block_path, string _dst_block_path)
 {
     buildCommand(_type, _src_conn_id, _dst_conn_id);
 
     post_stripe_id = _post_stripe_id;
     post_block_id = _post_block_id;
-    pre_stripe_id_global = _pre_stripe_id_global;
-    pre_stripe_id_relative = _pre_stripe_id_relative;
-    pre_block_id = _pre_block_id;
     src_node_id = _src_node_id;
     dst_node_id = _dst_node_id;
-    block_path = _block_path;
+    src_block_path = _src_block_path;
+    dst_block_path = _dst_block_path;
 
     writeUInt(post_stripe_id);
     writeUInt16(post_block_id);
-    writeUInt(pre_stripe_id_global);
-    writeUInt16(pre_stripe_id_relative);
-    writeUInt16(pre_block_id);
     writeUInt16(src_node_id);
     writeUInt16(dst_node_id);
-    writeString(block_path);
+    writeString(src_block_path);
+    writeString(dst_block_path);
 }

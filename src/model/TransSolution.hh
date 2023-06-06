@@ -7,7 +7,7 @@
 #include "TransTask.hh"
 #include "StripeBatch.hh"
 
-#define TRANSFER_TASKS_ONLY true
+#define TRANSFER_TASKS_ONLY false
 
 class TransSolution
 {

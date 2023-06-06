@@ -187,7 +187,7 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
                 }
 
                 // 2.4 create write task
-                TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, code.k_f + parity_id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, code.k_f + parity_id, enc_node, enc_node);
+                TransTask *write_task = new TransTask(TransTaskType::WRITE_BLK, stripe_group.id, code.k_f + parity_id, INVALID_STRIPE_ID, INVALID_STRIPE_ID, INVALID_BLK_ID, enc_node, enc_node);
                 sg_tasks[stripe_group.id].push_back(write_task);
                 sg_write_tasks[stripe_group.id].push_back(write_task);
             }
@@ -202,7 +202,7 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
                 uint16_t parity_node_id = stripe->indices[code.k_i + parity_id];
 
                 // 2.5 create parity block delete tasks
-                TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, INVALID_BLK_ID, stripe->id, stripe_id, code.k_f + parity_id, parity_node_id, parity_node_id);
+                TransTask *delete_task = new TransTask(TransTaskType::DELETE_BLK, stripe_group.id, INVALID_BLK_ID, stripe->id, stripe_id, code.k_i + parity_id, parity_node_id, parity_node_id);
                 sg_tasks[stripe_group.id].push_back(delete_task);
                 sg_delete_tasks[stripe_group.id].push_back(delete_task);
             }
