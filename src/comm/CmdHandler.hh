@@ -8,6 +8,8 @@
 #include "../util/Utils.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/MessageQueue.hh"
+#include "../util/Config.hh"
+#include "BlockIO.hh"
 #include "Command.hh"
 
 class CmdHandler : public ThreadPool
@@ -15,16 +17,16 @@ class CmdHandler : public ThreadPool
 private:
     /* data */
 public:
-    unordered_map<uint16_t, sockpp::tcp_connector> &connectors_map;
+    Config &config;
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
-    sockpp::tcp_acceptor &acceptor;
-
     unordered_map<uint16_t, mutex *> mtxs_map;
     unordered_map<uint16_t, thread *> handler_threads_map;
 
     MessageQueue<Command> &cmd_dist_queue;
 
-    CmdHandler(unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, sockpp::tcp_acceptor &_acceptor, MessageQueue<Command> &_cmd_dist_queue, unsigned int _num_threads);
+    unsigned char *block_buffer;
+
+    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> &_cmd_dist_queue, unsigned int _num_threads);
     ~CmdHandler();
 
     void run() override;

@@ -6,9 +6,9 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
 
     // create command distributor
-    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
+    cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
     // create command handler
-    cmd_handler = new CmdHandler(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
+    cmd_handler = new CmdHandler(config, sockets_map, *cmd_dist_queue, 1);
 }
 
 AgentNode::~AgentNode()

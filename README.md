@@ -34,22 +34,12 @@ Balanced Code Conversion
 * Agent
     * Handle the commands
         * From Controller: Parse Transfer command into Send command, and send
-          physical blocks to other Agents (on-going)
+          physical blocks to other Agents (implemented, verified)
         * From Agents: Parse Send command and receive physical block
-          (on-going)
-    * Command Format:
-        * Read: stripe_id, block_id, final_block_id, physical path
-            * Cache into memory
-        * Write: stripe_id, block_id, final_block_id, physical path
-            * From memory to path
-        * Transfer: stripe_id, block_id, final_block_id, src_node_id,
-          dst_node_id
-          * Send: same format
-        * Compute: stripe_id, final_block_id
-        * Delete: stripe_id, block_id, physical path
+          (implemented, verified)
     * Pipeline
-        * Read -> Compute
-        * Transfer -> Compute
-        * Transfer -> Write
-        * Compute -> Write
-        * Delete: directly delete
+        * Read -> Compute (on-going)
+        * Transfer -> Compute (on-going)
+        * Transfer -> Write (on-going)
+        * Compute -> Write (on-going)
+        * Delete: directly delete (on-going)

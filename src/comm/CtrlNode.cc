@@ -5,7 +5,7 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
     // create command distribution queue
     cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
     // create command distributor
-    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
+    cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
 }
 
 CtrlNode::~CtrlNode()
@@ -229,7 +229,7 @@ void CtrlNode::genSampleCommands(vector<Command> &commands)
         1, // block 1
         0, // from node 0
         1, // to node 1
-        "sample_src_block_path", "sample_dst_block_path");
+        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1");
     commands.push_back(cmd_2);
 
     // Command cmd_3;
