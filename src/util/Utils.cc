@@ -16,6 +16,16 @@ mt19937 Utils::createRandomGenerator()
     return generator;
 }
 
+void Utils::printUCharBuffer(unsigned char *buffer, unsigned int buffer_size)
+{
+    printf("\n");
+    for (unsigned int idx = 0; idx < buffer_size; idx++)
+    {
+        printf("%x", buffer[idx]);
+    }
+    printf("\n\n");
+}
+
 uint64_t Utils::calCombSize(uint32_t n, uint32_t k)
 {
     if (k > n)

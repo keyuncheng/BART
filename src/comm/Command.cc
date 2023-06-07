@@ -4,6 +4,7 @@ Command::Command(/* args */)
 {
     type = CommandType::CMD_UNKNOWN;
     len = 0; // command length
+    memset(content, 0, MAX_CMD_LEN);
 }
 
 Command::~Command()

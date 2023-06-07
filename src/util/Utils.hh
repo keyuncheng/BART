@@ -22,6 +22,8 @@ public:
         printf("\n");
     }
 
+    static void printUCharBuffer(unsigned char *buffer, unsigned int buffer_size);
+
     template <typename T>
     static vector<size_t> argsortVector(T &vec)
     {

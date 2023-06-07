@@ -18,4 +18,6 @@ int main(int argc, char **argv)
     AgentNode agent_node(config.agent_id, config);
 
     agent_node.start();
+
+    agent_node.stop();
 }

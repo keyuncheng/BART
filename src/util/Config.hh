@@ -20,8 +20,7 @@ public:
     unsigned int num_cmd_dist_thread;
 
     // Controller
-    string controller_ip;
-    unsigned int controller_port;
+    pair<string, unsigned int> controller_addr;
     map<uint16_t, pair<string, unsigned int>> agent_addr_map;
     string pre_placement_filename;      // pre-transition placement
     string pre_block_mapping_filename;  // pre-transition block mapping

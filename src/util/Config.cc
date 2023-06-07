@@ -24,8 +24,8 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "num_cmd_dist_thread", num_cmd_dist_thread);
 
     // Controller
-    string controller_addr;
-    inipp::get_value(ini.sections["Controller"], "controller_addr", controller_addr);
+    string controller_addr_raw;
+    inipp::get_value(ini.sections["Controller"], "controller_addr", controller_addr_raw);
     inipp::get_value(ini.sections["Controller"], "agent_addrs", agent_addrs_raw);
     inipp::get_value(ini.sections["Controller"], "pre_placement_filename", pre_placement_filename);
     inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
@@ -34,9 +34,10 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Controller"], "sg_meta_filename", sg_meta_filename);
 
     // controller ip, port
-    auto delim_pos = controller_addr.find(":");
-    controller_ip = controller_addr.substr(0, delim_pos);
-    controller_port = stoul(controller_addr.substr(delim_pos + 1, controller_addr.size() - controller_ip.size() - 1).c_str());
+    auto delim_pos = controller_addr_raw.find(":");
+    string controller_ip = controller_addr_raw.substr(0, delim_pos);
+    unsigned int controller_port = stoul(controller_addr_raw.substr(delim_pos + 1, controller_addr_raw.size() - controller_ip.size() - 1).c_str());
+    controller_addr = pair<string, unsigned int>(controller_ip, controller_port);
 
     // agent ip, port
     char *raw_str = (char *)malloc(agent_addrs_raw.size() * sizeof(char));
@@ -87,7 +88,7 @@ void Config::print()
     printf("===========================\n");
 
     printf("Controller:\n");
-    printf("addr: %s:%u\n", controller_ip.c_str(), controller_port);
+    printf("addr: %s:%u\n", controller_addr.first.c_str(), controller_addr.second);
     printf("pre_placement_filename: %s\n", pre_placement_filename.c_str());
     printf("pre_block_mapping_filename: %s\n", pre_block_mapping_filename.c_str());
     printf("post_placement_filename: %s\n", post_placement_filename.c_str());

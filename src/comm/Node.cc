@@ -5,9 +5,9 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
     // init socket
     sockpp::socket_initializer::initialize();
 
-    // add Controller
     if (self_conn_id != CTRL_NODE_ID)
     {
+        // add controller
         connectors_map[CTRL_NODE_ID] = sockpp::tcp_connector();
         sockets_map[CTRL_NODE_ID] = sockpp::tcp_socket();
     }
@@ -23,20 +23,30 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
         }
     }
 
-    // // add acceptor
-    // acceptor = new sockpp::tcp_acceptor(config.port);
+    // add acceptor
+    unsigned int self_port = 0;
+    if (self_conn_id == CTRL_NODE_ID)
+    {
+        self_port = config.controller_addr.second;
+    }
+    else
+    {
+        self_port = config.agent_addr_map[self_conn_id].second;
+    }
 
-    // printf("Node %u: start connection\n", self_conn_id);
+    acceptor = new sockpp::tcp_acceptor(self_port);
 
-    // // create ack connector threads
-    // thread ack_conn_thread([&]
-    //                        { Node::ack_conn_all(); });
+    printf("Node %u: start connection\n", self_conn_id);
 
-    // // connect all nodes
-    // connect_all();
+    // create ack connector threads
+    thread ack_conn_thread([&]
+                           { Node::ack_conn_all(); });
 
-    // // join ack connector threads
-    // ack_conn_thread.join();
+    // connect all nodes
+    connect_all();
+
+    // join ack connector threads
+    ack_conn_thread.join();
 }
 
 Node::~Node()
@@ -56,8 +66,8 @@ void Node::connect_all()
         unsigned int port;
         if (conn_id == CTRL_NODE_ID)
         {
-            ip = config.controller_ip;
-            port = config.controller_port;
+            ip = config.controller_addr.first;
+            port = config.controller_addr.second;
         }
         else
         {
@@ -100,9 +110,14 @@ void Node::connect_one(uint16_t conn_id, string ip, uint16_t port)
         this_thread::sleep_for(chrono::milliseconds(1));
     }
 
+    // printf("Successfully created connection to conn_id: %u\n", conn_id);
+
     // send the connection command
     Command cmd_conn;
     cmd_conn.buildCommand(CommandType::CMD_CONN, self_conn_id, conn_id);
+
+    // printf("Node %u connected to Node %u: \n", self_conn_id, conn_id);
+    // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
 
     if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
     {
@@ -128,12 +143,17 @@ void Node::ack_conn_all()
 
         // parse the connection command
         Command cmd_conn;
-        if (skt.read_n(&cmd_conn, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+        if (skt.read_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
             fprintf(stderr, "error reading cmd_conn\n");
             exit(EXIT_FAILURE);
         }
+
+        // printf("Received at Node %u: \n", self_conn_id);
+        // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
+
         cmd_conn.parse();
+
         if (cmd_conn.type != CommandType::CMD_CONN || cmd_conn.dst_conn_id != self_conn_id)
         {
             fprintf(stderr, "invalid cmd_conn: type: %u, dst_conn_id: %u\n", cmd_conn.type, cmd_conn.dst_conn_id);
@@ -145,9 +165,13 @@ void Node::ack_conn_all()
         sockets_map[conn_id] = move(skt);
 
         // send the ack command
-        auto &connector = connectors_map[conn_id];
+        auto &connector = sockets_map[conn_id];
         Command cmd_ack;
         cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
+
+        // printf("Reply ack at Node %u -> %u \n", self_conn_id, conn_id);
+        // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
+
         if (connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
             fprintf(stderr, "error send cmd_ack\n");
@@ -156,7 +180,7 @@ void Node::ack_conn_all()
 
         num_acked_nodes++;
 
-        printf("Node %u: received connection and acked to Node %u; connected to (%u / %u) Nodes\n", self_conn_id, conn_id, num_acked_nodes, num_conns);
+        // printf("Node %u: received connection and acked to Node %u; connected to (%u / %u) Nodes\n", self_conn_id, conn_id, num_acked_nodes, num_conns);
     }
 }
 
@@ -166,19 +190,25 @@ void Node::handle_ack_one(uint16_t conn_id)
 
     // parse the ack command
     Command cmd_ack;
-    if (connector.read_n(&cmd_ack, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+    if (connector.read_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
     {
         fprintf(stderr, "error reading cmd_ack from %u\n", conn_id);
         exit(EXIT_FAILURE);
     }
     cmd_ack.parse();
+
+    // printf("Handle ack at Node %u -> %u \n", self_conn_id, conn_id);
+    // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
+
     if (cmd_ack.type != CommandType::CMD_ACK)
     {
         fprintf(stderr, "invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
         exit(EXIT_FAILURE);
     }
 
-    printf("Node %u: received ack from Node %u\n", self_conn_id, conn_id);
+    // printf("Node %u: received ack from Node %u\n", self_conn_id, conn_id);
+
+    printf("Node %u: successfully connected to conn_id: %u\n", self_conn_id, conn_id);
 }
 
 void Node::disconnect_all()
