@@ -3,6 +3,10 @@ Balanced Code Conversion
 
 ## Workflow
 
+* Balanced Transition Generator (implemented, verified)
+    * Read stripe placement
+    * Generate transition solution
+
 * Controller
     * Generate physical stripes (implemented, verified)
         * Use middleware: store in ```/data/``` with file name
@@ -23,19 +27,16 @@ Balanced Code Conversion
     * Generate transition solution with BTS (implemented, verified)
     * Parse the transition solution from BTS into commands (implemented,
       verified)
-    * Distribute the transition commands to Agents (on-going)
-    * Wait for all finish signals from all Agents (implemented)
+    * Distribute the transition commands to Agents (implemented, verified)
+    * Wait for all finish signals from all Agents (on-going)
         * Report the time
-
-* Balanced Transition Generator (implemented, verified)
-    * Read stripe placement
-    * Generate transition solution
 
 * Agent
     * Handle the commands
         * From Controller: Parse Transfer command into Send command, and send
-          physical blocks to other Agents
+          physical blocks to other Agents (on-going)
         * From Agents: Parse Send command and receive physical block
+          (on-going)
     * Command Format:
         * Read: stripe_id, block_id, final_block_id, physical path
             * Cache into memory

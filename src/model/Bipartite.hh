@@ -46,9 +46,9 @@ public:
 
     void clear();
     void print();
-    void print_vertices();
-    void print_vertices(unordered_map<uint64_t, Vertex> &vertex_map);
-    void print_edges();
+    void printVertices();
+    void printVertices(unordered_map<uint64_t, Vertex> &vertex_map);
+    void printEdges();
 
     unordered_map<uint64_t, Vertex> left_vertices_map;  // left vertices map
     unordered_map<uint64_t, Vertex> right_vertices_map; // right vertices map

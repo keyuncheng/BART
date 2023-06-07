@@ -2,17 +2,20 @@
 
 AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id, _config)
 {
-    // create command handler
-    cmd_handler = new CmdHandler(connectors_map, sockets_map, *acceptor, 1);
+    // create command distribution queue
+    cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
 
     // create command distributor
-    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, 1);
+    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
+    // create command handler
+    cmd_handler = new CmdHandler(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
 }
 
 AgentNode::~AgentNode()
 {
     delete cmd_distributor;
     delete cmd_handler;
+    delete cmd_dist_queue;
 }
 
 void AgentNode::start()
@@ -27,14 +30,8 @@ void AgentNode::start()
 void AgentNode::stop()
 {
     // wait cmd_distributor finish
-    if (cmd_distributor->finished())
-    {
-        cmd_distributor->wait();
-    }
+    cmd_distributor->wait();
 
     // wait cmd_handler finish
-    if (cmd_handler->finished())
-    {
-        cmd_handler->wait();
-    }
+    cmd_handler->wait();
 }

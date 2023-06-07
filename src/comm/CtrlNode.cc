@@ -2,13 +2,16 @@
 
 CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id, _config)
 {
+    // create command distribution queue
+    cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
     // create command distributor
-    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, 1);
+    cmd_distributor = new CmdDist(connectors_map, sockets_map, *acceptor, *cmd_dist_queue, 1);
 }
 
 CtrlNode::~CtrlNode()
 {
     delete cmd_distributor;
+    delete cmd_dist_queue;
 }
 
 void CtrlNode::start()
@@ -58,17 +61,18 @@ void CtrlNode::genTransSolution()
     // trans_solution.print();
 
     vector<Command> commands;
-    gen_commands(trans_solution, pre_block_mapping, post_block_mapping, commands);
+    // genCommands(trans_solution, pre_block_mapping, post_block_mapping, commands);
+    genSampleCommands(commands);
 
     for (auto &command : commands)
     {
         // command.print();
-        cmd_distributor->queue->Push(command);
+        cmd_dist_queue->Push(command);
     }
     cmd_distributor->set_finished();
 }
 
-void CtrlNode::gen_commands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
+void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
 {
     for (auto &item : trans_solution.sg_tasks)
     {
@@ -200,4 +204,55 @@ void CtrlNode::gen_commands(TransSolution &trans_solution, vector<vector<pair<ui
     }
 
     printf("generated %lu commands\n", commands.size());
+}
+
+void CtrlNode::genSampleCommands(vector<Command> &commands)
+{
+    // Command cmd_1;
+    // cmd_1.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // stripe 1
+    //     0, // block 0
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "sample_src_block_path", "sample_dst_block_path");
+    // commands.push_back(cmd_1);
+
+    Command cmd_2;
+    cmd_2.buildCommand(
+        CommandType::CMD_TRANSFER_COMPUTE_BLK,
+        self_conn_id,
+        0, // cmd to node 0
+        1, // stripe 1
+        1, // block 1
+        0, // from node 0
+        1, // to node 1
+        "sample_src_block_path", "sample_dst_block_path");
+    commands.push_back(cmd_2);
+
+    // Command cmd_3;
+    // cmd_3.buildCommand(
+    //     CommandType::CMD_TRANSFER_RELOC_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 1
+    //     1, // stripe 1
+    //     2, // block 2
+    //     1, // from node 1
+    //     0, // to node 0
+    //     "sample_src_block_path", "sample_dst_block_path");
+    // commands.push_back(cmd_3);
+
+    // Command cmd_4;
+    // cmd_4.buildCommand(
+    //     CommandType::CMD_DELETE_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 1
+    //     1, // stripe 1
+    //     3, // block 3
+    //     1, // from node 1
+    //     1, // to node 1
+    //     "sample_src_block_path", "sample_dst_block_path");
+    // commands.push_back(cmd_4);
 }

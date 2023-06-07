@@ -241,20 +241,20 @@ void Bipartite::clear()
 
 void Bipartite::print()
 {
-    print_vertices();
-    print_edges();
+    printVertices();
+    printEdges();
 }
 
-void Bipartite::print_vertices()
+void Bipartite::printVertices()
 {
     printf("left_vertices (size: %ld):\n", left_vertices_map.size());
-    print_vertices(left_vertices_map);
+    printVertices(left_vertices_map);
 
     printf("right_vertices (size: %ld):\n", right_vertices_map.size());
-    print_vertices(right_vertices_map);
+    printVertices(right_vertices_map);
 }
 
-void Bipartite::print_vertices(unordered_map<uint64_t, Vertex> &vtx_map)
+void Bipartite::printVertices(unordered_map<uint64_t, Vertex> &vtx_map)
 {
     for (auto it = vtx_map.begin(); it != vtx_map.end(); it++)
     {
@@ -263,7 +263,7 @@ void Bipartite::print_vertices(unordered_map<uint64_t, Vertex> &vtx_map)
     }
 }
 
-void Bipartite::print_edges()
+void Bipartite::printEdges()
 {
     printf("edges (size: %ld):\n", edges_map.size());
     for (auto it = edges_map.begin(); it != edges_map.end(); it++)

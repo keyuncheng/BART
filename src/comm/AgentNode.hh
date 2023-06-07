@@ -3,6 +3,7 @@
 
 #include "../include/include.hh"
 #include "../util/Config.hh"
+#include "../util/MessageQueue.hh"
 #include "Node.hh"
 #include "CmdDist.hh"
 #include "CmdHandler.hh"
@@ -14,6 +15,9 @@ private:
 public:
     CmdHandler *cmd_handler;  // handler commands from Controller and Agents
     CmdDist *cmd_distributor; // distribute send block commands
+
+    // queue for command distribution
+    MessageQueue<Command> *cmd_dist_queue;
 
     AgentNode(uint16_t _self_conn_id, Config &_config);
     ~AgentNode();

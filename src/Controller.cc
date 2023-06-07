@@ -17,9 +17,10 @@ int main(int argc, char **argv)
 
     CtrlNode ctrl_node(CTRL_NODE_ID, config);
 
-    ctrl_node.genTransSolution();
-
     ctrl_node.start();
+
+    // generate transitio solution
+    ctrl_node.genTransSolution();
 
     ctrl_node.stop();
 }
