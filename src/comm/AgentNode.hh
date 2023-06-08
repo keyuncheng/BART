@@ -7,6 +7,9 @@
 #include "Node.hh"
 #include "CmdDist.hh"
 #include "CmdHandler.hh"
+#include "ParityComputeTask.hh"
+#include "ComputeWorker.hh"
+#include "WriteWorker.hh"
 
 class AgentNode : public Node
 {
@@ -15,9 +18,11 @@ private:
 public:
     CmdHandler *cmd_handler;  // handler commands from Controller and Agents
     CmdDist *cmd_distributor; // distribute send block commands
+    ComputeWorker *compute_worker;
 
     // queue for command distribution
     MessageQueue<Command> *cmd_dist_queue;
+    MessageQueue<ParityComputeTask> *parity_compute_queue;
 
     AgentNode(uint16_t _self_conn_id, Config &_config);
     ~AgentNode();

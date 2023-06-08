@@ -5,16 +5,20 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     // create command distribution queue
     cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
 
+    // create parity compute task queue
+    parity_compute_queue = new MessageQueue<ParityComputeTask>(MAX_MSG_QUEUE_LEN);
+
     // create command distributor
     cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
     // create command handler
-    cmd_handler = new CmdHandler(config, sockets_map, *cmd_dist_queue, 1);
+    cmd_handler = new CmdHandler(config, sockets_map, *cmd_dist_queue, *parity_compute_queue, 1);
 }
 
 AgentNode::~AgentNode()
 {
     delete cmd_distributor;
     delete cmd_handler;
+    delete parity_compute_queue;
     delete cmd_dist_queue;
 }
 
