@@ -34,6 +34,7 @@ using namespace std;
 
 #define MAX_MSG_QUEUE_LEN 1024
 #define MAX_CMD_LEN 1024
+#define MAX_MEM_POOL_SIZE 50
 #define CTRL_NODE_ID (INVALID_NODE_ID - 1)
 
 #endif // __INCLUDE_HH__

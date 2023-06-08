@@ -130,9 +130,10 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
                 for (uint8_t data_block_id = 0; data_block_id < code.k_i; data_block_id++)
                 {
                     uint16_t data_node_id = stripe->indices[data_block_id];
+                    uint8_t final_block_id = stripe_id * code.k_i + data_block_id;
 
                     // 1.2 create data block read tasks
-                    TransTask *read_task = new TransTask(TransTaskType::READ_RE_BLK, stripe_group.id, INVALID_BLK_ID, stripe->id, stripe_id, data_block_id, data_node_id, data_node_id);
+                    TransTask *read_task = new TransTask(TransTaskType::READ_RE_BLK, stripe_group.id, final_block_id, stripe->id, stripe_id, data_block_id, data_node_id, data_node_id);
                     sg_tasks[stripe_group.id].push_back(read_task);
                     sg_read_tasks[stripe_group.id].push_back(read_task);
 
@@ -140,7 +141,7 @@ void TransSolution::buildTransTasks(StripeBatch &stripe_batch)
                     // check if the parity block is not located at min_bw_node
                     if (data_node_id != enc_node)
                     {
-                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_COMPUTE_RE_BLK, stripe_group.id, INVALID_BLK_ID, stripe->id, stripe_id, data_block_id, data_node_id, enc_node);
+                        TransTask *transfer_task = new TransTask(TransTaskType::TRANSFER_COMPUTE_RE_BLK, stripe_group.id, final_block_id, stripe->id, stripe_id, data_block_id, data_node_id, enc_node);
                         sg_tasks[stripe_group.id].push_back(transfer_task);
                         sg_transfer_tasks[stripe_group.id].push_back(transfer_task);
                     }

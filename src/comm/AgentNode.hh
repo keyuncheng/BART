@@ -10,6 +10,7 @@
 #include "ParityComputeTask.hh"
 #include "ComputeWorker.hh"
 #include "WriteWorker.hh"
+#include "../util/MemoryPool.hh"
 
 class AgentNode : public Node
 {
@@ -23,6 +24,9 @@ public:
     // queue for command distribution
     MessageQueue<Command> *cmd_dist_queue;
     MessageQueue<ParityComputeTask> *parity_compute_queue;
+
+    // memory pool
+    MemoryPool *memory_pool;
 
     AgentNode(uint16_t _self_conn_id, Config &_config);
     ~AgentNode();

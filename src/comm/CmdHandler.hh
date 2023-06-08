@@ -15,6 +15,7 @@
 #include "BlockIO.hh"
 #include "Command.hh"
 #include "ParityComputeTask.hh"
+#include "../util/MemoryPool.hh"
 
 class CmdHandler : public ThreadPool
 {
@@ -31,9 +32,9 @@ public:
     MessageQueue<Command> &cmd_dist_queue;
     MessageQueue<ParityComputeTask> &parity_compute_queue;
 
-    unsigned char *block_buffer;
+    MemoryPool &memory_pool;
 
-    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> &_cmd_dist_queue, MessageQueue<ParityComputeTask> &_parity_compute_queue, unsigned int _num_threads);
+    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> &_cmd_dist_queue, MessageQueue<ParityComputeTask> &_parity_compute_queue, MemoryPool &_memory_pool, unsigned int _num_threads);
     ~CmdHandler();
 
     void run() override;
