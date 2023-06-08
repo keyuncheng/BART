@@ -2,6 +2,9 @@
 #define __CMD_HANDLER_HH__
 
 #include <mutex>
+#include <condition_variable>
+#include <atomic>
+
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
 #include "../include/include.hh"
@@ -19,8 +22,10 @@ private:
 public:
     Config &config;
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
-    unordered_map<uint16_t, mutex *> mtxs_map;
     unordered_map<uint16_t, thread *> handler_threads_map;
+    mutex handler_mtx;
+    condition_variable handler_cv;
+    atomic<bool> is_handler_ready;
 
     MessageQueue<Command> &cmd_dist_queue;
 

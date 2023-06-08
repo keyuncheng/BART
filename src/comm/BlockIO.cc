@@ -52,6 +52,13 @@ uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t 
     return offset;
 }
 
+void BlockIO::deleteBlock(string block_path)
+{
+    // remove file
+    // std::remove(block_path.c_str());
+    printf("remove block %s\n", block_path.c_str());
+}
+
 uint64_t BlockIO::sendBlock(sockpp::tcp_connector &connector, unsigned char *buffer, uint64_t block_size)
 {
     uint64_t send_bytes = 0;

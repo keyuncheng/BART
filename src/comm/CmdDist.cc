@@ -47,7 +47,7 @@ void CmdDist::run()
                 // read block
                 if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
                 {
-                    fprintf(stderr, "invalid block: %s\n", cmd.src_block_path.c_str());
+                    fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
                     exit(EXIT_FAILURE);
                 }
 

@@ -171,10 +171,10 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
             }
             case TransTaskType::DELETE_BLK:
             {
-                // is_task_parsed = true;
-                // cmd_type = CommandType::CMD_DELETE_BLK;
-                // src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-                // dst_block_path = ""; // empty string
+                is_task_parsed = true;
+                cmd_type = CommandType::CMD_DELETE_BLK;
+                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                dst_block_path = ""; // empty string
                 break;
             }
             case TransTaskType::COMPUTE_RE_BLK:
@@ -229,20 +229,20 @@ void CtrlNode::genSampleCommands(vector<Command> &commands)
         1, // block 1
         0, // from node 0
         1, // to node 1
-        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1");
+        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
     commands.push_back(cmd_2);
 
-    // Command cmd_3;
-    // cmd_3.buildCommand(
-    //     CommandType::CMD_TRANSFER_RELOC_BLK,
-    //     self_conn_id,
-    //     1, // cmd to node 1
-    //     1, // stripe 1
-    //     2, // block 2
-    //     1, // from node 1
-    //     0, // to node 0
-    //     "sample_src_block_path", "sample_dst_block_path");
-    // commands.push_back(cmd_3);
+    Command cmd_3;
+    cmd_3.buildCommand(
+        CommandType::CMD_TRANSFER_RELOC_BLK,
+        self_conn_id,
+        1, // cmd to node 1
+        1, // stripe 1
+        2, // block 2
+        1, // from node 1
+        0, // to node 0
+        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2_write");
+    commands.push_back(cmd_3);
 
     // Command cmd_4;
     // cmd_4.buildCommand(
