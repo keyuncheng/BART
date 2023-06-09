@@ -44,6 +44,27 @@ void CmdDist::run()
             // check if the command is block transfer command sent from Agent
             if ((cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK) && cmd.src_conn_id != CTRL_NODE_ID)
             {
+                if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+                {
+                    // relocating newly generated parity block
+                    if (cmd.post_block_id > config.code.k_f)
+                    {
+                        // make sure the parity block has been generated
+                        while (true)
+                        {
+                            ifstream f(cmd.src_block_path.c_str());
+                            if (f.good() == false)
+                            {
+                                this_thread::sleep_for(chrono::milliseconds(1));
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 // read block
                 if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
                 {

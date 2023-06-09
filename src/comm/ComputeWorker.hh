@@ -2,18 +2,28 @@
 #define __COMPUTE_WORKER_HH__
 
 #include <mutex>
+#include <isa-l.h>
+
 #include "../include/include.hh"
 #include "../util/ThreadPool.hh"
 #include "ParityComputeTask.hh"
 #include "../util/MessageQueue.hh"
 #include "../util/Config.hh"
 #include "../util/MemoryPool.hh"
+#include "BlockIO.hh"
 
 class ComputeWorker : public ThreadPool
 {
 private:
     /* data */
 public:
+    // table
+    unsigned char *re_matrix;
+    unsigned char *re_encode_gftbl;
+
+    unsigned char **pm_matrix;
+    unsigned char **pm_encode_gftbl;
+
     ComputeWorker(Config &_config, MessageQueue<ParityComputeTask> &_parity_compute_queue, MemoryPool &_memory_pool);
     ~ComputeWorker();
 
@@ -29,8 +39,10 @@ public:
 
     void run() override;
 
-    void computeReencode(uint8_t parity_block_id, uint8_t data_block_id, unsigned char *buffer);
-    void computeParityMerging(uint8_t parity_block_id, uint8_t data_block_id, unsigned char *buffer);
+    void initECTables();
+    void destroyECTables();
+
+    unsigned char gfPow(unsigned char val, unsigned int times);
 };
 
 #endif // __COMPUTE_WORKER_HH__

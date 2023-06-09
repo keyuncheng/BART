@@ -82,7 +82,7 @@ void Config::print()
     settings.print();
     printf("Transition approach: %s\n", approach.c_str());
     printf("enable_HDFS: %u\n", enable_HDFS);
-    printf("block_size: %u\n", block_size);
+    printf("block_size: %lu\n", block_size);
     printf("num_cmd_handler_thread: %u\n", num_cmd_handler_thread);
     printf("num_cmd_dist_thread: %u\n", num_cmd_dist_thread);
     printf("===========================\n");

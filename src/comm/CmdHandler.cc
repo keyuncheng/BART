@@ -90,7 +90,7 @@ void CmdHandler::handleControllerCmd()
             }
 
             // pass to compute queue
-            ParityComputeTask parity_compute_task(config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer);
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
             parity_compute_queue.Push(parity_compute_task);
         }
         else if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
@@ -178,7 +178,7 @@ void CmdHandler::handleAgentCmd(uint16_t conn_id)
         { // parity block compute command
 
             // pass to compute queue
-            ParityComputeTask parity_compute_task(config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer);
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
             parity_compute_queue.Push(parity_compute_task);
         }
         else if (cmd.type == CMD_TRANSFER_RELOC_BLK)

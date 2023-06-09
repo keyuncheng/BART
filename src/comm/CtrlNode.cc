@@ -113,8 +113,26 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 // parse the task
                 is_task_parsed = true;
                 cmd_type = CommandType::CMD_LOCAL_COMPUTE_BLK;
+
+                // src block path
                 src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-                dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+
+                // dst block path
+                if (task->type == TransTaskType::READ_RE_BLK)
+                {
+                    for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
+                    {
+                        if (parity_id > 0)
+                        {
+                            dst_block_path = dst_block_path + ":";
+                        }
+                        dst_block_path = dst_block_path + post_block_mapping[task->post_block_id][config.code.k_f + parity_id].second;
+                    }
+                }
+                else if (task->type == TransTaskType::READ_PM_BLK)
+                {
+                    dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                }
 
                 break;
             }
@@ -139,8 +157,26 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 // parse the task
                 is_task_parsed = true;
                 cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
+
+                // src block path
                 src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-                dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+
+                // dst block path
+                if (task->type == TransTaskType::READ_RE_BLK)
+                {
+                    for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
+                    {
+                        if (parity_id > 0)
+                        {
+                            dst_block_path = dst_block_path + ":";
+                        }
+                        dst_block_path = dst_block_path + post_block_mapping[task->post_block_id][config.code.k_f + parity_id].second;
+                    }
+                }
+                else if (task->type == TransTaskType::READ_PM_BLK)
+                {
+                    dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                }
 
                 break;
             }

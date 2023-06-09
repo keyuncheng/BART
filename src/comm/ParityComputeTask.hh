@@ -10,7 +10,7 @@ class ParityComputeTask
 private:
     /* data */
 public:
-    ConvertibleCode &code;
+    ConvertibleCode *code;
 
     // erasure coding
     uint32_t post_stripe_id; // post_stripe_id (stripe group id)
@@ -18,18 +18,16 @@ public:
     EncodeMethod enc_method;
     unsigned char *buffer;
 
-    // TODO: add block save path
+    vector<string> re_parity_paths;
+    string pm_parity_path;
 
     // collected counter
     uint8_t collected;
 
-    // table
-    unsigned char **encode_gftbl;
-
     unsigned char **data_buffer;
     unsigned char **parity_buffer;
 
-    ParityComputeTask(ConvertibleCode &_code, uint32_t _post_stripe_id, uint8_t _post_block_id, unsigned char *_buffer);
+    ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, unsigned char *_buffer, string _raw_path);
     ~ParityComputeTask();
 };
 
