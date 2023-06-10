@@ -71,7 +71,7 @@ def main():
     sg_meta_path = metadata_dir / sg_meta_filename
     data_dir = root_dir / "data"
     
-    # Read placement
+    # Read pre-transition placement
     pre_placement = []
     with open("{}".format(str(pre_placement_path)), "r") as f:
         for line in f.readlines():
@@ -126,16 +126,16 @@ def main():
                 pre_stripe_id = int(post_block_id / k_i)
                 pre_block_id = int(post_block_id % k_i)
                 pre_stripe_id_global = sg_meta[post_stripe_id]["pre_stripe_ids"][pre_stripe_id]
-                post_block_placement_path = pre_block_mapping[pre_stripe_id_global][pre_block_id]
+                post_block_placement_path = data_dir / "node_{}".format(placed_node_id) / Path(pre_block_mapping[pre_stripe_id_global][pre_block_id]).name
             else:
                 if enable_HDFS:
                     pass # TO IMPLEMENT
                 else:
                     # parity block: generate new filename
-                    post_block_placement_path = data_dir / "post_block_{}_{}".format(post_stripe_id, post_block_id)
+                    post_block_placement_path = data_dir / "node_{}".format(placed_node_id) / "post_block_{}_{}".format(post_stripe_id, post_block_id)
             post_block_mapping.append([post_stripe_id, post_block_id, placed_node_id, post_block_placement_path])
 
-    # Write block mapping file
+    # Write post-transition block mapping file
     print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
 
     with open("{}".format(str(post_block_mapping_path)), "w") as f:

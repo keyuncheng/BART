@@ -32,6 +32,29 @@ uint64_t BlockIO::readBlock(string block_path, unsigned char *buffer, uint64_t b
 
 uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t block_size)
 {
+    // mkdir
+    string block_dir;
+    auto it = block_path.find_last_of("/");
+    if (it == string::npos)
+    { // relative path; get current working directory
+        char cwd[256];
+        if (getcwd(cwd, 256))
+        {
+            block_dir = cwd;
+        }
+    }
+    else
+    { // absolute path
+        block_dir = block_path.substr(0, it);
+    }
+    char mkdir_command[256];
+    sprintf(mkdir_command, "mkdir -p %s", block_dir.c_str());
+    if (system(mkdir_command) < 0)
+    {
+        fprintf(stderr, "BlockIO::writeBlock error create block directory: %s\n", block_dir.c_str());
+    }
+    // printf("BlockIO::writeBlock create block directory: %s\n", block_dir.c_str());
+
     // write file
     FILE *file = fopen(block_path.c_str(), "w");
     if (!file)
