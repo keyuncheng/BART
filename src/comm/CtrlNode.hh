@@ -4,6 +4,7 @@
 #include "../include/include.hh"
 #include "../util/Config.hh"
 #include "Node.hh"
+#include "CmdHandler.hh"
 #include "CmdDist.hh"
 #include "../util/StripeGenerator.hh"
 #include "../model/TransSolution.hh"
@@ -17,6 +18,7 @@ class CtrlNode : public Node
 private:
     /* data */
 public:
+    CmdHandler *cmd_handler; // handler commands from Agents
     CmdDist *cmd_distributor;
 
     // queue for command distribution

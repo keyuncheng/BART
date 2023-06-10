@@ -24,32 +24,34 @@ CmdDist::~CmdDist()
 
 void CmdDist::run()
 {
-    printf("start to distribute command\n");
+    printf("CmdDist:: start to distribute commands\n");
     while (finished() == false || cmd_dist_queue.IsEmpty() == false)
     {
         Command cmd;
         if (cmd_dist_queue.Pop(cmd) == true)
         {
-            unique_lock<mutex> lck(*mtxs_map[cmd.dst_conn_id]); // add lock
-            auto &connector = connectors_map[cmd.dst_conn_id];
+            cmd.print();
+
+            // add lock
+            unique_lock<mutex> lck(*mtxs_map[cmd.dst_conn_id]);
+
             // send the command
+            auto &connector = connectors_map[cmd.dst_conn_id];
             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
             {
-                fprintf(stderr, "error send cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
+                fprintf(stderr, "error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
                 exit(EXIT_FAILURE);
             }
 
-            cmd.print();
-
-            // check if the command is block transfer command sent from Agent
-            if ((cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK) && cmd.src_conn_id != CTRL_NODE_ID)
+            // check if the command is a block transfer command sent from Agent, after which there will be a following block comming transferred in
+            if (cmd.src_conn_id != CTRL_NODE_ID && (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK))
             {
                 if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 {
                     // relocating newly generated parity block
                     if (cmd.post_block_id > config.code.k_f)
                     {
-                        // make sure the parity block has been generated
+                        // make sure the parity block has been generated from compute worker
                         while (true)
                         {
                             ifstream f(cmd.src_block_path.c_str());

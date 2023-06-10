@@ -10,18 +10,18 @@ enum CommandType
      * @brief connection; acknowledge; stop connection;
      * format: <type | src_conn_id | dst_conn_id>
      */
-    CMD_UNKNOWN,
     CMD_CONN,
     CMD_ACK,
-    CMD_STOP,
     /**
      * @brief block computation and transfer: computation; relocation (from Controller or from Agent);
      * format: <type | src_conn_id | dst_conn_id | post_stripe_id | post_block_id | pre_stripe_id_global | pre_stripe_id_relative | pre_block_id | src_node_id | dst_node_id | block_path>
      */
+    CMD_STOP,
     CMD_LOCAL_COMPUTE_BLK,    // read -> compute -> write
     CMD_TRANSFER_COMPUTE_BLK, // read -> transfer -> compute -> write
     CMD_TRANSFER_RELOC_BLK,   // read -> transfer -> write
     CMD_DELETE_BLK,           // delete
+    CMD_UNKNOWN,
 };
 
 class Command

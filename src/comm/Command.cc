@@ -104,10 +104,10 @@ void Command::parse()
     {
     case CommandType::CMD_CONN:
     case CommandType::CMD_ACK:
-    case CommandType::CMD_STOP:
     {
         break;
     }
+    case CommandType::CMD_STOP:
     case CommandType::CMD_LOCAL_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:

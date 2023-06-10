@@ -29,15 +29,17 @@ public:
     condition_variable handler_cv;
     atomic<bool> is_handler_ready;
 
-    MessageQueue<Command> &cmd_dist_queue;
-    MessageQueue<ParityComputeTask> &parity_compute_queue;
+    MessageQueue<Command> *cmd_dist_queue;
+    MessageQueue<ParityComputeTask> *parity_compute_queue;
+    MemoryPool *memory_pool;
 
-    MemoryPool &memory_pool;
-
-    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> &_cmd_dist_queue, MessageQueue<ParityComputeTask> &_parity_compute_queue, MemoryPool &_memory_pool, unsigned int _num_threads);
+    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> *_cmd_dist_queue, MessageQueue<ParityComputeTask> *_parity_compute_queue, MemoryPool *_memory_pool, unsigned int _num_threads);
     ~CmdHandler();
 
     void run() override;
+
+    void waitForController();
+    void waitForAgents();
 
     void handleControllerCmd();
     void handleAgentCmd(uint16_t conn_id);

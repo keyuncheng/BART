@@ -40,10 +40,10 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
 
     // create ack connector threads
     thread ack_conn_thread([&]
-                           { Node::ack_conn_all(); });
+                           { Node::ackConnAll(); });
 
     // connect all nodes
-    connect_all();
+    connectAll();
 
     // join ack connector threads
     ack_conn_thread.join();
@@ -51,11 +51,11 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
 
 Node::~Node()
 {
-
+    acceptor->close();
     delete acceptor;
 }
 
-void Node::connect_all()
+void Node::connectAll()
 {
     unordered_map<uint16_t, thread *> conn_threads;
     // create connect threads
@@ -75,7 +75,7 @@ void Node::connect_all()
             port = config.agent_addr_map[conn_id].second;
         }
 
-        conn_threads[conn_id] = new thread(&Node::connect_one, this, conn_id, ip, port);
+        conn_threads[conn_id] = new thread(&Node::connectOne, this, conn_id, ip, port);
     }
 
     for (auto &item : conn_threads)
@@ -89,7 +89,7 @@ void Node::connect_all()
     for (auto &item : connectors_map)
     {
         uint16_t conn_id = item.first;
-        ack_threads[conn_id] = new thread(&Node::handle_ack_one, this, conn_id);
+        ack_threads[conn_id] = new thread(&Node::handleAckOne, this, conn_id);
     }
 
     for (auto &item : ack_threads)
@@ -101,7 +101,7 @@ void Node::connect_all()
     printf("Node %u: successfully connected to %lu nodes\n", self_conn_id, connectors_map.size());
 }
 
-void Node::connect_one(uint16_t conn_id, string ip, uint16_t port)
+void Node::connectOne(uint16_t conn_id, string ip, uint16_t port)
 {
     // create connection
     sockpp::tcp_connector &connector = connectors_map[conn_id];
@@ -126,7 +126,7 @@ void Node::connect_one(uint16_t conn_id, string ip, uint16_t port)
     }
 }
 
-void Node::ack_conn_all()
+void Node::ackConnAll()
 {
     uint16_t num_acked_nodes = 0;
     uint16_t num_conns = connectors_map.size();
@@ -184,7 +184,7 @@ void Node::ack_conn_all()
     }
 }
 
-void Node::handle_ack_one(uint16_t conn_id)
+void Node::handleAckOne(uint16_t conn_id)
 {
     sockpp::tcp_connector &connector = connectors_map[conn_id];
 
@@ -211,14 +211,16 @@ void Node::handle_ack_one(uint16_t conn_id)
     printf("Node %u: successfully connected to conn_id: %u\n", self_conn_id, conn_id);
 }
 
-void Node::disconnect_all()
+void Node::disconnectAll()
 {
+    printf("start to disconnect all connections\n");
+
     // create disconnect threads
     unordered_map<uint16_t, thread *> disconnect_threads;
     for (auto &item : connectors_map)
     {
         uint16_t conn_id = item.first;
-        disconnect_threads[conn_id] = new thread(&Node::disconnect_one, this, conn_id);
+        disconnect_threads[conn_id] = new thread(&Node::disconnectOne, this, conn_id);
     }
 
     for (auto &item : disconnect_threads)
@@ -228,12 +230,14 @@ void Node::disconnect_all()
     }
 }
 
-void Node::disconnect_one(uint16_t conn_id)
+void Node::disconnectOne(uint16_t conn_id)
 {
     sockpp::tcp_connector &connector = connectors_map[conn_id];
 
     // receive ack command
     Command cmd_disconnect;
-    cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id);
+    cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
     connector.write_n(cmd_disconnect.content, MAX_CMD_LEN * sizeof(unsigned char));
+
+    connector.close();
 }

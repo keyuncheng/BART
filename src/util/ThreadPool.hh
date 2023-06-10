@@ -55,7 +55,7 @@ public:
         return is_finished;
     }
 
-    void set_finished()
+    void setFinished()
     {
         is_finished = true;
     }

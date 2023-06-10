@@ -4,6 +4,10 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
 {
     // create command distribution queue
     cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
+
+    // create command handler (only handle STOP command from Agents)
+    cmd_handler = new CmdHandler(config, sockets_map, NULL, NULL, NULL, 1);
+
     // create command distributor
     cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
 }
@@ -11,19 +15,29 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
 CtrlNode::~CtrlNode()
 {
     delete cmd_distributor;
+    delete cmd_handler;
     delete cmd_dist_queue;
 }
 
 void CtrlNode::start()
 {
-    // start cmd_handler
+    // start cmd distributor
     cmd_distributor->start();
+
+    // start cmd_handler
+    cmd_handler->start();
 }
 
 void CtrlNode::stop()
 {
     // wait cmd_distributor finish
     cmd_distributor->wait();
+
+    // // send disconnect signal
+    // disconnectAll();
+
+    // wait cmd_handler finish
+    cmd_handler->wait_for_agents();
 }
 
 void CtrlNode::genTransSolution()
@@ -69,7 +83,9 @@ void CtrlNode::genTransSolution()
         // command.print();
         cmd_dist_queue->Push(command);
     }
-    cmd_distributor->set_finished();
+
+    // finish command distribution
+    cmd_distributor->setFinished();
 }
 
 void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
@@ -256,29 +272,29 @@ void CtrlNode::genSampleCommands(vector<Command> &commands)
     //     "sample_src_block_path", "sample_dst_block_path");
     // commands.push_back(cmd_1);
 
-    Command cmd_2;
-    cmd_2.buildCommand(
-        CommandType::CMD_TRANSFER_COMPUTE_BLK,
-        self_conn_id,
-        0, // cmd to node 0
-        1, // stripe 1
-        1, // block 1
-        0, // from node 0
-        1, // to node 1
-        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
-    commands.push_back(cmd_2);
+    // Command cmd_2;
+    // cmd_2.buildCommand(
+    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // stripe 1
+    //     1, // block 1
+    //     0, // from node 0
+    //     1, // to node 1
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
+    // commands.push_back(cmd_2);
 
-    Command cmd_3;
-    cmd_3.buildCommand(
-        CommandType::CMD_TRANSFER_RELOC_BLK,
-        self_conn_id,
-        1, // cmd to node 1
-        1, // stripe 1
-        2, // block 2
-        1, // from node 1
-        0, // to node 0
-        "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2_write");
-    commands.push_back(cmd_3);
+    // Command cmd_3;
+    // cmd_3.buildCommand(
+    //     CommandType::CMD_TRANSFER_RELOC_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 1
+    //     1, // stripe 1
+    //     2, // block 2
+    //     1, // from node 1
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2_write");
+    // commands.push_back(cmd_3);
 
     // Command cmd_4;
     // cmd_4.buildCommand(

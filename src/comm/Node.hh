@@ -23,12 +23,12 @@ public:
     Node(uint16_t _self_conn_id, Config &_config);
     ~Node();
 
-    void connect_all();
-    void connect_one(uint16_t conn_id, string ip, uint16_t port);
-    void ack_conn_all();
-    void handle_ack_one(uint16_t conn_id);
-    void disconnect_all();
-    void disconnect_one(uint16_t conn_id);
+    void connectAll();
+    void connectOne(uint16_t conn_id, string ip, uint16_t port);
+    void ackConnAll();
+    void handleAckOne(uint16_t conn_id);
+    void disconnectAll();
+    void disconnectOne(uint16_t conn_id);
 };
 
 #endif // __NODE_HH__
