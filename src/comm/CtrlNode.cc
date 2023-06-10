@@ -298,7 +298,7 @@ void CtrlNode::genSampleCommands(vector<Command> &commands)
     //     2, // block 2
     //     1, // from node 1
     //     0, // to node 0
-    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_2_write");
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
     // commands.push_back(cmd_3);
 
     // Command cmd_4;

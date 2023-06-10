@@ -84,7 +84,7 @@ void CmdDist::run()
                     exit(EXIT_FAILURE);
                 }
 
-                printf("obtained block transfer task, send block\n");
+                printf("CmdDist::run obtained block transfer task, send block %s\n", cmd.src_block_path.c_str());
                 // Utils::printUCharBuffer(block_buffer, 10);
             }
 

@@ -68,7 +68,7 @@ void CmdHandler::handleControllerCmd()
         auto ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
         if (ret_val == -1)
         {
-            fprintf(stderr, "error reading command\n");
+            fprintf(stderr, "CmdHandler::handleControllerCmd error reading command\n");
             exit(EXIT_FAILURE);
         }
         else if (ret_val == 0)
@@ -84,7 +84,7 @@ void CmdHandler::handleControllerCmd()
         // validate command
         if (cmd.src_conn_id != CTRL_NODE_ID)
         {
-            fprintf(stderr, "invalid command content\n");
+            fprintf(stderr, "CmdHandler::handleControllerCmd error: invalid command content\n");
             exit(EXIT_FAILURE);
         }
 
@@ -103,7 +103,7 @@ void CmdHandler::handleControllerCmd()
                 exit(EXIT_FAILURE);
             }
 
-            printf("received local parity compute block\n");
+            printf("CmdHandler::handleControllerCmd received local parity compute block\n");
 
             // pass to compute queue
             ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
@@ -114,14 +114,14 @@ void CmdHandler::handleControllerCmd()
             // validate command
             if (cmd.src_node_id == cmd.dst_node_id)
             {
-                fprintf(stderr, "invalid command content\n");
+                fprintf(stderr, "CmdHandler::handleControllerCmd error: invalid command content\n");
                 exit(EXIT_FAILURE);
             }
 
             // forward the command to another node
             Command cmd_forward;
 
-            cmd_forward.buildCommand(cmd.type, self_conn_id, cmd.dst_node_id, cmd.post_block_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
+            cmd_forward.buildCommand(cmd.type, self_conn_id, cmd.dst_node_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
 
             printf("received block transfer task (type: %u, Node %u -> %u), forward block\n", cmd_forward.type, cmd_forward.src_node_id, cmd_forward.dst_node_id);
 
@@ -177,7 +177,7 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
         ssize_t ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
         if (ret_val == -1)
         {
-            fprintf(stderr, "error reading command\n");
+            fprintf(stderr, "CmdHandler::handleAgentCmd error reading command\n");
             exit(EXIT_FAILURE);
         }
         else if (ret_val == 0)
@@ -190,6 +190,13 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
         cmd.parse();
         cmd.print();
 
+        // validate command
+        if (cmd.src_conn_id != self_conn_id)
+        {
+            fprintf(stderr, "CmdHandler::handleAgentCmd error: invalid command content\n");
+            exit(EXIT_FAILURE);
+        }
+
         // check whether it's a stop command
         if (cmd.type == CommandType::CMD_STOP)
         {
@@ -198,47 +205,45 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
             break;
         }
 
-        // the other commands are transfer commands
+        // block transfer commands
 
-        // validate command
-        if (cmd.src_conn_id != self_conn_id || (cmd.type != CommandType::CMD_TRANSFER_COMPUTE_BLK && cmd.type != CommandType::CMD_TRANSFER_RELOC_BLK) || cmd.src_node_id == cmd.dst_node_id)
+        if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
         {
-            fprintf(stderr, "invalid command content\n");
-            exit(EXIT_FAILURE);
-        }
+            // request a block from memory pool
+            unsigned char *block_buffer = memory_pool->getBlock();
 
-        // request a block from memory pool
-        unsigned char *block_buffer = memory_pool->getBlock();
-
-        // recv block
-        if (BlockIO::recvBlock(skt, block_buffer, config.block_size) != config.block_size)
-        {
-            fprintf(stderr, "invalid block: %s\n", cmd.src_block_path.c_str());
-            exit(EXIT_FAILURE);
-        }
-
-        printf("CmdHandler::handleAgentCmd received block transfer task and block\n");
-        // Utils::printUCharBuffer(block_buffer, 10);
-
-        if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
-        { // parity block compute command
-
-            // pass to compute queue
-            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
-            parity_compute_queue->Push(parity_compute_task);
-        }
-        else if (cmd.type == CMD_TRANSFER_RELOC_BLK)
-        { // relocate command
-
-            //  block
-            if (BlockIO::writeBlock(cmd.dst_block_path, block_buffer, config.block_size) != config.block_size)
+            // recv block
+            if (BlockIO::recvBlock(skt, block_buffer, config.block_size) != config.block_size)
             {
-                fprintf(stderr, "error writing block: %s\n", cmd.dst_block_path.c_str());
+                fprintf(stderr, "CmdHandler::handleAgentCmd error recv block: %s\n", cmd.src_block_path.c_str());
                 exit(EXIT_FAILURE);
             }
 
-            // free block
-            memory_pool->freeBlock(block_buffer);
+            printf("CmdHandler::handleAgentCmd received block transfer task and block\n");
+            // Utils::printUCharBuffer(block_buffer, 10);
+
+            if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
+            { // parity block compute command
+
+                // pass to compute queue
+                ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
+                parity_compute_queue->Push(parity_compute_task);
+            }
+            else if (cmd.type == CMD_TRANSFER_RELOC_BLK)
+            { // relocate command
+
+                //  block
+                if (BlockIO::writeBlock(cmd.dst_block_path, block_buffer, config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "CmdHandler::handleAgentCmd error writing block: %s\n", cmd.dst_block_path.c_str());
+                    exit(EXIT_FAILURE);
+                }
+
+                // free block
+                memory_pool->freeBlock(block_buffer);
+
+                printf("CmdHandler::handleAgentCmd write block: %s\n", cmd.dst_block_path.c_str());
+            }
         }
     }
 

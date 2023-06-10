@@ -5,7 +5,7 @@ MemoryPool::MemoryPool(unsigned int _num_blocks, uint64_t _block_size) : num_blo
     // free block list
     free_block_queue = new moodycamel::ConcurrentQueue<unsigned int>(num_blocks);
 
-    block_ptrs = (unsigned char **)malloc(block_size * sizeof(unsigned char *));
+    block_ptrs = (unsigned char **)malloc(num_blocks * sizeof(unsigned char *));
     for (unsigned int block_id = 0; block_id < num_blocks; block_id++)
     {
         // allocate block in memory
@@ -46,7 +46,7 @@ unsigned char *MemoryPool::getBlock()
 void MemoryPool::freeBlock(unsigned char *block_ptr)
 {
     auto it = block_ptrs_map.find(block_ptr);
-    if (it != block_ptrs_map.end())
+    if (it == block_ptrs_map.end())
     {
         fprintf(stderr, "error: invalid block pointer to free: %p\n", block_ptr);
         return;
