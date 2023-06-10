@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     ctrl_node.start();
 
-    // generate transitio solution
+    // generate transition solution
     ctrl_node.genTransSolution();
 
     ctrl_node.stop();

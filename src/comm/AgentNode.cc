@@ -41,17 +41,9 @@ void AgentNode::start()
 
 void AgentNode::stop()
 {
-    // wait cmd_handler finish
-    cmd_handler->wait_for_controller();
-
-    // send disconnect signal
-    disconnectAll();
-
-    cmd_handler->wait_for_agents();
-
-    // set finished
-    cmd_distributor->setFinished();
-
     // wait cmd_distributor finish
     cmd_distributor->wait();
+
+    // wait cmd_handler finish
+    cmd_handler->wait();
 }

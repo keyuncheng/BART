@@ -23,49 +23,32 @@ void CmdHandler::run()
     lck.unlock();
     handler_cv.notify_all();
 
+    // create cmd handler thread
     for (auto &item : sockets_map)
     {
         uint16_t conn_id = item.first;
 
-        // create cmd handler thread
         if (conn_id != CTRL_NODE_ID)
-        {
+        { // create handler thread for Agents
             handler_threads_map[conn_id] = new thread(&CmdHandler::handleAgentCmd, this, conn_id);
         }
         else
-        {
+        { // create handler thread for Controller
             handler_threads_map[conn_id] = new thread(&CmdHandler::handleControllerCmd, this);
         }
     }
-}
 
-void CmdHandler::waitForController()
-{
-    uint16_t conn_id = CTRL_NODE_ID;
-
-    handler_threads_map[conn_id]->join();
-    delete handler_threads_map[conn_id];
-}
-
-void CmdHandler::waitForAgents()
-{
-    // join the threads
+    // join cmd handler thread
     for (auto &item : sockets_map)
     {
         uint16_t conn_id = item.first;
-
-        // create cmd handler thread
-        if (conn_id != CTRL_NODE_ID)
-        {
-            handler_threads_map[conn_id]->join();
-            delete handler_threads_map[conn_id];
-        }
+        handler_threads_map[conn_id]->join();
     }
 }
 
 void CmdHandler::handleControllerCmd()
 {
-    printf("CmdHandler:: start to handle commands from Controller\n");
+    printf("CmdHandler::handleControllerCmd start to handle commands from Controller\n");
 
     // obtain the starter lock
     unique_lock<mutex> lck(handler_mtx);
@@ -76,7 +59,7 @@ void CmdHandler::handleControllerCmd()
     }
     lck.unlock();
 
-    while (finished() == false)
+    while (true)
     {
         auto &skt = sockets_map[CTRL_NODE_ID];
 
@@ -105,6 +88,8 @@ void CmdHandler::handleControllerCmd()
             exit(EXIT_FAILURE);
         }
 
+        uint16_t self_conn_id = cmd.dst_conn_id;
+
         // handle commands
         if (cmd.type == CommandType::CMD_LOCAL_COMPUTE_BLK)
         { // read block command
@@ -117,6 +102,8 @@ void CmdHandler::handleControllerCmd()
                 fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
                 exit(EXIT_FAILURE);
             }
+
+            printf("received local parity compute block\n");
 
             // pass to compute queue
             ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
@@ -134,7 +121,7 @@ void CmdHandler::handleControllerCmd()
             // forward the command to another node
             Command cmd_forward;
 
-            cmd_forward.buildCommand(cmd.type, cmd.src_node_id, cmd.dst_node_id, cmd.post_block_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
+            cmd_forward.buildCommand(cmd.type, self_conn_id, cmd.dst_node_id, cmd.post_block_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
 
             printf("received block transfer task (type: %u, Node %u -> %u), forward block\n", cmd_forward.type, cmd_forward.src_node_id, cmd_forward.dst_node_id);
 
@@ -147,105 +134,113 @@ void CmdHandler::handleControllerCmd()
         }
         else if (cmd.type == CMD_STOP)
         {
-            printf("received stop command from Controller\n");
+            printf("CmdHandler::handleControllerCmd received stop command from Controller, call socket.close()\n");
+
+            for (auto &item : sockets_map)
+            {
+                uint16_t dst_conn_id = item.first;
+
+                Command cmd_disconnect;
+                cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
+
+                // add to cmd_dist_queue
+                cmd_dist_queue->Push(cmd_disconnect);
+            }
             skt.close();
             break;
         }
     }
 
-    printf("CmdHandler:: handleControllerCmd exit\n");
+    printf("CmdHandler::handleControllerCmd finished handling commands from Controller\n");
 }
 
-void CmdHandler::handleAgentCmd(uint16_t conn_id)
+void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
 {
-    // printf("CmdHandler:: start to handle commands from Agent %u\n", conn_id);
+    printf("CmdHandler::handleAgentCmd start to handle commands from Agent %u\n", self_conn_id);
 
-    // // obtain the starter lock
-    // unique_lock<mutex> lck(handler_mtx);
-    // while (is_handler_ready == false)
-    // {
-    //     handler_cv.wait(lck, [&]
-    //                     { return is_handler_ready.load(); });
-    // }
-    // lck.unlock();
+    // obtain the starter lock
+    unique_lock<mutex> lck(handler_mtx);
+    while (is_handler_ready == false)
+    {
+        handler_cv.wait(lck, [&]
+                        { return is_handler_ready.load(); });
+    }
+    lck.unlock();
 
-    // while (finished() == false)
-    // {
-    //     auto &skt = sockets_map[conn_id];
+    while (true)
+    {
+        auto &skt = sockets_map[self_conn_id];
 
-    //     Command cmd;
-    //     // retrieve command
+        Command cmd;
+        // retrieve command
 
-    //     ssize_t ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
+        ssize_t ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
+        if (ret_val == -1)
+        {
+            fprintf(stderr, "error reading command\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (ret_val == 0)
+        {
+            // currently, no cmd comming in
+            continue;
+        }
 
-    //     if (ret_val == -1)
-    //     {
-    //         fprintf(stderr, "error reading command\n");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     else if (ret_val == 0)
-    //     {
-    //         // currently, no cmd comming in
-    //         continue;
-    //     }
+        // parse the command
+        cmd.parse();
+        cmd.print();
 
-    //     printf("I'm here too too\n");
+        // check whether it's a stop command
+        if (cmd.type == CommandType::CMD_STOP)
+        {
+            printf("CmdHandler::handleAgentCmd received stop command from Agent %u, call socket.close()\n", cmd.src_conn_id);
+            skt.close();
+            break;
+        }
 
-    //     // parse the command
-    //     cmd.parse();
-    //     cmd.print();
+        // the other commands are transfer commands
 
-    //     // check whether it's a stop command
-    //     if (cmd.type == CommandType::CMD_STOP)
-    //     {
-    //         printf("received stop command from Agent %u\n", cmd.src_conn_id);
-    //         skt.close();
-    //         break;
-    //     }
+        // validate command
+        if (cmd.src_conn_id != self_conn_id || (cmd.type != CommandType::CMD_TRANSFER_COMPUTE_BLK && cmd.type != CommandType::CMD_TRANSFER_RELOC_BLK) || cmd.src_node_id == cmd.dst_node_id)
+        {
+            fprintf(stderr, "invalid command content\n");
+            exit(EXIT_FAILURE);
+        }
 
-    //     // the other commands are transfer commands
+        // request a block from memory pool
+        unsigned char *block_buffer = memory_pool->getBlock();
 
-    //     // validate command
-    //     if (cmd.src_conn_id != conn_id || (cmd.type != CommandType::CMD_TRANSFER_COMPUTE_BLK && cmd.type != CommandType::CMD_TRANSFER_RELOC_BLK) || cmd.src_node_id == cmd.dst_node_id)
-    //     {
-    //         fprintf(stderr, "invalid command content\n");
-    //         exit(EXIT_FAILURE);
-    //     }
+        // recv block
+        if (BlockIO::recvBlock(skt, block_buffer, config.block_size) != config.block_size)
+        {
+            fprintf(stderr, "invalid block: %s\n", cmd.src_block_path.c_str());
+            exit(EXIT_FAILURE);
+        }
 
-    //     // request a block from memory pool
-    //     unsigned char *block_buffer = memory_pool->getBlock();
+        printf("CmdHandler::handleAgentCmd received block transfer task and block\n");
+        // Utils::printUCharBuffer(block_buffer, 10);
 
-    //     // recv block
-    //     if (BlockIO::recvBlock(skt, block_buffer, config.block_size) != config.block_size)
-    //     {
-    //         fprintf(stderr, "invalid block: %s\n", cmd.src_block_path.c_str());
-    //         exit(EXIT_FAILURE);
-    //     }
+        if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
+        { // parity block compute command
 
-    //     printf("received block transfer task and block\n");
-    //     // Utils::printUCharBuffer(block_buffer, 10);
+            // pass to compute queue
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
+            parity_compute_queue->Push(parity_compute_task);
+        }
+        else if (cmd.type == CMD_TRANSFER_RELOC_BLK)
+        { // relocate command
 
-    //     if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
-    //     { // parity block compute command
+            //  block
+            if (BlockIO::writeBlock(cmd.dst_block_path, block_buffer, config.block_size) != config.block_size)
+            {
+                fprintf(stderr, "error writing block: %s\n", cmd.dst_block_path.c_str());
+                exit(EXIT_FAILURE);
+            }
 
-    //         // pass to compute queue
-    //         ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
-    //         parity_compute_queue->Push(parity_compute_task);
-    //     }
-    //     else if (cmd.type == CMD_TRANSFER_RELOC_BLK)
-    //     { // relocate command
+            // free block
+            memory_pool->freeBlock(block_buffer);
+        }
+    }
 
-    //         //  block
-    //         if (BlockIO::writeBlock(cmd.dst_block_path, block_buffer, config.block_size) != config.block_size)
-    //         {
-    //             fprintf(stderr, "error writing block: %s\n", cmd.dst_block_path.c_str());
-    //             exit(EXIT_FAILURE);
-    //         }
-
-    //         // free block
-    //         memory_pool->freeBlock(block_buffer);
-    //     }
-    // }
-
-    // printf("CmdHandler:: handleAgentCmd exit\n");
+    printf("CmdHandler::handleAgentCmd finished handling commands for Agent %u\n", self_conn_id);
 }

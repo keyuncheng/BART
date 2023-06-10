@@ -27,8 +27,6 @@ public:
     void connectOne(uint16_t conn_id, string ip, uint16_t port);
     void ackConnAll();
     void handleAckOne(uint16_t conn_id);
-    void disconnectAll();
-    void disconnectOne(uint16_t conn_id);
 };
 
 #endif // __NODE_HH__

@@ -38,11 +38,8 @@ public:
 
     void run() override;
 
-    void waitForController();
-    void waitForAgents();
-
     void handleControllerCmd();
-    void handleAgentCmd(uint16_t conn_id);
+    void handleAgentCmd(uint16_t self_conn_id);
 };
 
 #endif // __CMD_HANDLER_HH__

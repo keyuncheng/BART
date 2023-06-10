@@ -22,6 +22,8 @@ public:
     unordered_map<uint16_t, mutex *> mtxs_map;
     MessageQueue<Command> &cmd_dist_queue;
 
+    atomic<uint32_t> num_finished_connectors;
+
     unsigned char *block_buffer;
 
     CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, unsigned int _num_threads);

@@ -208,36 +208,5 @@ void Node::handleAckOne(uint16_t conn_id)
 
     // printf("Node %u: received ack from Node %u\n", self_conn_id, conn_id);
 
-    printf("Node %u: successfully connected to conn_id: %u\n", self_conn_id, conn_id);
-}
-
-void Node::disconnectAll()
-{
-    printf("start to disconnect all connections\n");
-
-    // create disconnect threads
-    unordered_map<uint16_t, thread *> disconnect_threads;
-    for (auto &item : connectors_map)
-    {
-        uint16_t conn_id = item.first;
-        disconnect_threads[conn_id] = new thread(&Node::disconnectOne, this, conn_id);
-    }
-
-    for (auto &item : disconnect_threads)
-    {
-        item.second->join();
-        delete item.second;
-    }
-}
-
-void Node::disconnectOne(uint16_t conn_id)
-{
-    sockpp::tcp_connector &connector = connectors_map[conn_id];
-
-    // receive ack command
-    Command cmd_disconnect;
-    cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
-    connector.write_n(cmd_disconnect.content, MAX_CMD_LEN * sizeof(unsigned char));
-
-    connector.close();
+    printf("Node:: successfully connected to conn_id: %u\n", conn_id);
 }

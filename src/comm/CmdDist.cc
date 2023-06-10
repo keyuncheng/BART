@@ -10,6 +10,9 @@ CmdDist::CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector>
 
     // init block buffer
     block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+
+    // init counter
+    num_finished_connectors = 0;
 }
 
 CmdDist::~CmdDist()
@@ -24,7 +27,7 @@ CmdDist::~CmdDist()
 
 void CmdDist::run()
 {
-    printf("CmdDist:: start to distribute commands\n");
+    printf("CmdDist::run start to distribute commands\n");
     while (finished() == false || cmd_dist_queue.IsEmpty() == false)
     {
         Command cmd;
@@ -81,8 +84,22 @@ void CmdDist::run()
                     exit(EXIT_FAILURE);
                 }
 
-                printf("received block transfer task, send block\n");
+                printf("obtained block transfer task, send block\n");
                 // Utils::printUCharBuffer(block_buffer, 10);
+            }
+
+            // stop connection command
+            if (cmd.type == CommandType::CMD_STOP)
+            {
+                connector.close();
+                num_finished_connectors++;
+                printf("CmdDist::run obtained stop connection command to Node %u, call connector.close()\n", cmd.dst_conn_id);
+
+                if (num_finished_connectors == connectors_map.size())
+                {
+                    printf("CmdDist::run all Nodes connection stopped, finished\n");
+                    setFinished();
+                }
             }
         }
     }

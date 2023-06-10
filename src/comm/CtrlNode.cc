@@ -33,11 +33,8 @@ void CtrlNode::stop()
     // wait cmd_distributor finish
     cmd_distributor->wait();
 
-    // // send disconnect signal
-    // disconnectAll();
-
     // wait cmd_handler finish
-    cmd_handler->wait_for_agents();
+    cmd_handler->wait();
 }
 
 void CtrlNode::genTransSolution()
@@ -84,8 +81,16 @@ void CtrlNode::genTransSolution()
         cmd_dist_queue->Push(command);
     }
 
-    // finish command distribution
-    cmd_distributor->setFinished();
+    // send disconnect commands
+    for (auto &item : connectors_map)
+    {
+        uint16_t dst_conn_id = item.first;
+
+        Command cmd_disconnect;
+        cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
+
+        cmd_dist_queue->Push(cmd_disconnect);
+    }
 }
 
 void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
@@ -269,7 +274,7 @@ void CtrlNode::genSampleCommands(vector<Command> &commands)
     //     0, // block 0
     //     0, // from node 0
     //     0, // to node 0
-    //     "sample_src_block_path", "sample_dst_block_path");
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_solution");
     // commands.push_back(cmd_1);
 
     // Command cmd_2;
