@@ -103,7 +103,7 @@ void CmdHandler::handleControllerCmd()
                 exit(EXIT_FAILURE);
             }
 
-            printf("CmdHandler::handleControllerCmd received local parity compute block\n");
+            printf("CmdHandler::handleControllerCmd read local block for parity compute: %s\n", cmd.src_block_path.c_str());
 
             // pass to compute queue
             ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);

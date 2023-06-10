@@ -14,7 +14,7 @@ uint64_t BlockIO::readBlock(string block_path, unsigned char *buffer, uint64_t b
     if (!file)
     {
         fprintf(stderr, "failed to open file %s\n", block_path.c_str());
-        return false;
+        exit(EXIT_FAILURE);
     }
 
     uint64_t read_bytes = 0;
@@ -37,7 +37,7 @@ uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t 
     if (!file)
     {
         fprintf(stderr, "failed to open file %s\n", block_path.c_str());
-        return false;
+        exit(EXIT_FAILURE);
     }
     uint64_t write_bytes = 0;
     uint64_t offset = 0;

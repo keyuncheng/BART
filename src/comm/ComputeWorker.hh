@@ -24,18 +24,16 @@ public:
     unsigned char **pm_matrix;
     unsigned char **pm_encode_gftbl;
 
-    ComputeWorker(Config &_config, MessageQueue<ParityComputeTask> &_parity_compute_queue, MemoryPool &_memory_pool);
+    ComputeWorker(Config &_config, MessageQueue<ParityComputeTask> &_parity_compute_queue, MemoryPool &_memory_pool, unsigned _num_threads);
     ~ComputeWorker();
 
     Config &config;
     MessageQueue<ParityComputeTask> &parity_compute_queue;
     MemoryPool &memory_pool;
 
-    mutex ongoing_task_map_mtx;
-
-    // key: post_stripe_id:encode_method:parity_id
-    // Note: for re-encoding,
+    // on-going parity computation task map
     map<string, ParityComputeTask> ongoing_task_map;
+    mutex ongoing_task_map_mtx;
 
     void run() override;
 

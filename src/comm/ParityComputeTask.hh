@@ -15,6 +15,7 @@ public:
     // erasure coding
     uint32_t post_stripe_id; // post_stripe_id (stripe group id)
     uint8_t post_block_id;   // post block id
+    uint8_t pre_stripe_id;   // for parity merging only
     EncodeMethod enc_method;
     unsigned char *buffer;
 
@@ -29,6 +30,8 @@ public:
 
     ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, unsigned char *_buffer, string _raw_path);
     ~ParityComputeTask();
+
+    void print();
 };
 
 #endif // __PARITY_COMPUTE_TASK_HH__

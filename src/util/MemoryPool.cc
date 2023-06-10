@@ -49,7 +49,7 @@ void MemoryPool::freeBlock(unsigned char *block_ptr)
     if (it == block_ptrs_map.end())
     {
         fprintf(stderr, "error: invalid block pointer to free: %p\n", block_ptr);
-        return;
+        exit(EXIT_FAILURE);
     }
 
     // enqueue the free block

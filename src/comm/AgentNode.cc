@@ -12,7 +12,7 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     memory_pool = new MemoryPool(MAX_MEM_POOL_SIZE, config.block_size);
 
     // create compute worker
-    compute_worker = new ComputeWorker(config, *parity_compute_queue, *memory_pool);
+    compute_worker = new ComputeWorker(config, *parity_compute_queue, *memory_pool, 1);
 
     // create command distributor
     cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
@@ -32,6 +32,9 @@ AgentNode::~AgentNode()
 
 void AgentNode::start()
 {
+    // start compute_worker
+    compute_worker->start();
+
     // start cmd_handler
     cmd_handler->start();
 
@@ -46,4 +49,8 @@ void AgentNode::stop()
 
     // wait cmd_handler finish
     cmd_handler->wait();
+
+    // wait compute_worker finish
+    compute_worker->setFinished();
+    compute_worker->wait();
 }

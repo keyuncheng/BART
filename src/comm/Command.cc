@@ -124,7 +124,7 @@ void Command::parse()
     case CommandType::CMD_UNKNOWN:
     {
         fprintf(stderr, "invalid command type\n");
-        break;
+        exit(EXIT_FAILURE);
     }
     }
 }

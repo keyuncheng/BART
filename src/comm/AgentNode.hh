@@ -17,9 +17,9 @@ class AgentNode : public Node
 private:
     /* data */
 public:
-    CmdHandler *cmd_handler;  // handler commands from Controller and Agents
-    CmdDist *cmd_distributor; // distribute send block commands
-    ComputeWorker *compute_worker;
+    CmdHandler *cmd_handler;       // handler commands from Controller and Agents
+    CmdDist *cmd_distributor;      // distribute send block commands
+    ComputeWorker *compute_worker; // compute worker
 
     // queue for command distribution
     MessageQueue<Command> *cmd_dist_queue;

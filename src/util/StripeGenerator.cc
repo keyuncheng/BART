@@ -139,7 +139,7 @@ bool StripeGenerator::loadBlockMapping(uint8_t ecn, uint32_t num_stripes, string
     if (record_id != ecn * num_stripes)
     {
         fprintf(stderr, "error: invalid number of records %lu\n", record_id);
-        return false;
+        exit(EXIT_FAILURE);
     }
 
     // for (uint32_t stripe_id = 0; stripe_id < num_stripes; stripe_id++)

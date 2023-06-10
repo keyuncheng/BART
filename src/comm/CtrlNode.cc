@@ -72,8 +72,8 @@ void CtrlNode::genTransSolution()
     // trans_solution.print();
 
     vector<Command> commands;
-    // genCommands(trans_solution, pre_block_mapping, post_block_mapping, commands);
-    genSampleCommands(commands);
+    genCommands(trans_solution, pre_block_mapping, post_block_mapping, commands);
+    // genSampleCommands(commands);
 
     for (auto &command : commands)
     {
@@ -95,6 +95,8 @@ void CtrlNode::genTransSolution()
 
 void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
 {
+    ConvertibleCode &code = config.code;
+
     for (auto &item : trans_solution.sg_tasks)
     {
         uint32_t sg_id = item.first;
@@ -113,8 +115,16 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
             case TransTaskType::READ_RE_BLK:
             case TransTaskType::READ_PM_BLK:
             {
+                uint16_t parity_compute_node = INVALID_NODE_ID;
 
-                uint16_t parity_compute_node = post_block_mapping[sg_id][task->post_block_id].first;
+                if (task->type == READ_RE_BLK)
+                {
+                    parity_compute_node = post_block_mapping[sg_id][code.k_f].first;
+                }
+                else if (task->type == READ_PM_BLK)
+                {
+                    parity_compute_node = post_block_mapping[sg_id][task->post_block_id].first;
+                }
 
                 // only parse for local read tasks
                 if (task->src_node_id != parity_compute_node)
@@ -128,7 +138,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 if (task->src_node_id != src_block_node_id)
                 {
                     fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
 
                 // parse the task
@@ -140,19 +150,19 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
 
                 // dst block path
                 if (task->type == TransTaskType::READ_RE_BLK)
-                {
+                { // need to read the path of all parity blocks, as we only have one parity computation task
                     for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
-                    {
+                    { // concatenate the paths
                         if (parity_id > 0)
                         {
                             dst_block_path = dst_block_path + ":";
                         }
-                        dst_block_path = dst_block_path + post_block_mapping[task->post_block_id][config.code.k_f + parity_id].second;
+                        dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
                     }
                 }
                 else if (task->type == TransTaskType::READ_PM_BLK)
-                {
-                    dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                { // destination block: obtained the corresponding parity block only
+                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[task->post_stripe_id][task->post_block_id].second;
                 }
 
                 break;
@@ -164,7 +174,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 if (task->src_node_id == task->dst_node_id)
                 {
                     fprintf(stderr, "error: invalid transfer task: (%u -> %u)\n", task->src_node_id, task->dst_node_id);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
 
                 // check block location
@@ -172,7 +182,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 if (task->src_node_id != src_block_node_id)
                 {
                     fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
 
                 // parse the task
@@ -191,12 +201,12 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                         {
                             dst_block_path = dst_block_path + ":";
                         }
-                        dst_block_path = dst_block_path + post_block_mapping[task->post_block_id][config.code.k_f + parity_id].second;
+                        dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
                     }
                 }
                 else if (task->type == TransTaskType::READ_PM_BLK)
                 {
-                    dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[task->post_stripe_id][task->post_block_id].second;
                 }
 
                 break;
@@ -207,7 +217,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 if (task->src_node_id == task->dst_node_id)
                 {
                     fprintf(stderr, "error: invalid transfer task: (%u -> %u)\n", task->src_node_id, task->dst_node_id);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
 
                 // check block location
@@ -215,7 +225,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 if (task->src_node_id != src_block_node_id)
                 {
                     fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    return;
+                    exit(EXIT_FAILURE);
                 }
 
                 // parse the task
@@ -265,41 +275,252 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
 
 void CtrlNode::genSampleCommands(vector<Command> &commands)
 {
-    // Command cmd_1;
-    // cmd_1.buildCommand(
+    // // read local parity block
+    // Command cmd_pm_0;
+    // cmd_pm_0.buildCommand(
     //     CommandType::CMD_LOCAL_COMPUTE_BLK,
     //     self_conn_id,
     //     0, // cmd to node 0
-    //     1, // stripe 1
-    //     0, // block 0
+    //     1, // post_stripe 1
+    //     6, // post_block 6
     //     0, // from node 0
     //     0, // to node 0
-    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_solution");
-    // commands.push_back(cmd_1);
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_0", "0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_0);
 
-    // Command cmd_2;
-    // cmd_2.buildCommand(
-    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
+    // // read local parity block
+    // Command cmd_pm_1;
+    // cmd_pm_1.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
     //     self_conn_id,
     //     0, // cmd to node 0
-    //     1, // stripe 1
-    //     1, // block 1
+    //     1, // post_stripe 1
+    //     6, // post_stripe 6
     //     0, // from node 0
-    //     1, // to node 1
-    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
-    // commands.push_back(cmd_2);
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_1", "1:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_1);
 
-    // Command cmd_3;
-    // cmd_3.buildCommand(
-    //     CommandType::CMD_TRANSFER_RELOC_BLK,
+    // // read local parity block
+    // Command cmd_pm_0;
+    // cmd_pm_0.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     6, // post_block 6
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_0", "0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_0);
+
+    // // transfer parity block
+    // Command cmd_pm_1;
+    // cmd_pm_1.buildCommand(
+    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
     //     self_conn_id,
     //     1, // cmd to node 1
-    //     1, // stripe 1
-    //     2, // block 2
+    //     1, // post_stripe 1
+    //     6, // post_stripe 6
     //     1, // from node 1
     //     0, // to node 0
-    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/64M_1_write");
-    // commands.push_back(cmd_3);
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_1", "1:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_1);
+
+    // // transfer parity block
+    // Command cmd_pm_0;
+    // cmd_pm_0.buildCommand(
+    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 1
+    //     1, // post_stripe 1
+    //     6, // post_block 6
+    //     1, // from node 1
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_0", "0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_0);
+
+    // // transfer parity block
+    // Command cmd_pm_1;
+    // cmd_pm_1.buildCommand(
+    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 1
+    //     1, // post_stripe 1
+    //     6, // post_stripe 6
+    //     1, // from node 1
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_1", "1:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/pm_0_solution");
+    // commands.push_back(cmd_pm_1);
+
+    // // read local data block
+    // Command cmd_db_0;
+    // cmd_db_0.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     0, // post_block 0
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_0", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_0);
+
+    // // read local data block
+    // Command cmd_db_1;
+    // cmd_db_1.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     1, // post_block 1
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_1);
+
+    // // read local data block
+    // Command cmd_db_2;
+    // cmd_db_2.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     2, // post_block 2
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_2);
+
+    // // read local data block
+    // Command cmd_db_3;
+    // cmd_db_3.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     3, // post_block 3
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_3", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_3);
+
+    // // read local data block
+    // Command cmd_db_4;
+    // cmd_db_4.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     4, // post_block 4
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_4", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_4);
+
+    // // read local data block
+    // Command cmd_db_5;
+    // cmd_db_5.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     5, // post_block 5
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_5", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_5);
+
+    // // read local data block
+    // Command cmd_db_0;
+    // cmd_db_0.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     0, // post_block 0
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_0", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_0);
+
+    // // read local data block
+    // Command cmd_db_1;
+    // cmd_db_1.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     1, // post_block 1
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_1);
+
+    // // read local data block
+    // Command cmd_db_2;
+    // cmd_db_2.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     2, // post_block 2
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_2", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_2);
+
+    // // read local data block
+    // Command cmd_db_3;
+    // cmd_db_3.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     3, // post_block 3
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_3", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_3);
+
+    // // read local data block
+    // Command cmd_db_4;
+    // cmd_db_4.buildCommand(
+    //     CommandType::CMD_LOCAL_COMPUTE_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     4, // post_block 4
+    //     0, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_4", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_4);
+
+    // // transfer data block
+    // Command cmd_db_5;
+    // cmd_db_5.buildCommand(
+    //     CommandType::CMD_TRANSFER_COMPUTE_BLK,
+    //     self_conn_id,
+    //     1, // cmd to node 0
+    //     1, // post_stripe 1
+    //     5, // post_block 5
+    //     1, // from node 0
+    //     0, // to node 0
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/db_5", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_0:/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1");
+    // commands.push_back(cmd_db_5);
+
+    // // transfer relocated parity block
+    // Command cmd_re_reloc_1;
+    // cmd_re_reloc_1.buildCommand(
+    //     CommandType::CMD_TRANSFER_RELOC_BLK,
+    //     self_conn_id,
+    //     0, // cmd to node 0
+    //     1, // post_stripe 1
+    //     7, // post_block 7
+    //     0, // from node 0
+    //     1, // to node 1
+    //     "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1", "/home/kycheng/Documents/projects/redundancy-transition/balancedconversion/BalancedConversion/data/re_solution_1_reloc");
+    // commands.push_back(cmd_re_reloc_1);
 
     // Command cmd_4;
     // cmd_4.buildCommand(

@@ -85,7 +85,7 @@ uint8_t StripeGroup::getMinTransBW(string approach, u16string &enc_nodes)
     else
     {
         fprintf(stderr, "invalid approach: %s\n", approach.c_str());
-        return UINT8_MAX;
+        exit(EXIT_FAILURE);
     }
 
     // data relocation cost
