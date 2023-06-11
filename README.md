@@ -28,8 +28,8 @@ Balanced Code Conversion
     * Parse the transition solution from BTS into commands (implemented,
       verified)
     * Distribute the transition commands to Agents (implemented, verified)
-    * Wait for all finish signals from all Agents (implemented)
-        * Report the time (on-going)
+    * Wait for all finish signals from all Agents (implemented, verified)
+        * Report the time (implemented, verified)
 
 * Agent
     * Handle the commands
@@ -38,8 +38,8 @@ Balanced Code Conversion
         * From Agents: Parse Send command and receive physical block
           (implemented, verified)
     * Pipeline
-        * Read -> Compute (implemented)
-        * Transfer -> Compute (implemented)
-        * Transfer -> Write (implemented)
-        * Compute -> Write (implemented)
-        * Delete: directly delete (implemented)
+        * Read -> Compute (implemented, verified)
+        * Transfer -> Compute (implemented, verified)
+        * Transfer -> Write (implemented, verified)
+        * Compute -> Write (implemented, verified)
+        * Delete: directly delete (implemented, verified)
