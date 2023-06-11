@@ -4,15 +4,17 @@
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("usage: ./Agent config_filename");
+        printf("usage: ./Agent agent_id config_filename\n");
         return -1;
     }
 
-    string config_filename = argv[1];
+    uint16_t agent_id = atoi(argv[1]);
+    string config_filename = argv[2];
 
     Config config(config_filename);
+    config.agent_id = agent_id; // now set as cmd line input
     config.print();
 
     AgentNode agent_node(config.agent_id, config);

@@ -21,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <sys/time.h>
+#include <typeinfo>
 
 using namespace std;
 

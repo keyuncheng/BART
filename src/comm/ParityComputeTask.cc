@@ -8,8 +8,8 @@ ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stri
     }
 
     // extract parity block paths
-    char *raw_str = (char *)malloc(_raw_path.size() * sizeof(char));
-    memcpy(raw_str, _raw_path.c_str(), _raw_path.size() * sizeof(char));
+    char *raw_str = (char *)malloc((_raw_path.size() + 1) * sizeof(char));
+    strcpy(raw_str, _raw_path.c_str());
 
     // encode method
     if (post_block_id < code->k_f)
