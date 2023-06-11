@@ -176,7 +176,7 @@ void ComputeWorker::run()
             // add the collected block
             ongoing_task.collected++;
 
-            printf("ComputeWorker::run collected block for parity computation task: %s\n", parity_compute_key.c_str());
+            printf("ComputeWorker::run collected block for parity computation task: %s, collected: %u\n", parity_compute_key.c_str(), ongoing_task.collected);
 
             // perform computation
             if (ongoing_task.enc_method == EncodeMethod::RE_ENCODE)

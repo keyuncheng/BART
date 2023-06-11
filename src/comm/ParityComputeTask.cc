@@ -40,10 +40,8 @@ ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stri
         pre_stripe_id = atoi(token);
 
         // parity block path
-        while ((token = strtok(NULL, ":")))
-        {
-            pm_parity_path = token;
-        }
+        token = strtok(NULL, ":");
+        pm_parity_path = token;
     }
 
     // init num of collected parity blocks

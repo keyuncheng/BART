@@ -219,7 +219,7 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
                 exit(EXIT_FAILURE);
             }
 
-            printf("CmdHandler::handleAgentCmd received block transfer task and block\n");
+            printf("CmdHandler::handleAgentCmd received block transfer task and block: %s\n", cmd.dst_block_path.c_str());
             // Utils::printUCharBuffer(block_buffer, 10);
 
             if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)

@@ -102,11 +102,12 @@ def main():
         cmd = "ssh {} \"mkdir -p {}\"".format(node_ip, str(node_dir))
         exec_cmd(cmd, exec=True)
 
-        cmd = "ssh {} \"rm -rf {}/*\"".format(node_ip, str(node_dir))
+        cmd = "ssh {} \"bash -c \\\"rm -rf {}/*\\\"\"".format(node_ip, str(node_dir))
         exec_cmd(cmd, exec=True)
 
         for block_path in blocks_to_gen:
             block_size_MB = int(block_size / (1024 * 1024))
+            # TODO: if it's a data block, use dd; if it's a parity block, use ec
             cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, str(block_path), block_size_MB)
             exec_cmd(cmd, exec=True)
         

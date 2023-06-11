@@ -69,10 +69,10 @@ void CtrlNode::genTransSolution()
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
-    // trans_solution.print();
+    trans_solution.print();
 
     vector<Command> commands;
-    genCommands(trans_solution, pre_block_mapping, post_block_mapping, commands);
+    genCommands(stripe_batch, trans_solution, pre_block_mapping, post_block_mapping, commands);
     // genSampleCommands(commands);
 
     for (auto &command : commands)
@@ -93,7 +93,7 @@ void CtrlNode::genTransSolution()
     }
 }
 
-void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
+void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands)
 {
     ConvertibleCode &code = config.code;
 
@@ -119,11 +119,11 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
 
                 if (task->type == READ_RE_BLK)
                 {
-                    parity_compute_node = post_block_mapping[sg_id][code.k_f].first;
+                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[0];
                 }
                 else if (task->type == READ_PM_BLK)
                 {
-                    parity_compute_node = post_block_mapping[sg_id][task->post_block_id].first;
+                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[task->post_block_id - code.k_f];
                 }
 
                 // only parse for local read tasks
@@ -193,7 +193,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                 src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
 
                 // dst block path
-                if (task->type == TransTaskType::READ_RE_BLK)
+                if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK)
                 {
                     for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
                     {
@@ -204,7 +204,7 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                         dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
                     }
                 }
-                else if (task->type == TransTaskType::READ_PM_BLK)
+                else if (task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
                 {
                     dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[task->post_stripe_id][task->post_block_id].second;
                 }
@@ -220,18 +220,29 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
                     exit(EXIT_FAILURE);
                 }
 
-                // check block location
-                uint16_t src_block_node_id = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].first;
-                if (task->src_node_id != src_block_node_id)
-                {
-                    fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    exit(EXIT_FAILURE);
-                }
-
                 // parse the task
                 is_task_parsed = true;
                 cmd_type = CommandType::CMD_TRANSFER_RELOC_BLK;
-                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+
+                if (task->post_block_id < code.k_f)
+                { // data block
+                    // check block location (for data block only)
+                    uint16_t src_block_node_id = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].first;
+
+                    if (task->src_node_id != src_block_node_id)
+                    {
+                        fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
+                        exit(EXIT_FAILURE);
+                    }
+                    // data block path: obtained from pre_block_mapping
+                    src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                }
+                else
+                { // newly computed parity block path (no need to check the location)
+                    // the same path (but on different node)
+                    src_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                }
+
                 dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
 
                 break;
@@ -240,7 +251,23 @@ void CtrlNode::genCommands(TransSolution &trans_solution, vector<vector<pair<uin
             {
                 is_task_parsed = true;
                 cmd_type = CommandType::CMD_DELETE_BLK;
-                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+
+                if (task->post_block_id < code.k_f)
+                {
+                    src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                }
+                else
+                {
+                    if (task->pre_stripe_id_global != INVALID_STRIPE_ID_GLOBAL && task->pre_stripe_id_relative != INVALID_STRIPE_ID && task->pre_block_id != INVALID_BLK_ID && task->post_block_id == INVALID_BLK_ID)
+                    { // old parity block
+                        src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                    }
+                    else
+                    { // relocated parity block
+                        src_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                    }
+                }
+
                 dst_block_path = ""; // empty string
                 break;
             }

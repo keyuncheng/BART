@@ -13,7 +13,7 @@ uint64_t BlockIO::readBlock(string block_path, unsigned char *buffer, uint64_t b
     FILE *file = fopen(block_path.c_str(), "r");
     if (!file)
     {
-        fprintf(stderr, "failed to open file %s\n", block_path.c_str());
+        fprintf(stderr, "BlockIO::readBlock failed to open file %s\n", block_path.c_str());
         exit(EXIT_FAILURE);
     }
 
@@ -59,7 +59,7 @@ uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t 
     FILE *file = fopen(block_path.c_str(), "w");
     if (!file)
     {
-        fprintf(stderr, "failed to open file %s\n", block_path.c_str());
+        fprintf(stderr, "BlockIO::writeBlock failed to open file %s\n", block_path.c_str());
         exit(EXIT_FAILURE);
     }
     uint64_t write_bytes = 0;

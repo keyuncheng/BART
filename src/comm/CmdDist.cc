@@ -52,20 +52,25 @@ void CmdDist::run()
                 if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 {
                     // relocating newly generated parity block
-                    if (cmd.post_block_id > config.code.k_f)
+                    if (cmd.post_block_id >= config.code.k_f)
                     {
-                        // make sure the parity block has been generated from compute worker
+
                         while (true)
-                        {
+                        { // make sure the parity block has been generated from compute worker
                             ifstream f(cmd.src_block_path.c_str());
                             if (f.good() == false)
                             {
-                                this_thread::sleep_for(chrono::milliseconds(1));
+                                this_thread::sleep_for(chrono::milliseconds(10));
+                                continue;
                             }
-                            else
+                            f.seekg(0, ios::end);
+                            uint64_t file_size = f.tellg();
+                            if (file_size < config.block_size)
                             {
-                                break;
+                                this_thread::sleep_for(chrono::milliseconds(10));
+                                continue;
                             }
+                            break;
                         }
                     }
                 }
