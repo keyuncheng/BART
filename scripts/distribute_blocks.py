@@ -64,6 +64,8 @@ def main():
     pre_placement_path = metadata_dir / pre_placement_filename
     pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     data_dir = root_dir / "data"
+    
+    lambda_ = int(k_f / k_i)
 
     
     # Read pre-stripe block mapping
@@ -98,10 +100,32 @@ def main():
     cmd = "cd {}; ./GenECStripe {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, block_size, str(data_dir) + "/")
     exec_cmd(cmd, exec=True)
 
+    # # Original Version (distribute all blocks)
+    # for node_id in range(num_nodes):
+    #     node_ip = agent_addrs[node_id][0]
+    #     blocks_to_gen = node_block_mapping[node_id]
+    #     print("Generate {} blocks at Node {} ({})".format(len(blocks_to_gen), node_id, node_ip))
+
+    #     node_dir = data_dir / "node_{}".format(node_id)
+
+    #     cmd = "ssh {} \"mkdir -p {}\"".format(node_ip, str(node_dir))
+    #     exec_cmd(cmd, exec=True)
+
+    #     cmd = "ssh {} \"bash -c \\\"rm -rf {}/*\\\"\"".format(node_ip, str(node_dir))
+    #     exec_cmd(cmd, exec=True)
+
+    #     for pre_stripe_id, pre_block_id, pre_block_placement_path in blocks_to_gen:
+    #         ec_pre_block_path = data_dir / "block_{}_{}".format(0, pre_block_id)
+
+    #         cmd = "scp {} {}:{}".format(str(ec_pre_block_path), node_ip, pre_block_placement_path)
+    #         exec_cmd(cmd, exec=True)
+        
+
+    # Hacked Version: only keep one pre-stripe across the cluster
     for node_id in range(num_nodes):
         node_ip = agent_addrs[node_id][0]
-        blocks_to_gen = node_block_mapping[node_id]
-        print("Generate {} blocks at Node {} ({})".format(len(blocks_to_gen), node_id, node_ip))
+
+        print("Generate blocks at Node {} ({})".format(node_id, node_ip))
 
         node_dir = data_dir / "node_{}".format(node_id)
 
@@ -111,12 +135,12 @@ def main():
         cmd = "ssh {} \"bash -c \\\"rm -rf {}/*\\\"\"".format(node_ip, str(node_dir))
         exec_cmd(cmd, exec=True)
 
-        for pre_stripe_id, pre_block_id, pre_block_placement_path in blocks_to_gen:
-            ec_pre_block_path = data_dir / "block_{}_{}".format(0, pre_block_id)
+        for pre_stripe_id in range(lambda_):
+            for pre_block_id in range(k_i + m_i):
+                ec_pre_block_path  = data_dir / "block_{}_{}".format(pre_stripe_id, pre_block_id)
 
-            cmd = "scp {} {}:{}".format(ec_pre_block_path, node_ip, pre_block_placement_path)
-            exec_cmd(cmd, exec=True)
-        
+                cmd = "scp {} {}:{}".format(str(ec_pre_block_path), node_ip, str(data_dir))
+                exec_cmd(cmd, exec=True)
 
 if __name__ == '__main__':
     main()

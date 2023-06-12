@@ -79,7 +79,12 @@ def main():
     pre_block_mapping = []
     for stripe_id, stripe_indices in enumerate(pre_placement):
         for block_id, placed_node_id in enumerate(stripe_indices):
-            pre_block_placement_path = data_dir / "node_{}".format(placed_node_id) / "block_{}_{}".format(stripe_id, block_id)
+            # # Original Version: place the actual data on node_{}
+            # pre_block_placement_path = data_dir / "node_{}".format(placed_node_id) / "block_{}_{}".format(stripe_id, block_id)
+
+            # Hacked Version: only store one stripe in data_dir
+            pre_block_placement_path = data_dir / "block_{}_{}".format(0, block_id)
+            
             pre_block_mapping.append([stripe_id, block_id, placed_node_id, pre_block_placement_path])
 
     # Write block mapping file

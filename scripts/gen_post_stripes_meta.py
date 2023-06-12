@@ -90,7 +90,7 @@ def main():
             pre_block_id = int(line[1])
             pre_node_id = int(line[2])
             pre_block_placement_path = line[3]
-            pre_block_mapping[pre_stripe_id][pre_block_id] = pre_block_placement_path
+            pre_block_mapping[pre_stripe_id][pre_block_id] = [pre_node_id, pre_block_placement_path]
 
 
     # Perform transition
@@ -119,21 +119,33 @@ def main():
     # Generate post-transition block mapping
     post_block_mapping = []
     for post_stripe_id, post_stripe_indices in enumerate(post_placement):
-        for post_block_id, placed_node_id in enumerate(post_stripe_indices):
+        for post_block_id, post_placed_node_id in enumerate(post_stripe_indices):
             post_block_placement_path = None
             if post_block_id < k_f:
                 # data block: read from pre_block_mapping
                 pre_stripe_id = int(post_block_id / k_i)
                 pre_block_id = int(post_block_id % k_i)
                 pre_stripe_id_global = sg_meta[post_stripe_id]["pre_stripe_ids"][pre_stripe_id]
-                post_block_placement_path = data_dir / "node_{}".format(placed_node_id) / Path(pre_block_mapping[pre_stripe_id_global][pre_block_id]).name
+
+                # # Original Version: get actual post_block_placement_path inside node_<i>
+                # post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / Path(pre_block_mapping[pre_stripe_id_global][pre_block_id][1]).name
+
+                # Hacked Version: no need to change
+                pre_placed_node_id = pre_block_mapping[pre_stripe_id_global][pre_block_id][0]
+                if pre_placed_node_id == post_placed_node_id:
+                    # There is no block relocation, the path keeps the same
+                    post_block_placement_path = pre_block_mapping[pre_stripe_id_global][pre_block_id][1]
+                else:
+                    # There is block relocation, rename the path
+                    post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / Path(pre_block_mapping[pre_stripe_id_global][pre_block_id][1]).name
+                
             else:
                 if enable_HDFS:
                     pass # TO IMPLEMENT
                 else:
                     # parity block: generate new filename
-                    post_block_placement_path = data_dir / "node_{}".format(placed_node_id) / "post_block_{}_{}".format(post_stripe_id, post_block_id)
-            post_block_mapping.append([post_stripe_id, post_block_id, placed_node_id, post_block_placement_path])
+                    post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / "post_block_{}_{}".format(post_stripe_id, post_block_id)
+            post_block_mapping.append([post_stripe_id, post_block_id, post_placed_node_id, post_block_placement_path])
 
     # Write post-transition block mapping file
     print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
