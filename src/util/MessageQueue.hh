@@ -2,7 +2,11 @@
 #define __MESSAGE_QUEUE_HH__
 
 #include "../include/include.hh"
-#include "readerwriterqueue.h"
+// #include "readerwriterqueue.h"
+#include "concurrentqueue.h"
+// #include "blockingconcurrentqueue.h"
+#include <mutex>
+#include <queue>
 
 template <class T>
 class MessageQueue
@@ -11,7 +15,9 @@ private:
     /* data */
 public:
     // use the open-source lock-free queue from here: https://github.com/cameron314/readerwriterqueue
-    moodycamel::ReaderWriterQueue<T> *queue;
+    // moodycamel::ReaderWriterQueue<T> *queue;
+    moodycamel::ConcurrentQueue<T> *queue;
+    // moodycamel::BlockingConcurrentQueue<T> *queue;
 
     /**
      * @brief Construct a new Message Queue object
@@ -20,7 +26,9 @@ public:
      */
     MessageQueue(uint32_t maxSize)
     {
-        queue = new moodycamel::ReaderWriterQueue<T>(maxSize);
+        // queue = new moodycamel::ReaderWriterQueue<T>(maxSize);
+        queue = new moodycamel::ConcurrentQueue<T>(maxSize);
+        // queue = new moodycamel::BlockingConcurrentQueue<T>(maxSize);
     }
 
     /**
@@ -51,8 +59,7 @@ public:
     bool Push(T &data)
     {
         while (!queue->try_enqueue(data))
-        {
-        }
+            ;
         return true;
     }
 

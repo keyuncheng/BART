@@ -74,7 +74,12 @@ int main(int argc, char *argv[])
         {
             string data_block_path = data_dir + string("block_") + to_string(pre_stripe_id) + string("_") + to_string(pre_data_id);
 
-            BlockIO::writeBlock(data_block_path, post_data_buffer[pre_stripe_id * k_i + pre_data_id], block_size);
+            // write block
+            if (BlockIO::writeBlock(data_block_path, post_data_buffer[pre_stripe_id * k_i + pre_data_id], block_size) != block_size)
+            {
+                fprintf(stderr, "error writing block: %s\n", data_block_path.c_str());
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
@@ -87,7 +92,12 @@ int main(int argc, char *argv[])
         {
             string pre_parity_block_path = data_dir + string("block_") + to_string(pre_stripe_id) + string("_") + to_string(k_i + parity_id);
 
-            BlockIO::writeBlock(pre_parity_block_path, post_parity_buffer[parity_id], block_size);
+            // write block
+            if (BlockIO::writeBlock(pre_parity_block_path, post_parity_buffer[parity_id], block_size) != block_size)
+            {
+                fprintf(stderr, "error writing block: %s\n", pre_parity_block_path.c_str());
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
@@ -98,7 +108,12 @@ int main(int argc, char *argv[])
     {
         string post_parity_block_path = data_dir + string("post_block_") + to_string(k_f + parity_id);
 
-        BlockIO::writeBlock(post_parity_block_path, post_parity_buffer[parity_id], block_size);
+        // write block
+        if (BlockIO::writeBlock(post_parity_block_path, post_parity_buffer[parity_id], block_size) != block_size)
+        {
+            fprintf(stderr, "error writing block: %s\n", post_parity_block_path.c_str());
+            exit(EXIT_FAILURE);
+        }
     }
 
     // free buffer

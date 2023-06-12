@@ -9,7 +9,7 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     parity_compute_queue = new MessageQueue<ParityComputeTask>(MAX_MSG_QUEUE_LEN);
 
     // memory pool
-    memory_pool = new MemoryPool(MAX_MEM_POOL_SIZE, config.block_size);
+    memory_pool = new MemoryPool(MAX_MEM_POOL_SIZE * config.code.lambda_i * config.agent_addr_map.size(), config.block_size);
 
     // create compute worker
     compute_worker = new ComputeWorker(config, *parity_compute_queue, *memory_pool, 1);

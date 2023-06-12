@@ -3,7 +3,9 @@
 MemoryPool::MemoryPool(unsigned int _num_blocks, uint64_t _block_size) : num_blocks(_num_blocks), block_size(_block_size)
 {
     // free block list
-    free_block_queue = new moodycamel::ConcurrentQueue<unsigned int>(num_blocks);
+    // free_block_queue = new moodycamel::ConcurrentQueue<unsigned int>(num_blocks);
+
+    free_block_queue = new queue<unsigned int>();
 
     block_ptrs = (unsigned char **)malloc(num_blocks * sizeof(unsigned char *));
     for (unsigned int block_id = 0; block_id < num_blocks; block_id++)
@@ -15,7 +17,9 @@ MemoryPool::MemoryPool(unsigned int _num_blocks, uint64_t _block_size) : num_blo
         block_ptrs_map[block_ptrs[block_id]] = block_id;
 
         // add to free block
-        free_block_queue->enqueue(block_id);
+        // free_block_queue->enqueue(block_id);
+
+        free_block_queue->push(block_id);
     }
 }
 
@@ -32,15 +36,22 @@ MemoryPool::~MemoryPool()
 
 unsigned char *MemoryPool::getBlock()
 {
-    unsigned free_block_id;
-    while (true)
+    unsigned int free_block_id;
+    unique_lock<mutex> lck(free_queue_mutex);
+    while (free_block_queue->empty())
     {
-        // dequeue and return free block
-        if (free_block_queue->try_dequeue(free_block_id) == true)
-        {
-            return block_ptrs[free_block_id];
-        }
+        queue_cv.wait(lck, [&]
+                      { return !free_block_queue->empty(); });
     }
+    // // dequeue and return free block
+    // if (free_block_queue->try_dequeue(free_block_id) == true)
+    // {
+    //     return block_ptrs[free_block_id];
+    // }
+
+    free_block_id = free_block_queue->front();
+    free_block_queue->pop();
+    return block_ptrs[free_block_id];
 }
 
 void MemoryPool::freeBlock(unsigned char *block_ptr)
@@ -53,5 +64,10 @@ void MemoryPool::freeBlock(unsigned char *block_ptr)
     }
 
     // enqueue the free block
-    free_block_queue->enqueue(it->second);
+    // free_block_queue->enqueue(it->second);
+
+    unique_lock<mutex> lck(free_queue_mutex);
+    free_block_queue->push(it->second);
+    lck.unlock();
+    queue_cv.notify_one();
 }

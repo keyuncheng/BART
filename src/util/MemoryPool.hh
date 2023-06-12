@@ -5,7 +5,9 @@
 #include <condition_variable>
 
 #include "../include/include.hh"
-#include "../util/concurrentqueue.h"
+// #include "../util/concurrentqueue.h"
+
+#include <queue>
 
 class MemoryPool
 {
@@ -16,7 +18,11 @@ public:
     uint64_t block_size;
     unsigned char **block_ptrs;
 
-    moodycamel::ConcurrentQueue<unsigned int> *free_block_queue;
+    queue<unsigned int> *free_block_queue;
+    mutex free_queue_mutex;
+    std::condition_variable queue_cv;
+
+    // moodycamel::ConcurrentQueue<unsigned int> *free_block_queue;
     unordered_map<unsigned char *, unsigned int> block_ptrs_map;
 
     MemoryPool(unsigned int _num_blocks, uint64_t _block_size);

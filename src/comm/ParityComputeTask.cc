@@ -2,7 +2,7 @@
 
 ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, unsigned char *_buffer, string _raw_path) : code(_code), post_stripe_id(_post_stripe_id), post_block_id(_post_block_id), buffer(_buffer)
 {
-    if (_post_stripe_id == INVALID_STRIPE_ID || _post_block_id == INVALID_BLK_ID)
+    if (_post_stripe_id == INVALID_STRIPE_ID_GLOBAL || _post_block_id == INVALID_BLK_ID)
     {
         return;
     }

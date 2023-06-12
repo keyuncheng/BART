@@ -32,7 +32,7 @@ public:
     MemoryPool &memory_pool;
 
     // on-going parity computation task map
-    map<string, ParityComputeTask> ongoing_task_map;
+    unordered_map<string, ParityComputeTask> ongoing_task_map;
     mutex ongoing_task_map_mtx;
 
     void run() override;

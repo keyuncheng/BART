@@ -28,8 +28,13 @@ CmdDist::~CmdDist()
 void CmdDist::run()
 {
     printf("CmdDist::run start to distribute commands\n");
-    while (finished() == false || cmd_dist_queue.IsEmpty() == false)
+    while (true)
     {
+        if (finished() == true && cmd_dist_queue.IsEmpty() == true)
+        {
+            break;
+        }
+
         Command cmd;
         if (cmd_dist_queue.Pop(cmd) == true)
         {
@@ -57,6 +62,9 @@ void CmdDist::run()
                         // relocating newly generated parity block
                         if (cmd.post_block_id >= config.code.k_f)
                         {
+                            // hack
+                            break;
+
                             while (true)
                             { // make sure the parity block has been generated and stored from compute worker
                                 if (compute_worker->isTaskOngoing(EncodeMethod::RE_ENCODE, cmd.post_stripe_id, cmd.post_block_id) == true || compute_worker->isTaskOngoing(EncodeMethod::PARITY_MERGE, cmd.post_stripe_id, cmd.post_block_id) == true)

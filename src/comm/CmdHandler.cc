@@ -65,7 +65,7 @@ void CmdHandler::handleControllerCmd()
 
         Command cmd;
         // retrieve command
-        auto ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
+        ssize_t ret_val = skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
         if (ret_val == -1)
         {
             fprintf(stderr, "CmdHandler::handleControllerCmd error reading command\n");
@@ -93,8 +93,10 @@ void CmdHandler::handleControllerCmd()
         // handle commands
         if (cmd.type == CommandType::CMD_LOCAL_COMPUTE_BLK)
         { // read block command
-          // request a block from memory pool
+            // request a block from memory pool
             unsigned char *block_buffer = memory_pool->getBlock();
+
+            // unsigned char *block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
 
             // read block
             if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
@@ -167,10 +169,12 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
     }
     lck.unlock();
 
+    unsigned char *cmd_handler_block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char *));
+
+    auto &skt = sockets_map[self_conn_id];
+
     while (true)
     {
-        auto &skt = sockets_map[self_conn_id];
-
         Command cmd;
         // retrieve command
 
@@ -183,7 +187,8 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
         else if (ret_val == 0)
         {
             // currently, no cmd comming in
-            continue;
+            printf("CmdHandler:: no command coming in, break\n");
+            break;
         }
 
         // parse the command
@@ -209,11 +214,8 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
 
         if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
         {
-            // request a block from memory pool
-            unsigned char *block_buffer = memory_pool->getBlock();
-
             // recv block
-            if (BlockIO::recvBlock(skt, block_buffer, config.block_size) != config.block_size)
+            if (BlockIO::recvBlock(skt, cmd_handler_block_buffer, config.block_size) != config.block_size)
             {
                 fprintf(stderr, "CmdHandler::handleAgentCmd error recv block: %s\n", cmd.src_block_path.c_str());
                 exit(EXIT_FAILURE);
@@ -225,6 +227,13 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
             if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
             { // parity block compute command
 
+                // request a block from memory pool
+                unsigned char *block_buffer = memory_pool->getBlock();
+
+                // unsigned char *block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+
+                memcpy(block_buffer, cmd_handler_block_buffer, config.block_size * sizeof(unsigned char));
+
                 // pass to compute queue
                 ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, block_buffer, cmd.dst_block_path);
                 parity_compute_queue->Push(parity_compute_task);
@@ -233,19 +242,18 @@ void CmdHandler::handleAgentCmd(uint16_t self_conn_id)
             { // relocate command
 
                 //  block
-                if (BlockIO::writeBlock(cmd.dst_block_path, block_buffer, config.block_size) != config.block_size)
+                if (BlockIO::writeBlock(cmd.dst_block_path, cmd_handler_block_buffer, config.block_size) != config.block_size)
                 {
                     fprintf(stderr, "CmdHandler::handleAgentCmd error writing block: %s\n", cmd.dst_block_path.c_str());
                     exit(EXIT_FAILURE);
                 }
 
-                // free block
-                memory_pool->freeBlock(block_buffer);
-
                 printf("CmdHandler::handleAgentCmd write block: %s\n", cmd.dst_block_path.c_str());
             }
         }
     }
+
+    free(cmd_handler_block_buffer);
 
     printf("CmdHandler::handleAgentCmd finished handling commands for Agent %u\n", self_conn_id);
 }
