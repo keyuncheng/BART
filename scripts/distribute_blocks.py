@@ -88,9 +88,15 @@ def main():
     for node_id in range(num_nodes):
         node_block_mapping[node_id] = []
 
-    for pre_stripes in pre_block_mapping:
-        for pre_node_id, pre_block_placement_path in pre_stripes:
-            node_block_mapping[pre_node_id].append(pre_block_placement_path)
+    for pre_stripe_id, pre_stripes in enumerate(pre_block_mapping):
+        for pre_block_id, item in enumerate(pre_stripes):
+            pre_node_id, pre_block_placement_path = item
+            print(pre_block_id, item)
+            node_block_mapping[pre_node_id].append([pre_stripe_id, pre_block_id, pre_block_placement_path])
+
+    # generate an EC stripe group
+    cmd = "cd {}; ./GenECStripe {} {} {} {} {} {}".format(str(bin_dir), k_i, m_i, k_f, m_f, block_size, str(data_dir) + "/")
+    exec_cmd(cmd, exec=True)
 
     for node_id in range(num_nodes):
         node_ip = agent_addrs[node_id][0]
@@ -105,10 +111,10 @@ def main():
         cmd = "ssh {} \"bash -c \\\"rm -rf {}/*\\\"\"".format(node_ip, str(node_dir))
         exec_cmd(cmd, exec=True)
 
-        for block_path in blocks_to_gen:
-            block_size_MB = int(block_size / (1024 * 1024))
-            # TODO: if it's a data block, use dd; if it's a parity block, use ec
-            cmd = "ssh {} \"dd if=/dev/urandom of={} bs={}M count=1 iflag=fullblock\"".format(node_ip, str(block_path), block_size_MB)
+        for pre_stripe_id, pre_block_id, pre_block_placement_path in blocks_to_gen:
+            ec_pre_block_path = data_dir / "block_{}_{}".format(0, pre_block_id)
+
+            cmd = "scp {} {}:{}".format(ec_pre_block_path, node_ip, pre_block_placement_path)
             exec_cmd(cmd, exec=True)
         
 
