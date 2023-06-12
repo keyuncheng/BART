@@ -137,7 +137,7 @@ def main():
                     post_block_placement_path = pre_block_mapping[pre_stripe_id_global][pre_block_id][1]
                 else:
                     # There is block relocation, rename the path
-                    post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / Path(pre_block_mapping[pre_stripe_id_global][pre_block_id][1]).name
+                    post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / "reloc_block_{}_{}".format(pre_stripe_id_global, pre_block_id)
                 
             else:
                 if enable_HDFS:

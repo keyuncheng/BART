@@ -60,7 +60,7 @@ You can install with apt-get to install the following packages
 sudo apt-get install g++ make cmake yasm nasm autoconf libtool git
 ```
 
-Note that Sockpp requires the cmake version of v3.1.2 or above
+Note that Sockpp requires the cmake version of v3.12 or above
 
 #### Sockpp
 

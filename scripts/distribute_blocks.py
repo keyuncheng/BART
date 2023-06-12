@@ -93,7 +93,6 @@ def main():
     for pre_stripe_id, pre_stripes in enumerate(pre_block_mapping):
         for pre_block_id, item in enumerate(pre_stripes):
             pre_node_id, pre_block_placement_path = item
-            print(pre_block_id, item)
             node_block_mapping[pre_node_id].append([pre_stripe_id, pre_block_id, pre_block_placement_path])
 
     # generate an EC stripe group
