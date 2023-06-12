@@ -9,7 +9,7 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
     cmd_handler = new CmdHandler(config, sockets_map, NULL, NULL, NULL, 1);
 
     // create command distributor
-    cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, 1);
+    cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, NULL, 1);
 }
 
 CtrlNode::~CtrlNode()

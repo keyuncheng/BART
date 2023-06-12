@@ -87,27 +87,18 @@ void ComputeWorker::run()
 
         if (parity_compute_queue.Pop(parity_compute_task) == true)
         {
+            string parity_compute_key = getParityComputeTaskKey(parity_compute_task.enc_method, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+
+            printf("ComputeWorker::run received parity computation task: %s\n", parity_compute_key.c_str());
+            parity_compute_task.print();
+
+            bool is_ongoing_task_found = isTaskOngoing(parity_compute_task.enc_method, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+
             // lock the map
             unique_lock<mutex> lck(ongoing_task_map_mtx);
 
-            // generate parity compute key
-            string parity_compute_key;
-            if (parity_compute_task.enc_method == EncodeMethod::RE_ENCODE)
-            { // Re-encoding format: post_stripe_id:enc_method
-                parity_compute_key = to_string(parity_compute_task.post_stripe_id) + string(":") + to_string(parity_compute_task.enc_method);
-            }
-            else if (parity_compute_task.enc_method == EncodeMethod::PARITY_MERGE)
-            { // Parity merging format: post_stripe_id:enc_method:post_block_id
-                parity_compute_key = to_string(parity_compute_task.post_stripe_id) + string(":") + to_string(parity_compute_task.enc_method) + string(":") + to_string(parity_compute_task.post_block_id);
-            }
-
-            printf("ComputeWorker::run received parity computation task: %s\n", parity_compute_key.c_str());
-
-            parity_compute_task.print();
-
             // check whether there is already a parity compute task
-            auto it = ongoing_task_map.find(parity_compute_key);
-            if (it == ongoing_task_map.end())
+            if (is_ongoing_task_found == false)
             { // add a new parity compute task
                 ongoing_task_map.insert(pair<string, ParityComputeTask>(parity_compute_key, parity_compute_task));
 
@@ -264,4 +255,32 @@ void ComputeWorker::run()
     }
 
     printf("ComputeWorker::run finished handling parity computation tasks\n");
+}
+
+string ComputeWorker::getParityComputeTaskKey(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id)
+{
+    // generate parity compute key
+    string parity_compute_key;
+    if (enc_method == EncodeMethod::RE_ENCODE)
+    { // Re-encoding format: post_stripe_id:enc_method
+        parity_compute_key = to_string(post_stripe_id) + string(":") + to_string(enc_method);
+    }
+    else if (enc_method == EncodeMethod::PARITY_MERGE)
+    { // Parity merging format: post_stripe_id:enc_method:post_block_id
+        parity_compute_key = to_string(post_stripe_id) + string(":") + to_string(enc_method) + string(":") + to_string(post_block_id);
+    }
+
+    return parity_compute_key;
+}
+
+bool ComputeWorker::isTaskOngoing(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id)
+{
+    // lock the map
+    unique_lock<mutex> lck(ongoing_task_map_mtx);
+
+    string parity_compute_key = getParityComputeTaskKey(enc_method, post_stripe_id, post_block_id);
+
+    // check whether there is already a parity compute task
+    auto it = ongoing_task_map.find(parity_compute_key);
+    return it != ongoing_task_map.end();
 }

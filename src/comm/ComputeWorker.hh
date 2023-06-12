@@ -41,6 +41,9 @@ public:
     void destroyECTables();
 
     unsigned char gfPow(unsigned char val, unsigned int times);
+
+    string getParityComputeTaskKey(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id);
+    bool isTaskOngoing(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id);
 };
 
 #endif // __COMPUTE_WORKER_HH__

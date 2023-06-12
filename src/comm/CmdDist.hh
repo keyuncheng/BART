@@ -11,6 +11,7 @@
 #include "../util/ThreadPool.hh"
 #include "../util/Config.hh"
 #include "BlockIO.hh"
+#include "ComputeWorker.hh"
 
 class CmdDist : public ThreadPool
 {
@@ -21,12 +22,13 @@ public:
     unordered_map<uint16_t, sockpp::tcp_connector> &connectors_map;
     unordered_map<uint16_t, mutex *> mtxs_map;
     MessageQueue<Command> &cmd_dist_queue;
+    ComputeWorker *compute_worker;
 
     atomic<uint32_t> num_finished_connectors;
 
     unsigned char *block_buffer;
 
-    CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, unsigned int _num_threads);
+    CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, ComputeWorker *_compute_worker, unsigned int _num_threads);
     ~CmdDist();
 
     void run() override;

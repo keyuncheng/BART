@@ -1,6 +1,6 @@
 #include "CmdDist.hh"
 
-CmdDist::CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), connectors_map(_connectors_map), cmd_dist_queue(_cmd_dist_queue)
+CmdDist::CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, ComputeWorker *_compute_worker, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), connectors_map(_connectors_map), cmd_dist_queue(_cmd_dist_queue), compute_worker(_compute_worker)
 {
     // init mutex
     for (auto &item : connectors_map)
@@ -46,56 +46,53 @@ void CmdDist::run()
                 exit(EXIT_FAILURE);
             }
 
-            // check if the command is a block transfer command sent from Agent, after which there will be a following block comming transferred in
-            if (cmd.src_conn_id != CTRL_NODE_ID && (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK))
-            {
-                if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+            //  sent from Agent, after which there will be a following block comming transferred in
+            if (cmd.src_conn_id != CTRL_NODE_ID)
+            { // check commands from Agent's CmdHandler
+                if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 {
-                    // relocating newly generated parity block
-                    if (cmd.post_block_id >= config.code.k_f)
+                    // if it's a newly generated parity block, then we need to check whether it has been computed
+                    if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                     {
-
-                        while (true)
-                        { // make sure the parity block has been generated from compute worker
-                            ifstream f(cmd.src_block_path.c_str());
-                            if (f.good() == false)
-                            {
-                                this_thread::sleep_for(chrono::milliseconds(10));
-                                continue;
+                        // relocating newly generated parity block
+                        if (cmd.post_block_id >= config.code.k_f)
+                        {
+                            while (true)
+                            { // make sure the parity block has been generated and stored from compute worker
+                                if (compute_worker->isTaskOngoing(EncodeMethod::RE_ENCODE, cmd.post_stripe_id, cmd.post_block_id) == true || compute_worker->isTaskOngoing(EncodeMethod::PARITY_MERGE, cmd.post_stripe_id, cmd.post_block_id) == true)
+                                {
+                                    this_thread::sleep_for(chrono::milliseconds(10));
+                                    continue;
+                                }
+                                else
+                                {
+                                    break;
+                                }
                             }
-                            f.seekg(0, ios::end);
-                            uint64_t file_size = f.tellg();
-                            if (file_size < config.block_size)
-                            {
-                                this_thread::sleep_for(chrono::milliseconds(10));
-                                continue;
-                            }
-                            break;
                         }
                     }
-                }
 
-                // read block
-                if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
-                {
-                    fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
-                    exit(EXIT_FAILURE);
-                }
+                    // read block
+                    if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
+                    {
+                        fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
+                        exit(EXIT_FAILURE);
+                    }
 
-                // send block
-                if (BlockIO::sendBlock(connector, block_buffer, config.block_size) != config.block_size)
-                {
-                    fprintf(stderr, "error sending block: %s to Node %u\n", cmd.src_block_path.c_str(), cmd.dst_conn_id);
-                    exit(EXIT_FAILURE);
-                }
+                    // send block
+                    if (BlockIO::sendBlock(connector, block_buffer, config.block_size) != config.block_size)
+                    {
+                        fprintf(stderr, "error sending block: %s to Node %u\n", cmd.src_block_path.c_str(), cmd.dst_conn_id);
+                        exit(EXIT_FAILURE);
+                    }
 
-                printf("CmdDist::run obtained block transfer task, send block %s\n", cmd.src_block_path.c_str());
-                // Utils::printUCharBuffer(block_buffer, 10);
+                    printf("CmdDist::run obtained block transfer task, send block %s\n", cmd.src_block_path.c_str());
+                    // Utils::printUCharBuffer(block_buffer, 10);
+                }
             }
 
-            // stop connection command
             if (cmd.type == CommandType::CMD_STOP)
-            {
+            { // stop connection command
                 connector.close();
                 num_finished_connectors++;
                 printf("CmdDist::run obtained stop connection command to Node %u, call connector.close()\n", cmd.dst_conn_id);
