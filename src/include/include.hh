@@ -34,7 +34,8 @@ using namespace std;
 #define INVALID_VTX_ID UINT64_MAX
 
 #define MAX_MSG_QUEUE_LEN 1024
-#define MAX_CMD_LEN 1024
+#define MAX_PARITY_COMPUTE_QUEUE_LEN 1024
+#define MAX_CMD_LEN 512
 #define MAX_MEM_POOL_SIZE 1
 #define CTRL_NODE_ID (INVALID_NODE_ID - 1)
 

@@ -1,41 +1,39 @@
-#ifndef __MESSAGE_QUEUE_HH__
-#define __MESSAGE_QUEUE_HH__
+#ifndef __MULTIWRITER_QUEUE_HH__
+#define __MULTIWRITER_QUEUE_HH__
 
 #include "../include/include.hh"
-#include "readerwriterqueue.h"
 // #include "concurrentqueue.h"
-// #include "blockingconcurrentqueue.h"
+#include "blockingconcurrentqueue.h"
 #include <mutex>
 #include <queue>
 
 template <class T>
-class MessageQueue
+class MultiWriterQueue
 {
 private:
     /* data */
 public:
     // use the open-source lock-free queue from here: https://github.com/cameron314/readerwriterqueue
-    moodycamel::ReaderWriterQueue<T> *queue;
-    // moodycamel::ConcurrentQueue<T> *queue;
-    // moodycamel::BlockingConcurrentQueue<T> *queue;
+    // moodycamel::MultiWriterQueue<T> *queue;
+    moodycamel::BlockingConcurrentQueue<T> *queue;
 
     /**
-     * @brief Construct a new Message Queue object
+     * @brief Construct a new MultiWriter Queue object
      *
      * @param maxSize
      */
-    MessageQueue(uint32_t maxSize)
+    MultiWriterQueue(uint32_t maxSize)
     {
-        queue = new moodycamel::ReaderWriterQueue<T>(maxSize);
-        // queue = new moodycamel::ConcurrentQueue<T>(maxSize);
-        // queue = new moodycamel::BlockingConcurrentQueue<T>(maxSize);
+        // queue = new moodycamel::ReaderWriterQueue<T>(maxSize);
+        // queue = new moodycamel::MultiWriterQueue<T>(maxSize);
+        queue = new moodycamel::BlockingConcurrentQueue<T>(maxSize);
     }
 
     /**
-     * @brief Destroy the Message Queue object
+     * @brief Destroy the MultiWriter Queue object
      *
      */
-    ~MessageQueue()
+    ~MultiWriterQueue()
     {
         bool flag = IsEmpty();
         if (flag)
@@ -44,7 +42,7 @@ public:
         }
         else
         {
-            fprintf(stderr, "MessageQueue: Queue is not empty.\n");
+            fprintf(stderr, "MultiWriterQueue: Queue is not empty.\n");
             exit(EXIT_FAILURE);
         }
     }
@@ -88,4 +86,4 @@ public:
     }
 };
 
-#endif // __MESSAGE_QUEUE_HH__
+#endif // __MULTIWRITER_QUEUE_HH__

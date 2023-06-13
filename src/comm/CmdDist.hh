@@ -2,16 +2,18 @@
 #define __CMD_DIST_HH__
 
 #include <mutex>
+#include <condition_variable>
+#include <atomic>
+
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
 #include "../include/include.hh"
 #include "../util/Utils.hh"
 #include "../util/MessageQueue.hh"
-#include "Command.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/Config.hh"
+#include "Command.hh"
 #include "BlockIO.hh"
-#include "ComputeWorker.hh"
 
 class CmdDist : public ThreadPool
 {
@@ -20,18 +22,25 @@ private:
 public:
     Config &config;
     unordered_map<uint16_t, sockpp::tcp_connector> &connectors_map;
-    unordered_map<uint16_t, mutex *> mtxs_map;
-    MessageQueue<Command> &cmd_dist_queue;
-    ComputeWorker *compute_worker;
 
-    atomic<uint32_t> num_finished_connectors;
+    // distributor threads
+    unordered_map<uint16_t, thread *> dist_threads_map;
 
-    unsigned char *block_buffer;
+    // ready to work
+    mutex ready_mtx;
+    condition_variable ready_cv;
+    atomic<bool> is_ready;
 
-    CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, MessageQueue<Command> &_cmd_dist_queue, ComputeWorker *_compute_worker, unsigned int _num_threads);
+    // message queues for distributing commands (each distributor thread pops commands from the corresponding queue)
+    unordered_map<uint16_t, MessageQueue<Command> *> &cmd_dist_queues;
+
+    CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, unsigned int _num_threads);
     ~CmdDist();
 
     void run() override;
+
+    void distCmdToController();
+    void distCmdToAgent(uint16_t dst_conn_id);
 };
 
 #endif // __CMD_DIST_HH__

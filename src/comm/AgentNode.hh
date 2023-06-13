@@ -4,6 +4,7 @@
 #include "../include/include.hh"
 #include "../util/Config.hh"
 #include "../util/MessageQueue.hh"
+#include "../util/MultiWriterQueue.h"
 #include "Node.hh"
 #include "CmdDist.hh"
 #include "CmdHandler.hh"
@@ -21,9 +22,11 @@ public:
     CmdDist *cmd_distributor;      // distribute send block commands
     ComputeWorker *compute_worker; // compute worker
 
-    // queue for command distribution
-    MessageQueue<Command> *cmd_dist_queue;
-    MessageQueue<ParityComputeTask> *parity_compute_queue;
+    // command distribution queue (each is a single reader single writer queue)
+    unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
+
+    // parity compute queue (a multiple writer single reader queue)
+    MultiWriterQueue<ParityComputeTask> *parity_compute_queue;
 
     // memory pool
     MemoryPool *memory_pool;

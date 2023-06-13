@@ -53,13 +53,14 @@ uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t 
     {
         fprintf(stderr, "BlockIO::writeBlock error create block directory: %s\n", block_dir.c_str());
     }
-    // printf("BlockIO::writeBlock create block directory: %s\n", block_dir.c_str());
+
+    // printf("BlockIO::writeBlock create block directory: %s for block path: %s\n", block_dir.c_str(), block_path.c_str());
 
     // write file
     FILE *file = fopen(block_path.c_str(), "w");
     if (!file)
     {
-        fprintf(stderr, "BlockIO::writeBlock failed to open file %s\n", block_path.c_str());
+        fprintf(stderr, "BlockIO::writeBlock failed to open file %s, error: %d\n", block_path.c_str(), errno);
         exit(EXIT_FAILURE);
     }
     uint64_t write_bytes = 0;

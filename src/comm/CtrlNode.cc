@@ -2,21 +2,32 @@
 
 CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id, _config)
 {
-    // create command distribution queue
-    cmd_dist_queue = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
+    // create command distribution queues
+    // each connector have one distinct queue (self_conn_id don't have it)
+    for (auto &item : connectors_map)
+    {
+        uint16_t conn_id = item.first;
+        cmd_dist_queues[conn_id] = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
+    }
 
     // create command handler (only handle STOP command from Agents)
-    cmd_handler = new CmdHandler(config, sockets_map, NULL, NULL, NULL, 1);
+    cmd_handler = new CmdHandler(config, sockets_map, NULL, NULL, NULL, NULL, 1);
 
     // create command distributor
-    cmd_distributor = new CmdDist(config, connectors_map, *cmd_dist_queue, NULL, 1);
+    cmd_distributor = new CmdDist(config, connectors_map, cmd_dist_queues, 1);
 }
 
 CtrlNode::~CtrlNode()
 {
     delete cmd_distributor;
     delete cmd_handler;
-    delete cmd_dist_queue;
+
+    // each connector have one distinct queue
+    for (auto &item : connectors_map)
+    {
+        uint16_t conn_id = item.first;
+        delete cmd_dist_queues[conn_id];
+    }
 }
 
 void CtrlNode::start()
@@ -69,19 +80,15 @@ void CtrlNode::genTransSolution()
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
-    trans_solution.print();
+    // trans_solution.print();
 
     vector<Command> commands;
+
+    // // generate transition commands
     genCommands(stripe_batch, trans_solution, pre_block_mapping, post_block_mapping, commands);
     // genSampleCommands(commands);
 
-    for (auto &command : commands)
-    {
-        // command.print();
-        cmd_dist_queue->Push(command);
-    }
-
-    // send disconnect commands
+    // generate stop commands
     for (auto &item : connectors_map)
     {
         uint16_t dst_conn_id = item.first;
@@ -89,7 +96,20 @@ void CtrlNode::genTransSolution()
         Command cmd_disconnect;
         cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
 
-        cmd_dist_queue->Push(cmd_disconnect);
+        commands.push_back(cmd_disconnect);
+    }
+
+    // send disconnect commands
+
+    // for (auto &command : commands)
+    // {
+    //     command.print();
+    // }
+
+    for (auto &command : commands)
+    {
+        // command.print();
+        cmd_dist_queues[command.dst_conn_id]->Push(command);
     }
 }
 

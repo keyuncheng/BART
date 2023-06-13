@@ -7,41 +7,42 @@ ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stri
         return;
     }
 
-    // extract parity block paths
-    char *raw_str = (char *)malloc((_raw_path.size() + 1) * sizeof(char));
-    strcpy(raw_str, _raw_path.c_str());
-
     // encode method
     if (post_block_id < code->k_f)
     {
         enc_method = EncodeMethod::RE_ENCODE;
         re_parity_paths.assign(code->m_f, string());
 
-        // extract re-encoding: m parity block paths
-        uint8_t pid = 0;
-        char *token = strtok(raw_str, ":");
-        re_parity_paths[pid] = token;
-        pid++;
+        // parity paths
+        string delimiter_char = ":";
+        size_t pos = 0;
+        string token;
+        uint8_t parity_id = 0;
 
-        while ((token = strtok(NULL, ":")))
+        while ((pos = _raw_path.find(delimiter_char)) != std::string::npos)
         {
-            re_parity_paths[pid] = token;
-            pid++;
+            token = _raw_path.substr(0, pos);
+            re_parity_paths[parity_id] = token;
+            _raw_path.erase(0, pos + delimiter_char.length());
+            parity_id++;
         }
-
-        free(raw_str);
+        re_parity_paths[code->m_f - 1] = token;
     }
     else
     {
         enc_method = EncodeMethod::PARITY_MERGE;
 
         // pre_stripe_id
-        char *token = strtok(raw_str, ":");
-        pre_stripe_id = atoi(token);
+        string delimiter_char = ":";
+        size_t pos = _raw_path.find(delimiter_char);
+        string token = _raw_path.substr(0, pos);
+        _raw_path.erase(0, pos + delimiter_char.length());
+
+        // pre-stripe-id
+        pre_stripe_id = atoi(token.c_str());
 
         // parity block path
-        token = strtok(NULL, ":");
-        pm_parity_path = token;
+        pm_parity_path = _raw_path;
     }
 
     // init num of collected parity blocks

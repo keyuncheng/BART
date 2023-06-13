@@ -21,8 +21,8 @@ public:
     CmdHandler *cmd_handler; // handler commands from Agents
     CmdDist *cmd_distributor;
 
-    // queue for command distribution
-    MessageQueue<Command> *cmd_dist_queue;
+    // command distribution queue (each is a single reader single writer queue)
+    unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
 
     CtrlNode(uint16_t _self_conn_id, Config &_config);
     ~CtrlNode();

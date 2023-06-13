@@ -11,7 +11,9 @@
 #include "../util/Utils.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/MessageQueue.hh"
+#include "../util/MultiWriterQueue.h"
 #include "../util/Config.hh"
+#include "ComputeWorker.hh"
 #include "BlockIO.hh"
 #include "Command.hh"
 #include "ParityComputeTask.hh"
@@ -24,22 +26,34 @@ private:
 public:
     Config &config;
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
-    unordered_map<uint16_t, thread *> handler_threads_map;
-    mutex handler_mtx;
-    condition_variable handler_cv;
-    atomic<bool> is_handler_ready;
 
-    MessageQueue<Command> *cmd_dist_queue;
-    MessageQueue<ParityComputeTask> *parity_compute_queue;
+    // handler threads
+    unordered_map<uint16_t, thread *> handler_threads_map;
+
+    mutex ready_mtx;
+    condition_variable ready_cv;
+    atomic<bool> is_ready;
+
+    // message queues for distributing commands
+    // each command handler thread pushes commands to the corresponding queue
+    unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
+
+    // parity compute queue (parse parity computation commands and push the parity compute task to ComputeWorker)
+    MultiWriterQueue<ParityComputeTask> *parity_compute_queue;
+
+    // memory pool (for allocating blocks for parity computation)
     MemoryPool *memory_pool;
 
-    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, MessageQueue<Command> *_cmd_dist_queue, MessageQueue<ParityComputeTask> *_parity_compute_queue, MemoryPool *_memory_pool, unsigned int _num_threads);
+    // used for retrieving parity block computation status only
+    ComputeWorker *compute_worker;
+
+    CmdHandler(Config &_config, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, MultiWriterQueue<ParityComputeTask> *_parity_compute_queue, MemoryPool *_memory_pool, ComputeWorker *_compute_worker, unsigned int _num_threads);
     ~CmdHandler();
 
     void run() override;
 
-    void handleControllerCmd();
-    void handleAgentCmd(uint16_t self_conn_id);
+    void handleCmdFromController();
+    void handleCmdFromAgent(uint16_t src_conn_id);
 };
 
 #endif // __CMD_HANDLER_HH__
