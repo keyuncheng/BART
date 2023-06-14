@@ -28,7 +28,9 @@ public:
     unsigned char **data_buffer;
     // unsigned char **parity_buffer;
 
-    ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, unsigned char *_buffer, string _raw_path);
+    bool all_tasks_finished;
+
+    ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, EncodeMethod _enc_method, unsigned char *_buffer, string _raw_path);
     ~ParityComputeTask();
 
     void print();

@@ -33,10 +33,13 @@ using namespace std;
 #define INVALID_BLK_ID UINT8_MAX
 #define INVALID_VTX_ID UINT64_MAX
 
-#define MAX_MSG_QUEUE_LEN 1024
-#define MAX_PARITY_COMPUTE_QUEUE_LEN 1024
+#define MAX_MSG_QUEUE_LEN 10240
+#define MAX_PARITY_COMPUTE_QUEUE_LEN 10240
+#define MAX_PARITY_RELOC_QUEUE_LEN 10240
 #define MAX_CMD_LEN 512
 #define MAX_MEM_POOL_SIZE 1
 #define CTRL_NODE_ID (INVALID_NODE_ID - 1)
+
+const string parity_comp_term_signal = "PARITY_COMP_TERM";
 
 #endif // __INCLUDE_HH__

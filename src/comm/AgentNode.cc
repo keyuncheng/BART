@@ -13,17 +13,20 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     // create parity compute task queue
     parity_compute_queue = new MultiWriterQueue<ParityComputeTask>(MAX_PARITY_COMPUTE_QUEUE_LEN * config.code.n_f);
 
+    // create parity compute result queue
+    parity_comp_result_queue = new MessageQueue<string>(MAX_PARITY_COMPUTE_QUEUE_LEN);
+
     // memory pool
     memory_pool = new MemoryPool(MAX_MEM_POOL_SIZE * config.code.lambda_i * config.agent_addr_map.size(), config.block_size);
 
     // create compute worker
-    compute_worker = new ComputeWorker(config, *parity_compute_queue, *memory_pool, 1);
+    compute_worker = new ComputeWorker(config, *parity_compute_queue, *parity_comp_result_queue, *memory_pool, 1);
 
     // create command distributor
     cmd_distributor = new CmdDist(config, connectors_map, cmd_dist_queues, 1);
 
     // create command handler
-    cmd_handler = new CmdHandler(config, sockets_map, &cmd_dist_queues, parity_compute_queue, memory_pool, compute_worker, 1);
+    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, &cmd_dist_queues, parity_compute_queue, parity_comp_result_queue, memory_pool, compute_worker, 1);
 }
 
 AgentNode::~AgentNode()
@@ -32,6 +35,7 @@ AgentNode::~AgentNode()
     delete cmd_distributor;
     delete compute_worker;
     delete memory_pool;
+    delete parity_comp_result_queue;
     delete parity_compute_queue;
 
     // each connector have one distinct queue
@@ -44,25 +48,24 @@ AgentNode::~AgentNode()
 
 void AgentNode::start()
 {
-    // start compute_worker
-    compute_worker->start();
-
     // start cmd_handler
     cmd_handler->start();
 
     // start cmd_distributor
     cmd_distributor->start();
+
+    // start compute_worker
+    compute_worker->start();
 }
 
 void AgentNode::stop()
 {
+    // wait compute_worker finish
+    compute_worker->wait();
+
     // wait cmd_distributor finish
     cmd_distributor->wait();
 
     // wait cmd_handler finish
     cmd_handler->wait();
-
-    // wait compute_worker finish
-    compute_worker->setFinished();
-    compute_worker->wait();
 }

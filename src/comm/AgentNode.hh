@@ -10,7 +10,6 @@
 #include "CmdHandler.hh"
 #include "ParityComputeTask.hh"
 #include "ComputeWorker.hh"
-#include "WriteWorker.hh"
 #include "../util/MemoryPool.hh"
 
 class AgentNode : public Node
@@ -22,11 +21,14 @@ public:
     CmdDist *cmd_distributor;      // distribute send block commands
     ComputeWorker *compute_worker; // compute worker
 
-    // command distribution queue (each is a single reader single writer queue)
+    // command distribution queues (each is a single reader single writer queue) (CmdDist <-> CmdHandler)
     unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
 
-    // parity compute queue (a multiple writer single reader queue)
+    // parity compute queue (a multiple writer single reader queue) (CmdHandler <-> ComputeWorker)
     MultiWriterQueue<ParityComputeTask> *parity_compute_queue;
+
+    // parity compute result queue (ComputeWorker <-> CmdHandler)
+    MessageQueue<string> *parity_comp_result_queue;
 
     // memory pool
     MemoryPool *memory_pool;

@@ -24,7 +24,9 @@ void Command::print()
         printf("\n");
         break;
     }
-    case CommandType::CMD_LOCAL_COMPUTE_BLK:
+    case CommandType::CMD_COMPUTE_RE_BLK:
+    case CommandType::CMD_COMPUTE_PM_BLK:
+    case CommandType::CMD_READ_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
     case CommandType::CMD_DELETE_BLK:
@@ -108,7 +110,9 @@ void Command::parse()
         break;
     }
     case CommandType::CMD_STOP:
-    case CommandType::CMD_LOCAL_COMPUTE_BLK:
+    case CommandType::CMD_COMPUTE_RE_BLK:
+    case CommandType::CMD_COMPUTE_PM_BLK:
+    case CommandType::CMD_READ_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
     case CommandType::CMD_DELETE_BLK:

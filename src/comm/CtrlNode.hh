@@ -32,8 +32,6 @@ public:
 
     void genTransSolution();
     void genCommands(StripeBatch &stripe_batch, TransSolution &trans_solution, vector<vector<pair<uint16_t, string>>> &pre_block_mapping, vector<vector<pair<uint16_t, string>>> &post_block_mapping, vector<Command> &commands);
-
-    void genSampleCommands(vector<Command> &commands);
 };
 
 #endif // __CTRL_NODE_HH__
