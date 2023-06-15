@@ -11,7 +11,6 @@
 #include "../util/Utils.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/MessageQueue.hh"
-#include "../util/MultiWriterQueue.h"
 #include "../util/Config.hh"
 #include "ComputeWorker.hh"
 #include "BlockIO.hh"
@@ -28,7 +27,22 @@ public:
     uint16_t self_conn_id;
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
 
-    // mutex for handlers
+    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
+    unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
+
+    // parity compute task queue: each retrieves parity computation task from Controller and pass to ComputeWorker (CmdHandler -> ComputeWorker)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *pc_task_queues;
+
+    // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *pc_reply_queues;
+
+    // parity relocation task queue (ComputeWorker -> CmdHandler)
+    MessageQueue<ParityComputeTask> *parity_reloc_task_queue;
+
+    // memory pool (for allocating blocks for parity computation)
+    MemoryPool *memory_pool;
+
+    // mutex for hand1lers
     mutex ready_mtx;
     condition_variable ready_cv;
     atomic<bool> is_ready;
@@ -36,38 +50,27 @@ public:
     // command handler threads
     unordered_map<uint16_t, thread *> handler_threads_map;
 
-    // parity relocation command handler
-    thread *parity_reloc_thread;
+    // parity relocation task thread
+    thread *parity_reloc_task_thread;
 
-    // handle parity relocation command
-    mutex parity_reloc_cmd_map_mtx;
-    unordered_map<uint32_t, vector<Command>> parity_reloc_cmd_map;
-
-    // command distribution queues (each is a single reader single writer queue) (CmdDist <-> CmdHandler)
-    unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
-
-    // parity compute queue (a multiple writer single reader queue) (CmdHandler <-> ComputeWorker)
-    MultiWriterQueue<ParityComputeTask> *parity_compute_queue;
-
-    // parity compute result queue (ComputeWorker <-> CmdHandler)
-    MessageQueue<string> *parity_comp_result_queue;
-
-    // memory pool (for allocating blocks for parity computation)
-    MemoryPool *memory_pool;
-
-    // used for retrieving parity block computation status only
-    ComputeWorker *compute_worker;
-
-    CmdHandler(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, MultiWriterQueue<ParityComputeTask> *_parity_compute_queue, MessageQueue<string> *_parity_comp_result_queue, MemoryPool *_memory_pool, ComputeWorker *_compute_worker, unsigned int _num_threads);
+    CmdHandler(Config &_config, uint16_t _self_conn_id,
+               unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
+               unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues,
+               unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
+               unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues,
+               MessageQueue<ParityComputeTask> *_pc_reloc_task_queue, MemoryPool *_memory_pool, unsigned int _num_threads);
     ~CmdHandler();
 
     void run() override;
 
+    // handle command thread
     void handleCmdFromController();
     void handleCmdFromAgent(uint16_t src_conn_id);
 
-    // handle parity relocation command
-    void handleParityRelocCmdFromController();
+    // parity relocation thread
+    void handleParityRelocTask();
+
+    void distStopCmds();
 };
 
 #endif // __CMD_HANDLER_HH__

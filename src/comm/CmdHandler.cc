@@ -1,6 +1,7 @@
 #include "CmdHandler.hh"
 
-CmdHandler::CmdHandler(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, MultiWriterQueue<ParityComputeTask> *_parity_compute_queue, MessageQueue<string> *_parity_comp_result_queue, MemoryPool *_memory_pool, ComputeWorker *_compute_worker, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), cmd_dist_queues(_cmd_dist_queues), parity_compute_queue(_parity_compute_queue), parity_comp_result_queue(_parity_comp_result_queue), memory_pool(_memory_pool), compute_worker(_compute_worker)
+CmdHandler::CmdHandler(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
+                       unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues, MessageQueue<ParityComputeTask> *_parity_reloc_task_queue, MemoryPool *_memory_pool, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), cmd_dist_queues(_cmd_dist_queues), pc_task_queues(_pc_task_queues), pc_reply_queues(_pc_reply_queues), parity_reloc_task_queue(_parity_reloc_task_queue), memory_pool(_memory_pool)
 {
     for (auto &item : sockets_map)
     {
@@ -23,17 +24,13 @@ void CmdHandler::run()
     lck.unlock();
     ready_cv.notify_all();
 
+    // create parity relocation thread
     if (self_conn_id != CTRL_NODE_ID)
     {
-        // create cmd handler thread from Controller
-        handler_threads_map[CTRL_NODE_ID] = new thread(&CmdHandler::handleCmdFromController, this);
-
-        // join cmd handler thread from Controller
-        handler_threads_map[CTRL_NODE_ID]->join();
-        delete handler_threads_map[CTRL_NODE_ID];
+        parity_reloc_task_thread = new thread(&CmdHandler::handleParityRelocTask, this);
     }
 
-    // create cmd handler thread for Agent
+    // create cmd handler thread for Controller and Agents
     for (auto &item : sockets_map)
     {
         uint16_t conn_id = item.first;
@@ -42,33 +39,33 @@ void CmdHandler::run()
         { // create handler thread for Agents
             handler_threads_map[conn_id] = new thread(&CmdHandler::handleCmdFromAgent, this, conn_id);
         }
+        else
+        {
+            handler_threads_map[conn_id] = new thread(&CmdHandler::handleCmdFromController, this);
+        }
     }
 
-    // collect parity computation results thread
     if (self_conn_id != CTRL_NODE_ID)
     {
-        // create parity relocation command thread
-        parity_reloc_thread = new thread(&CmdHandler::handleParityRelocCmdFromController, this);
+        // join parity relocation thread
+        parity_reloc_task_thread->join();
 
-        parity_reloc_thread->join();
-        delete parity_reloc_thread;
+        // distribute stop commands
+        distStopCmds();
     }
 
-    // join cmd handler thread for Agent
+    // join cmd handler thread for both Controller and Agents
     for (auto &item : sockets_map)
     {
         uint16_t conn_id = item.first;
-        if (conn_id != CTRL_NODE_ID)
-        {
-            handler_threads_map[conn_id]->join();
-            delete handler_threads_map[conn_id];
-        }
+        handler_threads_map[conn_id]->join();
+        delete handler_threads_map[conn_id];
     }
 }
 
 void CmdHandler::handleCmdFromController()
 {
-    printf("CmdHandler::handleCmdFromController start to handle commands from Controller\n");
+    printf("CmdHandler::handleCmdFromController [Node %u] start to handle commands from Controller\n", self_conn_id);
 
     // obtain the starter lock
     unique_lock<mutex> lck(ready_mtx);
@@ -81,6 +78,9 @@ void CmdHandler::handleCmdFromController()
 
     uint16_t src_conn_id = CTRL_NODE_ID;
     auto &skt = sockets_map[src_conn_id];
+
+    MessageQueue<ParityComputeTask> &pc_controller_task_queue = *((*pc_task_queues)[CTRL_NODE_ID]);
+    MessageQueue<ParityComputeTask> &pc_reply_queue = *((*pc_reply_queues)[self_conn_id]);
 
     while (true)
     {
@@ -104,95 +104,92 @@ void CmdHandler::handleCmdFromController()
         cmd.print();
 
         // validate command
-        if (cmd.src_conn_id != src_conn_id)
+        if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
         {
             fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid command content\n");
             exit(EXIT_FAILURE);
         }
 
-        // handle commands
-        if (cmd.type == CommandType::CMD_COMPUTE_PM_BLK || cmd.type == CommandType::CMD_COMPUTE_RE_BLK)
+        if (cmd.type == CommandType::CMD_COMPUTE_RE_BLK || cmd.type == CommandType::CMD_COMPUTE_PM_BLK)
         {
             // validate command
-            if (cmd.src_node_id != cmd.dst_node_id)
+            if (self_conn_id != cmd.src_node_id || cmd.src_node_id != cmd.dst_node_id)
             {
-                fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid local compute command content\n");
+                fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid compute command content\n");
                 exit(EXIT_FAILURE);
             }
 
-            // pass to compute queue (for creating a record for computation)
-            EncodeMethod enc_method = (cmd.type == CommandType::CMD_COMPUTE_RE_BLK) ? EncodeMethod::RE_ENCODE : EncodeMethod::PARITY_MERGE;
-            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, enc_method, NULL, cmd.dst_block_path);
+            // parse to a command
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.enc_method, cmd.src_block_nodes, cmd.parity_reloc_nodes, cmd.src_block_path, cmd.dst_block_path);
 
-            parity_compute_queue->Push(parity_compute_task);
+            // push a command to parity compute queue (controller)
+            pc_controller_task_queue.Push(parity_compute_task);
 
-            printf("CmdHandler::handleCmdFromController create compute task for parity compute: (%u, %u), enc_method: %u\n", cmd.post_stripe_id, cmd.post_block_id, enc_method);
+            printf("CmdHandler::handleCmdFromController received parity computation task, forward to ComputeWorker, post: (%u, %u), enc_method: %u\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, parity_compute_task.enc_method);
         }
         else if (cmd.type == CommandType::CMD_READ_COMPUTE_BLK)
         { // read block command
             // validate command
-            if (cmd.src_node_id != cmd.dst_node_id)
+            if (self_conn_id != cmd.src_node_id || cmd.src_node_id != cmd.dst_node_id)
             {
                 fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid local compute command content\n");
                 exit(EXIT_FAILURE);
             }
 
-            // request a block from memory pool
-            // unsigned char *block_buffer = memory_pool->getBlock();
+            // parse to a command
 
-            unsigned char *block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.enc_method, cmd.src_block_nodes, cmd.parity_reloc_nodes, cmd.src_block_path, cmd.dst_block_path);
 
-            // read block
-            if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
+            // push a command to parity compute queue (source node)
+            MessageQueue<ParityComputeTask> &pc_src_task_queue = *((*pc_task_queues)[self_conn_id]);
+            pc_src_task_queue.Push(parity_compute_task);
+
+            printf("CmdHandler::handleCmdFromController parse to parity compute task (local read), waiting for reply from queue %u, post: (%u, %u)\n", self_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+
+            // wait for reply from pc_reply queue
+            ParityComputeTask pc_reply_task;
+            while (true)
             {
-                fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
-                exit(EXIT_FAILURE);
+                if (pc_reply_queue.Pop(pc_reply_task) == true)
+                {
+                    if (pc_reply_task.post_stripe_id == parity_compute_task.post_stripe_id)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid pc_reply content\n");
+                        exit(EXIT_FAILURE);
+                    }
+                }
             }
 
-            // pass to compute queue
-            EncodeMethod enc_method = (cmd.post_block_id < config.code.k_f) ? EncodeMethod::RE_ENCODE : EncodeMethod::PARITY_MERGE;
-            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, enc_method, block_buffer, cmd.dst_block_path);
-            parity_compute_queue->Push(parity_compute_task);
-
-            printf("CmdHandler::handleCmdFromController read local block for parity compute: %s\n", cmd.src_block_path.c_str());
+            printf("CmdHandler::handleCmdFromController received reply of parity computation, post: (%u, %u)\n", pc_reply_task.post_stripe_id, pc_reply_task.post_block_id);
         }
         else if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
         { // block transfer command
+
+            uint16_t dst_conn_id = cmd.dst_node_id;
+
             // validate command
-            if (cmd.src_node_id == cmd.dst_node_id)
+            if (cmd.src_node_id == dst_conn_id)
             {
                 fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid transfer command content\n");
                 exit(EXIT_FAILURE);
             }
 
-            // add lock (to dst node)
-            uint16_t dst_conn_id = cmd.dst_node_id;
+            // only parse for data block relocation; the parity block relocation will be generated by ComputeWorker
+            if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK && cmd.post_block_id >= config.code.k_f)
+            {
+                fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid transfer command content\n");
+                exit(EXIT_FAILURE);
+            }
 
             // forward the command to another node
+            cmd.print();
+
             Command cmd_forward;
-
-            cmd_forward.buildCommand(cmd.type, self_conn_id, dst_conn_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
-
-            // special handling for parity block relocation task
-            // need to wait for parity compute queue to finish
-            if (cmd_forward.type == CommandType::CMD_TRANSFER_RELOC_BLK && cmd_forward.post_block_id >= config.code.k_f)
-            {
-                // continue;
-
-                // create a parity reloc record, to aggregate the blocks to relocate
-                lock_guard<mutex> lck(parity_reloc_cmd_map_mtx);
-                if (parity_reloc_cmd_map.find(cmd_forward.post_stripe_id) == parity_reloc_cmd_map.end())
-                {
-                    parity_reloc_cmd_map.insert(pair<uint32_t, vector<Command>>(cmd_forward.post_stripe_id, vector<Command>(config.code.m_f, Command())));
-                }
-
-                // associate the block with the command
-                parity_reloc_cmd_map[cmd_forward.post_stripe_id][cmd_forward.post_block_id - config.code.k_f] = cmd_forward;
-
-                printf("handleCmdFromController:: received parity block relocation task (type: %u, post_stripe: (%u, %u), Node %u -> %u), cached\n", cmd_forward.type, cmd_forward.post_stripe_id, cmd_forward.post_block_id, cmd_forward.src_node_id, cmd_forward.dst_node_id);
-
-                continue;
-            }
+            cmd_forward.buildCommand(cmd.type, self_conn_id, dst_conn_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, dst_conn_id, cmd.src_block_path, cmd.dst_block_path);
 
             // add to cmd_dist_queue[dst_node_id]
             (*cmd_dist_queues)[dst_conn_id]->Push(cmd_forward);
@@ -205,26 +202,27 @@ void CmdHandler::handleCmdFromController()
         }
         else if (cmd.type == CMD_STOP)
         {
-            // pass to parity compute thread to terminate
-            ParityComputeTask parity_compute_term_task(&config.code, INVALID_STRIPE_ID_GLOBAL, INVALID_BLK_ID, EncodeMethod::UNKNOWN_METHOD, NULL, string());
-            parity_compute_term_task.all_tasks_finished = true;
-            parity_compute_queue->Push(parity_compute_term_task);
+            // parse to a command
+            ParityComputeTask term_task(true);
+
+            // push a command to parity compute queue (controller)
+            MessageQueue<ParityComputeTask> &pc_controller_task_queue = *((*pc_task_queues)[CTRL_NODE_ID]);
+            pc_controller_task_queue.Push(term_task);
 
             // close socket
             skt.close();
 
             printf("CmdHandler::handleCmdFromController received stop command from Controller, call socket.close()\n");
-
             break;
         }
     }
 
-    printf("CmdHandler::handleCmdFromController finished handling commands from Controller\n");
+    printf("CmdHandler::handleCmdFromController [Node %u] finished handling commands from Controller\n", self_conn_id);
 }
 
 void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
 {
-    printf("CmdHandler::handleCmdFromAgent start to handle commands from Agent %u\n", src_conn_id);
+    printf("CmdHandler::handleCmdFromAgent [Node %u] start to handle commands from Agent %u\n", self_conn_id, src_conn_id);
 
     // obtain the starter lock
     unique_lock<mutex> lck(ready_mtx);
@@ -235,9 +233,9 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
     }
     lck.unlock();
 
-    unsigned char *cmd_handler_block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char *));
-
     auto &skt = sockets_map[src_conn_id];
+
+    unsigned char *cmd_handler_block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char *));
 
     while (true)
     {
@@ -262,15 +260,49 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
         cmd.print();
 
         // validate command
-        if (cmd.src_conn_id != src_conn_id)
+        if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
         {
             fprintf(stderr, "CmdHandler::handleCmdFromAgent error: invalid command content\n");
             exit(EXIT_FAILURE);
         }
 
-        // block transfer commands
-        if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+        if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK)
         {
+            // parse to a command
+            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.enc_method, cmd.src_block_nodes, cmd.parity_reloc_nodes, cmd.src_block_path, cmd.dst_block_path);
+
+            // push a command to parity compute queue (source node)
+            MessageQueue<ParityComputeTask> &pc_src_task_queue = *((*pc_task_queues)[src_conn_id]);
+            pc_src_task_queue.Push(parity_compute_task);
+
+            printf("CmdHandler::handleCmdFromController parse to parity compute task (transfer), waiting for reply from queue %u, post: (%u, %u), enc_method: %u\n", src_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, parity_compute_task.enc_method);
+
+            // wait for reply from pc_reply queue
+            ParityComputeTask pc_reply_task;
+            MessageQueue<ParityComputeTask> &pc_reply_queue = *((*pc_reply_queues)[src_conn_id]);
+            while (true)
+            {
+                if (pc_reply_queue.Pop(pc_reply_task) == true)
+                {
+                    if (pc_reply_task.post_stripe_id == parity_compute_task.post_stripe_id)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        fprintf(stderr, "CmdHandler::handleCmdFromController error: invalid pc_reply content\n");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+
+            printf("CmdHandler::handleCmdFromController received reply of parity computation from Node %u, post: (%u, %u)\n", src_conn_id, pc_reply_task.post_stripe_id, pc_reply_task.post_block_id);
+        }
+        else if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+        {
+            printf("CmdHandler::handleCmdFromAgent received block relocation task: %s\n", cmd.dst_block_path.c_str());
+            // Utils::printUCharBuffer(block_buffer, 10);
+
             // recv block
             if (BlockIO::recvBlock(skt, cmd_handler_block_buffer, config.block_size) != config.block_size)
             {
@@ -278,39 +310,17 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
                 exit(EXIT_FAILURE);
             }
 
-            printf("CmdHandler::handleCmdFromAgent received block transfer task and block: %s\n", cmd.dst_block_path.c_str());
-            // Utils::printUCharBuffer(block_buffer, 10);
-
-            if (cmd.type == CMD_TRANSFER_COMPUTE_BLK)
-            { // parity block compute command
-
-                // request a block from memory pool
-                // unsigned char *block_buffer = memory_pool->getBlock();
-
-                unsigned char *block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
-
-                memcpy(block_buffer, cmd_handler_block_buffer, config.block_size * sizeof(unsigned char));
-
-                // pass to compute queue
-                EncodeMethod enc_method = (cmd.post_block_id < config.code.k_f) ? EncodeMethod::RE_ENCODE : EncodeMethod::PARITY_MERGE;
-                ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, enc_method, block_buffer, cmd.dst_block_path);
-                parity_compute_queue->Push(parity_compute_task);
+            //  block
+            if (BlockIO::writeBlock(cmd.dst_block_path, cmd_handler_block_buffer, config.block_size) != config.block_size)
+            {
+                fprintf(stderr, "CmdHandler::handleCmdFromAgent error writing block: %s\n", cmd.dst_block_path.c_str());
+                exit(EXIT_FAILURE);
             }
-            else if (cmd.type == CMD_TRANSFER_RELOC_BLK)
-            { // relocate command
 
-                //  block
-                if (BlockIO::writeBlock(cmd.dst_block_path, cmd_handler_block_buffer, config.block_size) != config.block_size)
-                {
-                    fprintf(stderr, "CmdHandler::handleCmdFromAgent error writing block: %s\n", cmd.dst_block_path.c_str());
-                    exit(EXIT_FAILURE);
-                }
-
-                printf("CmdHandler::handleCmdFromAgent write block: %s\n", cmd.dst_block_path.c_str());
-            }
+            printf("CmdHandler::handleCmdFromAgent write block: %s\n", cmd.dst_block_path.c_str());
         }
         else if (cmd.type == CommandType::CMD_STOP)
-        { // check whether it's a stop command
+        {
             printf("CmdHandler::handleCmdFromAgent received stop command from Agent %u, call socket.close()\n", cmd.src_conn_id);
             skt.close();
             break;
@@ -319,119 +329,83 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
 
     free(cmd_handler_block_buffer);
 
-    printf("CmdHandler::handleCmdFromAgent finished handling commands for Agent %u\n", src_conn_id);
+    printf("CmdHandler::handleCmdFromAgent [Node %u] finished handling commands for Agent %u\n", self_conn_id, src_conn_id);
 }
 
-void CmdHandler::handleParityRelocCmdFromController()
+void CmdHandler::handleParityRelocTask()
 {
-    printf("CmdHandler::handleParityRelocCmdFromController start to handle parity relocation commands from Controller\n");
+    printf("CmdHandler::handleParityRelocTask [Node %u] start to handle parity relocation task\n", self_conn_id);
 
-    string parity_compute_key;
-    string parity_reloc_key;
-    EncodeMethod enc_method = UNKNOWN_METHOD;
-    uint32_t post_stripe_id = INVALID_STRIPE_ID_GLOBAL;
-    uint8_t post_block_id = INVALID_BLK_ID;
-
+    ParityComputeTask parity_reloc_task;
     bool is_finished = false;
 
     while (true)
     {
-        if (parity_reloc_cmd_map.empty() == true && parity_comp_result_queue->IsEmpty() == true && is_finished == true)
+        if (parity_reloc_task_queue->IsEmpty() == true && is_finished == true)
         {
             break;
         }
 
-        if (parity_comp_result_queue->Pop(parity_compute_key) == true)
+        if (parity_reloc_task_queue->Pop(parity_reloc_task) == true)
         {
-            if (parity_compute_key.compare(parity_comp_term_signal) == 0)
+            // check parity relocation info
+            if (parity_reloc_task.all_tasks_finished == true)
             {
                 is_finished = true;
                 continue;
             }
 
-            // obtain the parity compute key
-            ComputeWorker::getParityComputeTaskFromKey(parity_compute_key, enc_method, post_stripe_id, post_block_id);
-
-            printf("CmdHandler::handleParityRelocCmdFromController obtained key: %s, post_stripe: (%u, %u), enc_method: %u\n", parity_compute_key.c_str(), post_stripe_id, post_block_id, enc_method);
-
-            // check whether the parity blocks need to be relocated
-            if (parity_reloc_cmd_map.find(post_stripe_id) == parity_reloc_cmd_map.end())
+            if (parity_reloc_task.enc_method == EncodeMethod::RE_ENCODE)
             {
-                continue;
-            }
-
-            // check from parity reloc command
-            vector<uint8_t> parity_ids_to_reloc;
-
-            if (enc_method == EncodeMethod::RE_ENCODE)
-            {
-                // relocate every parity block
                 for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
                 {
-                    Command &cmd_forward = parity_reloc_cmd_map[post_stripe_id][parity_id];
+                    uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[parity_id];
+                    string &dst_block_path = parity_reloc_task.parity_block_dst_paths[parity_id];
 
-                    if (cmd_forward.type != CommandType::CMD_UNKNOWN)
+                    // check whether needs relocation
+                    if (self_conn_id != dst_conn_id)
                     {
-                        parity_ids_to_reloc.push_back(parity_id);
+                        Command cmd_reloc;
+                        cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
+
+                        // add to cmd_dist_queue[dst_node_id]
+                        (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
+
+                        printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
                     }
                 }
             }
-            else if (enc_method == EncodeMethod::PARITY_MERGE)
+            else if (parity_reloc_task.enc_method == EncodeMethod::PARITY_MERGE)
             {
-                uint8_t parity_id = post_block_id - config.code.k_f;
-                Command &cmd_forward = parity_reloc_cmd_map[post_stripe_id][parity_id];
-                if (cmd_forward.type != CommandType::CMD_UNKNOWN)
-                {
-                    parity_ids_to_reloc.push_back(parity_id);
-                }
-            }
+                // send only one block
+                uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[0];
+                string &dst_block_path = parity_reloc_task.parity_block_dst_paths[0];
 
-            for (auto parity_id : parity_ids_to_reloc)
-            {
-                Command &cmd_forward = parity_reloc_cmd_map[post_stripe_id][parity_id];
+                Command cmd_reloc;
+                cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
                 // add to cmd_dist_queue[dst_node_id]
-                (*cmd_dist_queues)[cmd_forward.dst_node_id]->Push(cmd_forward);
+                (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
 
-                // clear out the record
-                parity_reloc_cmd_map[post_stripe_id][parity_id] = Command();
-
-                printf("CmdHandler::handleParityRelocCmdFromController handle parity block relocation task (type: %u, Node %u -> %u), forward block: (%u, %u), enc_method: %u\n", cmd_forward.type, cmd_forward.src_node_id, cmd_forward.dst_node_id, cmd_forward.post_stripe_id, cmd_forward.post_block_id, enc_method);
-            }
-
-            // needed to erase the record
-            bool needed_to_erase_record = true;
-            // erase the record
-            for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
-            {
-                Command &cmd_forward = parity_reloc_cmd_map[post_stripe_id][parity_id];
-
-                if (cmd_forward.type != CommandType::CMD_UNKNOWN)
-                {
-                    needed_to_erase_record = false;
-                    break;
-                }
-            }
-
-            if (needed_to_erase_record)
-            {
-                lock_guard<mutex> lck(parity_reloc_cmd_map_mtx);
-                parity_reloc_cmd_map.erase(post_stripe_id);
+                printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
             }
         }
     }
 
+    printf("CmdHandler::handleParityRelocTask [Node %u] end handling parity relocation task\n", self_conn_id);
+}
+
+void CmdHandler::distStopCmds()
+{
     // distribute terminate commands
     for (auto &item : sockets_map)
     {
         uint16_t dst_conn_id = item.first;
 
         Command cmd_disconnect;
-        cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
+        cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id);
 
         // add to cmd_dist_queue
         (*cmd_dist_queues)[dst_conn_id]->Push(cmd_disconnect);
     }
-
-    printf("CmdHandler::handleParityRelocCmdFromController finished handling parity relocation commands from Controller\n");
 }

@@ -1,10 +1,22 @@
 #include "ParityComputeTask.hh"
 
-ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, EncodeMethod _enc_method, unsigned char *_buffer, string _raw_path) : code(_code), post_stripe_id(_post_stripe_id), post_block_id(_post_block_id), enc_method(_enc_method), buffer(_buffer)
+ParityComputeTask::ParityComputeTask()
 {
-    re_parity_paths.assign(code->m_f, string());
+    code = NULL;
+    post_stripe_id = INVALID_STRIPE_ID_GLOBAL;
+    post_block_id = INVALID_BLK_ID;
+    enc_method = EncodeMethod::UNKNOWN_METHOD;
+    all_tasks_finished = false;
+}
 
-    if (_post_stripe_id == INVALID_STRIPE_ID_GLOBAL || _post_block_id == INVALID_BLK_ID)
+ParityComputeTask::ParityComputeTask(bool _all_tasks_finished) : all_tasks_finished(_all_tasks_finished)
+{
+}
+
+ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, EncodeMethod _enc_method, vector<uint16_t> &_src_block_nodes, vector<uint16_t> &_parity_reloc_nodes, string &_parity_block_src_path, string &_raw_dst_block_paths) : code(_code), post_stripe_id(_post_stripe_id), post_block_id(_post_block_id), src_node_id(_src_node_id), enc_method(_enc_method), src_block_nodes(_src_block_nodes), parity_reloc_nodes(_parity_reloc_nodes), parity_block_src_path(_parity_block_src_path)
+{
+    // skip instructions
+    if (_post_stripe_id == INVALID_STRIPE_ID_GLOBAL)
     {
         return;
     }
@@ -12,38 +24,38 @@ ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stri
     // process the paths
     if (enc_method == EncodeMethod::RE_ENCODE)
     {
+        parity_block_dst_paths.resize(code->m_f);
+
         // parity paths
         string delimiter_char = ":";
         size_t pos = 0;
         string token;
         uint8_t parity_id = 0;
 
-        while ((pos = _raw_path.find(delimiter_char)) != std::string::npos)
+        while ((pos = _raw_dst_block_paths.find(delimiter_char)) != std::string::npos)
         {
-            token = _raw_path.substr(0, pos);
-            re_parity_paths[parity_id] = token;
-            _raw_path.erase(0, pos + delimiter_char.length());
+            token = _raw_dst_block_paths.substr(0, pos);
+            parity_block_dst_paths[parity_id] = token;
+            _raw_dst_block_paths.erase(0, pos + delimiter_char.length());
             parity_id++;
         }
-        re_parity_paths[code->m_f - 1] = _raw_path;
+        parity_block_dst_paths[code->m_f - 1] = _raw_dst_block_paths;
     }
     else if (enc_method == EncodeMethod::PARITY_MERGE)
     {
+        parity_block_dst_paths.resize(1);
         // pre_stripe_id
         string delimiter_char = ":";
-        size_t pos = _raw_path.find(delimiter_char);
-        string token = _raw_path.substr(0, pos);
-        _raw_path.erase(0, pos + delimiter_char.length());
+        size_t pos = _raw_dst_block_paths.find(delimiter_char);
+        string token = _raw_dst_block_paths.substr(0, pos);
+        _raw_dst_block_paths.erase(0, pos + delimiter_char.length());
 
         // pre-stripe-id
         pre_stripe_id = atoi(token.c_str());
 
         // parity block path
-        pm_parity_path = _raw_path;
+        parity_block_dst_paths[0] = _raw_dst_block_paths;
     }
-
-    // init num of collected parity blocks
-    collected = 0;
 
     // init all_tasks_finished (false)
     all_tasks_finished = false;
@@ -55,17 +67,20 @@ ParityComputeTask::~ParityComputeTask()
 
 void ParityComputeTask::print()
 {
-    printf("ParityComputeTask post-stripe: (%u, %u), enc_method: %u, pre_stripe_id: %u, parity_block_path(s):\n", post_stripe_id, post_block_id, enc_method, pre_stripe_id);
+    printf("\nParityComputeTask enc_method: %u, pre_stripe_id: %u, post-stripe: (%u, %u), src_node_id: %u\n", enc_method, pre_stripe_id, post_stripe_id, post_block_id, src_node_id);
 
-    if (enc_method == EncodeMethod::RE_ENCODE)
-    {
-        for (auto path : re_parity_paths)
-        {
-            printf("%s\n", path.c_str());
-        }
-    }
-    else if (enc_method == EncodeMethod::PARITY_MERGE)
-    {
-        printf("%s\n", pm_parity_path.c_str());
-    }
+    // printf("src_block_nodes:\n");
+    // Utils::printVector(src_block_nodes);
+
+    // printf("parity_reloc_nodes\n");
+    // Utils::printVector(parity_reloc_nodes);
+
+    // printf("parity_block_src_path: %s\n", parity_block_src_path.c_str());
+
+    // printf("parity_block_dst_path(s):\n");
+    // for (auto path : parity_block_dst_paths)
+    // {
+    //     printf("%s\n", path.c_str());
+    // }
+    // printf("\n\n");
 }

@@ -52,6 +52,7 @@ uint64_t BlockIO::writeBlock(string block_path, unsigned char *buffer, uint64_t 
     if (system(mkdir_command) < 0)
     {
         fprintf(stderr, "BlockIO::writeBlock error create block directory: %s\n", block_dir.c_str());
+        exit(EXIT_FAILURE);
     }
 
     // printf("BlockIO::writeBlock create block directory: %s for block path: %s\n", block_dir.c_str(), block_path.c_str());

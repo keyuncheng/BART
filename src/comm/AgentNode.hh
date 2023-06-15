@@ -4,7 +4,6 @@
 #include "../include/include.hh"
 #include "../util/Config.hh"
 #include "../util/MessageQueue.hh"
-#include "../util/MultiWriterQueue.h"
 #include "Node.hh"
 #include "CmdDist.hh"
 #include "CmdHandler.hh"
@@ -21,14 +20,17 @@ public:
     CmdDist *cmd_distributor;      // distribute send block commands
     ComputeWorker *compute_worker; // compute worker
 
-    // command distribution queues (each is a single reader single writer queue) (CmdDist <-> CmdHandler)
+    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
     unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
 
-    // parity compute queue (a multiple writer single reader queue) (CmdHandler <-> ComputeWorker)
-    MultiWriterQueue<ParityComputeTask> *parity_compute_queue;
+    // parity compute task queue: each retrieves parity computation task from Controller and pass to ComputeWorker (CmdHandler -> ComputeWorker)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> pc_task_queues;
 
-    // parity compute result queue (ComputeWorker <-> CmdHandler)
-    MessageQueue<string> *parity_comp_result_queue;
+    // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> pc_reply_queues;
+
+    // parity block relocation task queue (ComputeWorker -> CmdHandler)
+    MessageQueue<ParityComputeTask> *parity_reloc_task_queue;
 
     // memory pool
     MemoryPool *memory_pool;

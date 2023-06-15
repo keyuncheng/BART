@@ -14,7 +14,7 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
     cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, NULL, NULL, NULL, NULL, NULL, 1);
 
     // create command distributor
-    cmd_distributor = new CmdDist(config, connectors_map, cmd_dist_queues, 1);
+    cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues, NULL, 1);
 }
 
 CtrlNode::~CtrlNode()
@@ -94,7 +94,7 @@ void CtrlNode::genTransSolution()
         uint16_t dst_conn_id = item.first;
 
         Command cmd_disconnect;
-        cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id, INVALID_STRIPE_ID, INVALID_BLK_ID, INVALID_NODE_ID, INVALID_NODE_ID, string(), string());
+        cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, dst_conn_id);
 
         commands.push_back(cmd_disconnect);
     }
@@ -130,151 +130,150 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
             CommandType cmd_type = CommandType::CMD_UNKNOWN;
             string src_block_path;
             string dst_block_path;
+            EncodeMethod enc_method = EncodeMethod::UNKNOWN_METHOD;
+            uint8_t num_src_blocks = 0;
+            vector<uint16_t> src_block_nodes;
+            uint8_t num_parity_reloc_nodes = 0;
+            vector<uint16_t> parity_reloc_nodes;
 
             switch (task->type)
             {
             case TransTaskType::COMPUTE_RE_BLK:
-            {
-                is_task_parsed = true;
-                cmd_type = CommandType::CMD_COMPUTE_RE_BLK;
-                break;
-            }
             case TransTaskType::COMPUTE_PM_BLK:
-            {
-                is_task_parsed = true;
-                cmd_type = CommandType::CMD_COMPUTE_PM_BLK;
-                break;
-            }
             case TransTaskType::READ_RE_BLK:
             case TransTaskType::READ_PM_BLK:
-            {
-                uint16_t parity_compute_node = INVALID_NODE_ID;
-
-                if (task->type == READ_RE_BLK)
-                {
-                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[0];
-                }
-                else if (task->type == READ_PM_BLK)
-                {
-                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[task->post_block_id - code.k_f];
-                }
-
-                // only parse for local read tasks
-                if (task->src_node_id != parity_compute_node)
-                {
-                    // printf("skip read task at node %u for parity computation at node %u\n", task->src_node_id, task->dst_node_id);
-                    continue;
-                }
-
-                // check block location
-                uint16_t src_block_node_id = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].first;
-                if (task->src_node_id != src_block_node_id)
-                {
-                    fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    exit(EXIT_FAILURE);
-                }
-
-                // parse the task
-                is_task_parsed = true;
-                cmd_type = CommandType::CMD_READ_COMPUTE_BLK;
-
-                // src block path
-                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-
-                // dst block path
-                if (task->type == TransTaskType::READ_RE_BLK)
-                { // need to read the path of all parity blocks, as we only have one parity computation task
-                    for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
-                    { // concatenate the paths
-                        if (parity_id > 0)
-                        {
-                            dst_block_path = dst_block_path + ":";
-                        }
-                        dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
-                    }
-                }
-                else if (task->type == TransTaskType::READ_PM_BLK)
-                { // destination block: obtained the corresponding parity block only
-                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[task->post_stripe_id][task->post_block_id].second;
-                }
-
-                break;
-            }
             case TransTaskType::TRANSFER_COMPUTE_RE_BLK:
             case TransTaskType::TRANSFER_COMPUTE_PM_BLK:
             {
-                // check task src/dst
-                if (task->src_node_id == task->dst_node_id)
-                {
-                    fprintf(stderr, "error: invalid transfer task: (%u -> %u)\n", task->src_node_id, task->dst_node_id);
-                    exit(EXIT_FAILURE);
-                }
-
-                // check block location
-                uint16_t src_block_node_id = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].first;
-                if (task->src_node_id != src_block_node_id)
-                {
-                    fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                    exit(EXIT_FAILURE);
-                }
-
                 // parse the task
                 is_task_parsed = true;
-                cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
+
+                // command type
+                if (task->type == TransTaskType::COMPUTE_RE_BLK)
+                {
+                    cmd_type = CommandType::CMD_COMPUTE_RE_BLK;
+                }
+                else if (task->type == TransTaskType::COMPUTE_PM_BLK)
+                {
+                    cmd_type = CommandType::CMD_COMPUTE_PM_BLK;
+                }
+                else if (task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::READ_PM_BLK)
+                {
+                    cmd_type = CommandType::CMD_READ_COMPUTE_BLK;
+                }
+                else if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
+                {
+                    cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
+                }
+
+                bool is_re = (task->type == TransTaskType::COMPUTE_RE_BLK || task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK);
+
+                uint16_t parity_compute_node = INVALID_NODE_ID;
+                if (is_re == true)
+                {
+                    // encode method;
+                    enc_method = EncodeMethod::RE_ENCODE;
+
+                    // parity source nodes
+                    num_src_blocks = code.k_f;
+                    src_block_nodes.resize(num_src_blocks);
+                    for (uint8_t final_data_block_id = 0; final_data_block_id < num_src_blocks; final_data_block_id++)
+                    {
+                        uint8_t pre_stripe_id = final_data_block_id / code.k_i;
+                        uint8_t pre_block_id = final_data_block_id % code.k_i;
+                        uint32_t pre_stripe_id_global = stripe_batch.selected_sgs.at(sg_id).pre_stripes[pre_stripe_id]->id;
+
+                        src_block_nodes[final_data_block_id] = pre_block_mapping[pre_stripe_id_global][pre_block_id].first;
+                    }
+
+                    // parity compute node
+                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[0];
+
+                    // relocation nodes
+                    // for re-encoding, set the relocation nodes for all parity blocks
+                    num_parity_reloc_nodes = code.m_f;
+                    parity_reloc_nodes.resize(num_parity_reloc_nodes);
+                    for (uint8_t parity_id = 0; parity_id < num_parity_reloc_nodes; parity_id++)
+                    {
+                        parity_reloc_nodes[parity_id] = post_block_mapping[sg_id][config.code.k_f + parity_id].first;
+                    }
+                }
+
+                bool is_pm = (task->type == TransTaskType::COMPUTE_PM_BLK || task->type == TransTaskType::READ_PM_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK);
+                if (is_pm == true)
+                {
+                    // encode method;
+                    enc_method = EncodeMethod::PARITY_MERGE;
+
+                    // parity source nodes
+                    num_src_blocks = code.lambda_i;
+                    src_block_nodes.resize(num_src_blocks);
+                    for (uint8_t pre_stripe_id = 0; pre_stripe_id < num_src_blocks; pre_stripe_id++)
+                    {
+                        uint32_t pre_stripe_id_global = stripe_batch.selected_sgs.at(sg_id).pre_stripes[pre_stripe_id]->id;
+                        src_block_nodes[pre_stripe_id] = pre_block_mapping[pre_stripe_id_global][task->post_block_id - code.k_f + code.k_i].first;
+                    }
+
+                    // parity compute node
+                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[task->post_block_id - code.k_f];
+
+                    // relocation nodes
+                    // for parity merging: set the relocation node for the corresponding parity block
+                    num_parity_reloc_nodes = 1;
+                    parity_reloc_nodes.resize(num_parity_reloc_nodes);
+                    parity_reloc_nodes[0] = post_block_mapping[sg_id][task->post_block_id].first;
+                }
 
                 // src block path
-                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                if (cmd_type == CommandType::CMD_READ_COMPUTE_BLK || cmd_type == CommandType::CMD_TRANSFER_COMPUTE_BLK)
+                { // assign block paths
+                    src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
+                }
 
                 // dst block path
-                if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK)
-                {
+                if (enc_method == EncodeMethod::RE_ENCODE)
+                { // for re-encoding, retrieve the block paths for all parity blocks and concatenate
+                    string delimiter_char = ":";
                     for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
                     {
                         if (parity_id > 0)
                         {
-                            dst_block_path = dst_block_path + ":";
+                            dst_block_path = dst_block_path + delimiter_char;
                         }
                         dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
                     }
                 }
-                else if (task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
+                else if (enc_method == EncodeMethod::PARITY_MERGE)
+                { // for parity merging: obtained the corresponding parity block path
+                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[sg_id][task->post_block_id].second;
+                }
+
+                // NOTE: only parse for local read tasks
+                if (cmd_type == CommandType::CMD_READ_COMPUTE_BLK)
                 {
-                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[task->post_stripe_id][task->post_block_id].second;
+                    if (task->src_node_id != parity_compute_node)
+                    {
+                        continue;
+                    }
                 }
 
                 break;
             }
             case TransTaskType::TRANSFER_RELOC_BLK:
             {
-                // check task src/dst
-                if (task->src_node_id == task->dst_node_id)
-                {
-                    fprintf(stderr, "error: invalid transfer task: (%u -> %u)\n", task->src_node_id, task->dst_node_id);
-                    exit(EXIT_FAILURE);
-                }
-
                 // parse the task
                 is_task_parsed = true;
                 cmd_type = CommandType::CMD_TRANSFER_RELOC_BLK;
 
-                if (task->post_block_id < code.k_f)
-                { // data block
-                    // check block location (for data block only)
-                    uint16_t src_block_node_id = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].first;
+                // only parse for data block relocation; the parity block relocation will be generated by ComputeWorker
+                if (task->post_block_id >= code.k_f)
+                {
+                    is_task_parsed = false;
+                    break;
+                }
 
-                    if (task->src_node_id != src_block_node_id)
-                    {
-                        fprintf(stderr, "error: inconsistent block location: %u, %u\n", src_block_node_id, task->src_node_id);
-                        exit(EXIT_FAILURE);
-                    }
-                    // data block path: obtained from pre_block_mapping
-                    src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-                }
-                else
-                { // newly computed parity block path (no need to check the location)
-                    // the same path (but on different node)
-                    src_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
-                }
+                // data block path: obtained from pre_block_mapping
+                src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
 
                 dst_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
 
@@ -282,7 +281,9 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
             }
             case TransTaskType::DELETE_BLK:
             {
-                is_task_parsed = true;
+                // DEBUG: set to false
+                is_task_parsed = false;
+
                 cmd_type = CommandType::CMD_DELETE_BLK;
 
                 if (task->post_block_id < code.k_f)
@@ -292,11 +293,11 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 else
                 {
                     if (task->pre_stripe_id_global != INVALID_STRIPE_ID_GLOBAL && task->pre_stripe_id_relative != INVALID_STRIPE_ID && task->pre_block_id != INVALID_BLK_ID && task->post_block_id == INVALID_BLK_ID)
-                    { // old parity block
+                    { // pre-stripe parity block
                         src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
                     }
                     else
-                    { // relocated parity block
+                    { // post-stripe parity block (before relocation)
                         src_block_path = post_block_mapping[task->post_stripe_id][task->post_block_id].second;
                     }
                 }
@@ -322,7 +323,10 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                     task->post_block_id,
                     task->src_node_id,
                     task->dst_node_id,
-                    src_block_path, dst_block_path);
+                    src_block_path, dst_block_path,
+                    enc_method,
+                    num_src_blocks, src_block_nodes,
+                    num_parity_reloc_nodes, parity_reloc_nodes);
                 commands.push_back(cmd);
             }
         }

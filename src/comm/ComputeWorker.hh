@@ -8,7 +8,6 @@
 #include "../util/ThreadPool.hh"
 #include "ParityComputeTask.hh"
 #include "../util/MessageQueue.hh"
-#include "../util/MultiWriterQueue.h"
 #include "../util/Config.hh"
 #include "../util/MemoryPool.hh"
 #include "BlockIO.hh"
@@ -18,6 +17,23 @@ class ComputeWorker : public ThreadPool
 private:
     /* data */
 public:
+    Config &config;
+
+    uint16_t self_conn_id;
+
+    unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
+
+    // parity compute task queue: each retrieves parity computation task from Controller and pass to ComputeWorker (CmdHandler -> ComputeWorker)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &pc_task_queues;
+
+    // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
+    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &pc_reply_queues;
+
+    MessageQueue<ParityComputeTask> &parity_reloc_task_queue;
+
+    // memory pool (passed from CmdHandler, used to free blocks only)
+    MemoryPool &memory_pool;
+
     // table
     unsigned char *re_matrix;
     unsigned char *re_encode_gftbl;
@@ -25,22 +41,19 @@ public:
     unsigned char **pm_matrix;
     unsigned char **pm_encode_gftbl;
 
-    ComputeWorker(Config &_config, MultiWriterQueue<ParityComputeTask> &_parity_compute_queue, MessageQueue<string> &_parity_comp_result_queue, MemoryPool &_memory_pool, unsigned _num_threads);
+    // parity buffer for re-encoding and parity merging
+    unsigned char *buffer;
+    unsigned char **re_buffers;
+    unsigned char **pm_buffers;
+
+    ComputeWorker(Config &_config, uint16_t _self_conn_id,
+                  unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
+                  unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_task_queues,
+                  unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_reply_queues,
+                  MessageQueue<ParityComputeTask> &_parity_reloc_task_queue,
+                  MemoryPool &_memory_pool,
+                  unsigned _num_threads);
     ~ComputeWorker();
-
-    Config &config;
-
-    // parity compute queue (passed from CmdHandler)
-    MultiWriterQueue<ParityComputeTask> &parity_compute_queue;
-
-    // parity compute result queue (ComputeWorker <-> CmdHandler)
-    MessageQueue<string> &parity_comp_result_queue;
-
-    // memory pool (passed from CmdHandler, used to free blocks only)
-    MemoryPool &memory_pool;
-
-    // on-going parity computation task map
-    unordered_map<string, ParityComputeTask> ongoing_task_map;
 
     void run() override;
 
@@ -50,8 +63,6 @@ public:
     unsigned char gfPow(unsigned char val, unsigned int times);
 
     static string getParityComputeTaskKey(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id);
-
-    static void getParityComputeTaskFromKey(string key, EncodeMethod &enc_method, uint32_t &post_stripe_id, uint8_t &post_block_id);
 };
 
 #endif // __COMPUTE_WORKER_HH__

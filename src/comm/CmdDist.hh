@@ -14,6 +14,7 @@
 #include "../util/Config.hh"
 #include "Command.hh"
 #include "BlockIO.hh"
+#include "../util/MemoryPool.hh"
 
 class CmdDist : public ThreadPool
 {
@@ -21,7 +22,14 @@ private:
     /* data */
 public:
     Config &config;
+    uint16_t self_conn_id;
     unordered_map<uint16_t, sockpp::tcp_connector> &connectors_map;
+
+    // message queues for distributing commands (each distributor thread pops commands from the corresponding queue)
+    unordered_map<uint16_t, MessageQueue<Command> *> &cmd_dist_queues;
+
+    // memory pool (for allocating blocks for parity computation)
+    MemoryPool *memory_pool;
 
     // distributor threads
     unordered_map<uint16_t, thread *> dist_threads_map;
@@ -31,10 +39,7 @@ public:
     condition_variable ready_cv;
     atomic<bool> is_ready;
 
-    // message queues for distributing commands (each distributor thread pops commands from the corresponding queue)
-    unordered_map<uint16_t, MessageQueue<Command> *> &cmd_dist_queues;
-
-    CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, unsigned int _num_threads);
+    CmdDist(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, MemoryPool *_memory_pool, unsigned int _num_threads);
     ~CmdDist();
 
     void run() override;

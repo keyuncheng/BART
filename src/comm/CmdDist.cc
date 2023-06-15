@@ -1,6 +1,6 @@
 #include "CmdDist.hh"
 
-CmdDist::CmdDist(Config &_config, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), connectors_map(_connectors_map), cmd_dist_queues(_cmd_dist_queues)
+CmdDist::CmdDist(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_connector> &_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, MemoryPool *_memory_pool, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), connectors_map(_connectors_map), cmd_dist_queues(_cmd_dist_queues), memory_pool(_memory_pool)
 {
     // init mutex
     for (auto &item : connectors_map)
@@ -51,7 +51,7 @@ void CmdDist::run()
 
 void CmdDist::distCmdToController()
 {
-    printf("CmdDist::distCmdToController start to distribute commands to Controller\n");
+    printf("CmdDist::distCmdToController [Node %u] start to distribute commands to Controller\n", self_conn_id);
 
     // obtain the starter lock
     unique_lock<mutex> lck(ready_mtx);
@@ -79,9 +79,9 @@ void CmdDist::distCmdToController()
         if (cmd_dist_queue.Pop(cmd) == true)
         {
             // validate
-            if (cmd.dst_conn_id != dst_conn_id)
+            if (cmd.src_conn_id != self_conn_id || cmd.dst_conn_id != dst_conn_id)
             {
-                fprintf(stderr, "CmdDist::distCmdToController error: invalid command content: %u, %u\n", cmd.dst_conn_id, dst_conn_id);
+                fprintf(stderr, "CmdDist::distCmdToController error: invalid command content: %u, %u\n", cmd.src_conn_id, cmd.dst_conn_id);
                 exit(EXIT_FAILURE);
             }
 
@@ -106,12 +106,12 @@ void CmdDist::distCmdToController()
         }
     }
 
-    printf("CmdDist::distCmdToController finished distribute commands to Controller\n");
+    printf("CmdDist::distCmdToController [Node %u] finished distribute commands to Controller\n", self_conn_id);
 }
 
 void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
 {
-    printf("CmdDist::distCmdToAgent start to distribute commands to Agent %u\n", dst_conn_id);
+    printf("CmdDist::distCmdToAgent [Node %u] start to distribute commands to Agent %u\n", self_conn_id, dst_conn_id);
 
     // obtain the starter lock
     unique_lock<mutex> lck(ready_mtx);
@@ -127,7 +127,7 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
     bool is_finished = false;
 
     // allocate block buffer
-    unsigned char *block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+    unsigned char *local_block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
 
     while (true)
     {
@@ -140,9 +140,9 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
         if (cmd_dist_queue.Pop(cmd) == true)
         {
             // validate
-            if (cmd.dst_conn_id != dst_conn_id)
+            if (cmd.src_conn_id != self_conn_id || cmd.dst_conn_id != dst_conn_id)
             {
-                fprintf(stderr, "CmdDist::distControllerCmd error: invalid command content\n");
+                fprintf(stderr, "CmdDist::distControllerCmd error: invalid command content: %u, %u\n", cmd.src_conn_id, cmd.dst_conn_id);
                 exit(EXIT_FAILURE);
             }
 
@@ -155,26 +155,27 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
                 exit(EXIT_FAILURE);
             }
 
-            // For block transfer command sent from Agent only
-            if (cmd.src_conn_id != CTRL_NODE_ID)
+            // For block transfer command (sent from Agent only)
+            if (self_conn_id != CTRL_NODE_ID)
             {
                 if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 { // after sending the command to Agent, we send the corresponding block
+
                     // read block
-                    if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
+                    if (BlockIO::readBlock(cmd.src_block_path, local_block_buffer, config.block_size) != config.block_size)
                     {
                         fprintf(stderr, "CmdDist::distCmdToAgent error reading block: %s\n", cmd.src_block_path.c_str());
                         exit(EXIT_FAILURE);
                     }
 
                     // send block
-                    if (BlockIO::sendBlock(connector, block_buffer, config.block_size) != config.block_size)
+                    if (BlockIO::sendBlock(connector, local_block_buffer, config.block_size) != config.block_size)
                     {
                         fprintf(stderr, "CmdDist::distCmdToAgent error sending block: %s to Node %u\n", cmd.src_block_path.c_str(), cmd.dst_conn_id);
                         exit(EXIT_FAILURE);
                     }
 
-                    printf("CmdDist::distCmdToAgent obtained block transfer task, send block %s\n", cmd.src_block_path.c_str());
+                    printf("CmdDist::distCmdToAgent send block to Node %u, block_path: %s\n", dst_conn_id, cmd.src_block_path.c_str());
                     // Utils::printUCharBuffer(block_buffer, 10);
                 }
             }
@@ -189,108 +190,7 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
     }
 
     // free block buffer
-    free(block_buffer);
+    free(local_block_buffer);
 
-    printf("CmdDist::distCmdToAgent finished distribute commands to Agent %u\n", dst_conn_id);
+    printf("CmdDist::distCmdToAgent [Node %u] finished distribute commands to Agent %u\n", self_conn_id, dst_conn_id);
 }
-
-// void CmdDist::distControllerCmd()
-// {
-//     printf("CmdDist::run start to distribute commands\n");
-//     while (true)
-//     {
-//         if (finished() == true && cmd_dist_queue.IsEmpty() == true)
-//         {
-//             break;
-//         }
-
-//         Command cmd;
-//         if (cmd_dist_queue.Pop(cmd) == true)
-//         {
-//             cmd.print();
-
-//             // add lock
-//             unique_lock<mutex> lck(*mtxs_map[cmd.dst_conn_id]);
-
-//             // send the command
-//             auto &connector = connectors_map[cmd.dst_conn_id];
-//             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-//             {
-//                 fprintf(stderr, "error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
-//                 exit(EXIT_FAILURE);
-//             }
-
-//             //  sent from Agent, after which there will be a following block comming transferred in
-//             if (cmd.src_conn_id != CTRL_NODE_ID)
-//             { // check commands from Agent's CmdHandler
-//                 if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
-//                 {
-//                     // // if it's a newly generated parity block, then we need to check whether it has been computed
-//                     // if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
-//                     // {
-//                     //     // relocating newly generated parity block
-//                     //     if (cmd.post_block_id >= config.code.k_f)
-//                     //     {
-//                     //         // hack
-//                     //         break;
-
-//                     //         while (true)
-//                     //         { // make sure the parity block has been generated and stored from compute worker
-//                     //             if (compute_worker->isTaskOngoing(EncodeMethod::RE_ENCODE, cmd.post_stripe_id, cmd.post_block_id) == true || compute_worker->isTaskOngoing(EncodeMethod::PARITY_MERGE, cmd.post_stripe_id, cmd.post_block_id) == true)
-//                     //             {
-//                     //                 this_thread::sleep_for(chrono::milliseconds(10));
-//                     //                 continue;
-//                     //             }
-//                     //             else
-//                     //             {
-//                     //                 break;
-//                     //             }
-//                     //         }
-//                     //     }
-//                     // }
-
-//                     // read block
-//                     if (BlockIO::readBlock(cmd.src_block_path, block_buffer, config.block_size) != config.block_size)
-//                     {
-//                         fprintf(stderr, "error reading block: %s\n", cmd.src_block_path.c_str());
-//                         exit(EXIT_FAILURE);
-//                     }
-
-//                     // send block
-//                     if (BlockIO::sendBlock(connector, block_buffer, config.block_size) != config.block_size)
-//                     {
-//                         fprintf(stderr, "error sending block: %s to Node %u\n", cmd.src_block_path.c_str(), cmd.dst_conn_id);
-//                         exit(EXIT_FAILURE);
-//                     }
-
-//                     printf("CmdDist::run obtained block transfer task, send block %s\n", cmd.src_block_path.c_str());
-//                     // Utils::printUCharBuffer(block_buffer, 10);
-//                 }
-//             }
-
-//             if (cmd.type == CommandType::CMD_STOP)
-//             { // stop connection command
-
-//                 unique_lock<mutex> lck(finished_mtx);
-//                 num_finished_connectors++;
-//                 lck.unlock();
-
-//                 printf("CmdDist::run obtained stop connection command to Node %u\n", cmd.dst_conn_id);
-
-//                 if (num_finished_connectors == connectors_map.size())
-//                 {
-//                     printf("CmdDist::run all Nodes connection stopped, finished\n");
-//                     setFinished();
-//                 }
-//             }
-//         }
-//     }
-
-//     // close connectors
-//     for (auto &item : connectors_map)
-//     {
-//         item.second.close();
-//     }
-
-//     printf("CmdDist::run stop to distribute commands\n");
-// }
