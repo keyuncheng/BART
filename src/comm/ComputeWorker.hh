@@ -62,7 +62,7 @@ public:
 
     unsigned char gfPow(unsigned char val, unsigned int times);
 
-    static string getParityComputeTaskKey(EncodeMethod enc_method, uint32_t post_stripe_id, uint8_t post_block_id);
+    void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
 };
 
 #endif // __COMPUTE_WORKER_HH__

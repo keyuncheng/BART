@@ -70,63 +70,18 @@ void ComputeWorker::run()
             { // compute re-encoding
                 // step 1: collect data from disk / network
                 ParityComputeTask src_block_task;
+
+                // retrieve tasks
+                vector<string> src_block_paths(code.k_f);
                 for (uint8_t data_block_id = 0; data_block_id < code.k_f; data_block_id++)
                 {
                     uint16_t src_node_id = parity_compute_task.src_block_nodes[data_block_id];
+                    retrieveDataAndReply(parity_compute_task, src_node_id, re_buffers[data_block_id]);
 
-                    MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
-
-                    // retrieve the src_block_task
-                    while (true)
-                    {
-                        if (pc_src_task_queue.Pop(src_block_task) == true)
-                        {
-                            printf("ComputeWorker::run received src block task");
-                            src_block_task.print();
-
-                            if (src_block_task.post_stripe_id == parity_compute_task.post_stripe_id)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                fprintf(stderr, "ComputeWorker::run error: invalid data block retrieval content\n");
-                                exit(EXIT_FAILURE);
-                            }
-                        }
-                    }
-
-                    printf("ComputeWorker::run retrieved task from pc_task_queue %u\n", src_node_id);
-
-                    // retrieve data
-                    string src_block_path = src_block_task.parity_block_src_path;
-                    if (self_conn_id == src_node_id)
-                    { // local read task
-                        // read block
-                        if (BlockIO::readBlock(src_block_path, re_buffers[data_block_id], config.block_size) != config.block_size)
-                        {
-                            fprintf(stderr, "ComputeWorker::run error reading local block: %s\n", src_block_path.c_str());
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                    { // transfer task
-                      // recv block
-                        auto &skt = sockets_map[src_node_id];
-                        if (BlockIO::recvBlock(skt, re_buffers[data_block_id], config.block_size) != config.block_size)
-                        {
-                            fprintf(stderr, "CmdHandler::handleCmdFromAgent error recv block from Node (%u)\n", src_node_id);
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-
-                    printf("ComputeWorker::run retrieved data block from Node %u\n", src_node_id);
-
-                    MessageQueue<ParityComputeTask> &pc_reply_queue = *pc_reply_queues[src_node_id];
-                    pc_reply_queue.Push(parity_compute_task);
-
-                    printf("ComputeWorker::run reply task to queue %u\n", src_node_id);
+                    printf("\n\n\npath %s\n", src_block_paths[data_block_id].c_str());
                 }
+
+                // retrieve data
 
                 printf("ComputeWorker::run retrieved all required data for re-encoding, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
 
@@ -156,59 +111,13 @@ void ComputeWorker::run()
             {
                 // step 1: collect data from disk / network
                 ParityComputeTask src_block_task;
+
+                // retrieve task
                 for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
                 {
                     uint16_t src_node_id = parity_compute_task.src_block_nodes[pre_stripe_id];
 
-                    MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
-
-                    // retrieve the src_block_task
-                    while (true)
-                    {
-                        if (pc_src_task_queue.Pop(src_block_task) == true)
-                        {
-                            if (src_block_task.post_stripe_id == parity_compute_task.post_stripe_id && src_block_task.post_block_id == parity_compute_task.post_block_id)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                fprintf(stderr, "ComputeWorker::run error: invalid parity block retrieval content\n");
-                                exit(EXIT_FAILURE);
-                            }
-                        }
-                    }
-
-                    printf("ComputeWorker::run retrieved task from pc_task_queue %u\n", src_node_id);
-
-                    // retrieve data
-                    string src_block_path = src_block_task.parity_block_src_path;
-                    if (self_conn_id == src_node_id)
-                    { // local read task
-                        // read block
-                        if (BlockIO::readBlock(src_block_path, pm_buffers[pre_stripe_id], config.block_size) != config.block_size)
-                        {
-                            fprintf(stderr, "ComputeWorker::run error reading local block: %s\n", src_block_path.c_str());
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                    { // transfer task
-                      // recv block
-                        auto &skt = sockets_map[src_node_id];
-                        if (BlockIO::recvBlock(skt, pm_buffers[pre_stripe_id], config.block_size) != config.block_size)
-                        {
-                            fprintf(stderr, "CmdHandler::handleCmdFromAgent error recv block from Node (%u)\n", src_node_id);
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-
-                    printf("ComputeWorker::run retrieved parity block from %u\n", src_node_id);
-
-                    MessageQueue<ParityComputeTask> &pc_reply_queue = *pc_reply_queues[src_node_id];
-                    pc_reply_queue.Push(parity_compute_task);
-
-                    printf("ComputeWorker::run reply task to queue %u\n", src_node_id);
+                    retrieveDataAndReply(parity_compute_task, src_node_id, pm_buffers[pre_stripe_id]);
                 }
 
                 uint8_t parity_id = parity_compute_task.post_block_id - code.k_f;
@@ -304,4 +213,64 @@ unsigned char ComputeWorker::gfPow(unsigned char val, unsigned int times)
     }
 
     return ret_val;
+}
+
+void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer)
+{
+    ParityComputeTask src_block_task;
+
+    MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
+
+    printf("ComputeWorker::retrieveTask start to retrieve task from pc_task_queue %u, post: (%u, %u)\n", src_node_id, src_block_task.post_stripe_id, src_block_task.post_block_id);
+
+    while (true)
+    {
+        if (pc_src_task_queue.Pop(src_block_task) == true)
+        {
+            // printf("ComputeWorker::run received src block task");
+            // src_block_task.print();
+
+            if (src_block_task.post_stripe_id == parity_compute_task.post_stripe_id)
+            {
+                break;
+            }
+            else
+            {
+                fprintf(stderr, "ComputeWorker::retrieveTask error: invalid data block retrieval content\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    printf("ComputeWorker::retrieveTask retrieved task from pc_task_queue %u, post: (%u, %u)\n", src_node_id, src_block_task.post_stripe_id, src_block_task.post_block_id);
+
+    if (self_conn_id == src_node_id)
+    { // local read task
+        // read block
+        string src_block_path = src_block_task.parity_block_src_path;
+        if (BlockIO::readBlock(src_block_path, buffer, config.block_size) != config.block_size)
+        {
+            fprintf(stderr, "ComputeWorker::retrieveData error reading local block: %s\n", src_block_path.c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    { // transfer task
+        printf("transfer\n\n\n");
+        // recv block
+        auto &skt = sockets_map[src_node_id];
+        if (BlockIO::recvBlock(skt, buffer, config.block_size) != config.block_size)
+        {
+            fprintf(stderr, "CmdHandler::retrieveData error recv block from Node (%u)\n", src_node_id);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    printf("ComputeWorker::retrieveData retrieved data from Node %u\n", src_node_id);
+
+    MessageQueue<ParityComputeTask> &pc_reply_queue = *pc_reply_queues[src_node_id];
+
+    pc_reply_queue.Push(parity_compute_task);
+
+    printf("ComputeWorker::sendReplyTask reply task to queue %u, post: (%u, %u)\n", src_node_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
 }
