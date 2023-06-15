@@ -62,6 +62,7 @@ public:
 
     unsigned char gfPow(unsigned char val, unsigned int times);
 
+    void retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
     void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
 };
 

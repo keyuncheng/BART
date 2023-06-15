@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
     // build transition tasks
     trans_solution.buildTransTasks(stripe_batch);
-    // trans_solution.print();
+    trans_solution.print();
 
     // store post-transition stripes to placement file
     stripe_generator.storeStripes(stripe_batch.post_stripes, post_placement_filename);

@@ -71,17 +71,38 @@ void ComputeWorker::run()
                 // step 1: collect data from disk / network
                 ParityComputeTask src_block_task;
 
-                // retrieve tasks
-                vector<string> src_block_paths(code.k_f);
+                // Optimize (start): parallelize read data across the cluster
+                unordered_map<uint16_t, vector<unsigned char *>> src_node_block_buffers_map;
                 for (uint8_t data_block_id = 0; data_block_id < code.k_f; data_block_id++)
                 {
                     uint16_t src_node_id = parity_compute_task.src_block_nodes[data_block_id];
-                    retrieveDataAndReply(parity_compute_task, src_node_id, re_buffers[data_block_id]);
-
-                    printf("\n\n\npath %s\n", src_block_paths[data_block_id].c_str());
+                    src_node_block_buffers_map[src_node_id].push_back(re_buffers[data_block_id]);
                 }
 
-                // retrieve data
+                thread *retrieve_threads = new thread[src_node_block_buffers_map.size()];
+
+                uint8_t thread_id = 0;
+                for (auto &item : src_node_block_buffers_map)
+                {
+                    retrieve_threads[thread_id++] = thread(&ComputeWorker::retrieveMultipleDataAndReply, this, &parity_compute_task, item.first, item.second);
+                }
+
+                for (uint idx = 0; idx < src_node_block_buffers_map.size(); idx++)
+                {
+                    retrieve_threads[idx].join();
+                }
+
+                delete[] retrieve_threads;
+                // Optimize (end): parallelize read data across the cluster
+
+                // // // Before Optimization (start) : sequentially read data
+                // vector<string> src_block_paths(code.k_f);
+                // for (uint8_t data_block_id = 0; data_block_id < code.k_f; data_block_id++)
+                // {
+                //     uint16_t src_node_id = parity_compute_task.src_block_nodes[data_block_id];
+                //     retrieveDataAndReply(parity_compute_task, src_node_id, re_buffers[data_block_id]);
+                // }
+                // // // Before Optimization (end) : sequentially read data
 
                 printf("ComputeWorker::run retrieved all required data for re-encoding, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
 
@@ -112,13 +133,39 @@ void ComputeWorker::run()
                 // step 1: collect data from disk / network
                 ParityComputeTask src_block_task;
 
-                // retrieve task
+                // Optimize (start): parallelize read data across the cluster
+                unordered_map<uint16_t, vector<unsigned char *>> src_node_block_buffers_map;
                 for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
                 {
                     uint16_t src_node_id = parity_compute_task.src_block_nodes[pre_stripe_id];
-
-                    retrieveDataAndReply(parity_compute_task, src_node_id, pm_buffers[pre_stripe_id]);
+                    src_node_block_buffers_map[src_node_id].push_back(pm_buffers[pre_stripe_id]);
                 }
+
+                thread *retrieve_threads = new thread[src_node_block_buffers_map.size()];
+
+                uint8_t thread_id = 0;
+                for (auto &item : src_node_block_buffers_map)
+                {
+                    retrieve_threads[thread_id++] = thread(&ComputeWorker::retrieveMultipleDataAndReply, this, &parity_compute_task, item.first, item.second);
+                }
+
+                for (uint idx = 0; idx < src_node_block_buffers_map.size(); idx++)
+                {
+                    retrieve_threads[idx].join();
+                }
+
+                delete[] retrieve_threads;
+                // Optimize (end): parallelize read data across the cluster
+
+                // // Before Optimization (start) : sequentially read data
+                // // retrieve task
+                // for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
+                // {
+                //     uint16_t src_node_id = parity_compute_task.src_block_nodes[pre_stripe_id];
+
+                //     retrieveDataAndReply(parity_compute_task, src_node_id, pm_buffers[pre_stripe_id]);
+                // }
+                // // Before Optimization (end) : sequentially read data
 
                 uint8_t parity_id = parity_compute_task.post_block_id - code.k_f;
 
@@ -256,7 +303,6 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
     }
     else
     { // transfer task
-        printf("transfer\n\n\n");
         // recv block
         auto &skt = sockets_map[src_node_id];
         if (BlockIO::recvBlock(skt, buffer, config.block_size) != config.block_size)
@@ -273,4 +319,12 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
     pc_reply_queue.Push(parity_compute_task);
 
     printf("ComputeWorker::sendReplyTask reply task to queue %u, post: (%u, %u)\n", src_node_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+}
+
+void ComputeWorker::retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers)
+{
+    for (auto buffer : buffers)
+    {
+        retrieveDataAndReply(*parity_compute_task, src_node_id, buffer);
+    }
 }
