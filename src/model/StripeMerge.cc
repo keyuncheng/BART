@@ -123,7 +123,7 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
         // min_bw_pm_nodes = valid_pm_nodes[rand_pos];
 
         // find encode nodes
-        stripe_group.getMinPMBWOptimized(min_bw_pm_nodes);
+        stripe_group.getMinPMBW(min_bw_pm_nodes);
     }
 
     // update parity computation nodes, final block placement and block distribution

@@ -66,9 +66,9 @@ public:
     uint8_t getDataRelocBW();
     uint8_t getMinREBW(u16string &enc_nodes);
 
+    uint8_t getMinPMBWBF(u16string &enc_nodes);
+    uint8_t getMinPMBWForParities(u16string &enc_nodes);
     uint8_t getMinPMBW(u16string &enc_nodes);
-    uint8_t getMinPMBWOptimized(u16string &enc_nodes);
-    uint8_t getMinPMBWGreedy(u16string &enc_nodes);
     bool isPerfectParityMerging();
 
     // generate parity computation scheme for perfect parity merging (parity generation bandwidth = 0)

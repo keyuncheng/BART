@@ -70,17 +70,12 @@ uint8_t StripeGroup::getMinTransBW(string approach, u16string &enc_nodes)
     }
     else if (approach == "BWPM" || approach == "BTPM")
     { // parity-merging only
-        // parity_update_bw = getMinPMBW(enc_nodes);
-        parity_update_bw = getMinPMBWOptimized(enc_nodes);
-        // parity_update_bw = getMinPMBWGreedy();
+        parity_update_bw = getMinPMBW(enc_nodes);
     }
     else if (approach == "BT")
     { // both re-encoding and parity merging
         // NOTE: here we assume that bandwidth(pm) <= bandwidth(re), thus we calculate pm bandwidth only
-
-        // parity_update_bw = getMinPMBW();
-        parity_update_bw = getMinPMBWOptimized(enc_nodes);
-        // parity_update_bw = getMinPMBWGreedy();
+        parity_update_bw = getMinPMBW(enc_nodes);
     }
     else
     {
@@ -139,7 +134,7 @@ uint8_t StripeGroup::getMinREBW(u16string &enc_nodes)
     return re_bw;
 }
 
-uint8_t StripeGroup::getMinPMBW(u16string &enc_nodes)
+uint8_t StripeGroup::getMinPMBWBF(u16string &enc_nodes)
 {
     uint16_t num_nodes = settings.num_nodes;
     // for parity merging, there are <num_nodes ^ code.m_f> possible choices to compute parity blocks, as we can collect each of m_f parity blocks at num_nodes nodes
@@ -188,7 +183,7 @@ uint8_t StripeGroup::getMinPMBW(u16string &enc_nodes)
     return min_bw;
 }
 
-uint8_t StripeGroup::getMinPMBWOptimized(u16string &enc_nodes)
+uint8_t StripeGroup::getMinPMBWForParities(u16string &enc_nodes)
 {
     uint8_t num_pre_stripes = pre_stripes.size();
     uint8_t num_required_parity_blocks = num_pre_stripes;
@@ -262,7 +257,7 @@ uint8_t StripeGroup::getMinPMBWOptimized(u16string &enc_nodes)
     return min_bw;
 }
 
-uint8_t StripeGroup::getMinPMBWGreedy(u16string &enc_nodes)
+uint8_t StripeGroup::getMinPMBW(u16string &enc_nodes)
 {
     uint8_t sum_pm_bw = 0;
     u16string relocated_nodes = data_dist; // mark if nodes are relocated
