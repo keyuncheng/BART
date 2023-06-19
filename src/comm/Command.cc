@@ -124,6 +124,7 @@ void Command::parse()
     case CommandType::CMD_READ_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
+    case CommandType::CMD_TRANSFER_BLK:
     case CommandType::CMD_DELETE_BLK:
     {
         post_stripe_id = readUInt();

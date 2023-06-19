@@ -1,7 +1,7 @@
 #include "CmdHandler.hh"
 
-CmdHandler::CmdHandler(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, sockpp::tcp_connector> &_blk_connectors_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
-                       unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues, MessageQueue<ParityComputeTask> *_parity_reloc_task_queue, MemoryPool *_memory_pool, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), blk_connectors_map(_blk_connectors_map), cmd_dist_queues(_cmd_dist_queues), pc_task_queues(_pc_task_queues), pc_reply_queues(_pc_reply_queues), parity_reloc_task_queue(_parity_reloc_task_queue), memory_pool(_memory_pool)
+CmdHandler::CmdHandler(Config &_config, uint16_t _self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
+                       unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues, MessageQueue<ParityComputeTask> *_parity_reloc_task_queue, MemoryPool *_memory_pool, unsigned int _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), cmd_dist_queues(_cmd_dist_queues), pc_task_queues(_pc_task_queues), pc_reply_queues(_pc_reply_queues), parity_reloc_task_queue(_parity_reloc_task_queue), memory_pool(_memory_pool)
 {
     for (auto &item : sockets_map)
     {
@@ -318,27 +318,6 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
             }
 
             printf("CmdHandler::handleCmdFromAgent write block: %s\n", cmd.dst_block_path.c_str());
-        }
-        else if (cmd.type == CommandType::CMD_TRANSFER_BLK)
-        {
-            printf("CmdHandler::handleCmdFromAgent recevied tranfer command from Agent %u, transfer block %s\n", cmd.src_conn_id, cmd.dst_block_path.c_str());
-
-            // read block
-            if (BlockIO::readBlock(cmd.dst_block_path, cmd_handler_block_buffer, config.block_size) != config.block_size)
-            {
-                fprintf(stderr, "CmdHandler::handleCmdFromAgent error reading block: %s\n", cmd.dst_block_path.c_str());
-                exit(EXIT_FAILURE);
-            }
-            
-            // send block
-            auto &blk_connector = blk_connectors_map[cmd.src_conn_id];
-            if (BlockIO::sendBlock(blk_connector, cmd_handler_block_buffer, config.block_size) != config.block_size)
-            {
-                fprintf(stderr, "CmdHandler::handleCmdFromAgent error sending block: %s to Node %u\n", cmd.dst_block_path.c_str(), cmd.src_conn_id);
-                exit(EXIT_FAILURE);
-            }
-
-            printf("CmdHandler::handleCmdFromAgent send block to Node %u, block_path: %s\n", cmd.src_conn_id, cmd.dst_block_path.c_str());
         }
         else if (cmd.type == CommandType::CMD_STOP)
         {

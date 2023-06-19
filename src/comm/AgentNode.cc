@@ -31,7 +31,7 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues, memory_pool, 1);
 
     // create command handler, receiving cmd and forwarding block
-    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, blk_connectors_map, &cmd_dist_queues, &pc_task_queues, &pc_reply_queues, parity_reloc_task_queue, memory_pool, 1);
+    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, &cmd_dist_queues, &pc_task_queues, &pc_reply_queues, parity_reloc_task_queue, memory_pool, 1);
 
     // create compute worker
     compute_worker = new ComputeWorker(config, self_conn_id, sockets_map, pc_task_queues, pc_reply_queues, cmd_dist_queues, *parity_reloc_task_queue, *memory_pool, 1);

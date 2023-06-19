@@ -139,7 +139,7 @@ def main():
                 ec_pre_block_path  = data_dir / "block_{}_{}".format(pre_stripe_id, pre_block_id)
 
                 cmd = "scp {} {}:{}".format(str(ec_pre_block_path), node_ip, str(data_dir))
-                exec_cmd(cmd, exec=True)
+                exec_cmd(cmd, exec=False)
 
 if __name__ == '__main__':
     main()

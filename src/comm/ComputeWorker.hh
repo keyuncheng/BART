@@ -12,6 +12,8 @@
 #include "../util/MemoryPool.hh"
 #include "BlockIO.hh"
 #include "Command.hh"
+#include "sockpp/tcp_connector.h"
+#include "sockpp/tcp_acceptor.h"
 
 class ComputeWorker : public ThreadPool
 {
@@ -49,6 +51,15 @@ public:
     unsigned char *buffer;
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
+    unsigned char **data_transfer_buffers;
+
+    // sockets for data transfer
+    unordered_map<uint16_t, sockpp::tcp_connector> blk_connectors_map;
+    unordered_map<uint16_t, sockpp::tcp_socket> blk_sockets_map;
+
+    sockpp::tcp_acceptor *blk_acceptor;
+
+    unordered_map<uint16_t, thread *> blk_handler_threads_map;
 
     ComputeWorker(Config &_config, uint16_t _self_conn_id,
                   unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
@@ -67,11 +78,20 @@ public:
 
     unsigned char gfPow(unsigned char val, unsigned int times);
 
+    // block transfer receive and read
     void retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
     void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
     
-    void notifyMultipleData(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
-    void notifyData(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
+    // block transfer send
+    void notifyMultipleAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
+    void notifyAgent(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
+    void handleBlkTransfer(uint16_t src_conn_id, unsigned char *buffer);
+
+    // sockets connections
+    void ackConnAll();
+    void connectAll();
+    void connectOne(uint16_t conn_id, string ip, uint16_t port);
+    void handleAckOne(uint16_t conn_id);
 };
 
 #endif // __COMPUTE_WORKER_HH__

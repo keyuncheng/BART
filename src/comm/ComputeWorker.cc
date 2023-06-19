@@ -23,10 +23,60 @@ ComputeWorker::ComputeWorker(
     {
         pm_buffers[block_id] = &buffer[block_id * config.block_size];
     }
+
+    // init buffers for data transfer
+    data_transfer_buffers = (unsigned char **)malloc((config.agent_addr_map.size()) * sizeof(unsigned char *));
+    for (uint8_t agent_id = 0; agent_id < config.agent_addr_map.size(); agent_id++)
+    {
+        if (agent_id != self_conn_id)
+        {
+            data_transfer_buffers[agent_id] = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+        }
+    }
+
+    // init sockets for listening block data
+    sockpp::socket_initializer::initialize();
+
+    for (auto &item : config.agent_addr_map)
+    {
+        uint16_t conn_id = item.first;
+        if (self_conn_id != conn_id)
+        {
+            blk_connectors_map[conn_id] = sockpp::tcp_connector();
+            blk_sockets_map[conn_id] = sockpp::tcp_socket();
+        }
+    }
+    unsigned int self_port = 0;
+    self_port = std::get<2>(config.agent_addr_map[self_conn_id]);
+    blk_acceptor = new sockpp::tcp_acceptor(self_port);
+
+    printf("ComputeWorker %u: start connection\n", self_conn_id);
+
+    thread ack_conn_thread([&]
+                           { ComputeWorker::ackConnAll(); });
+
+    // connect all nodes
+    ComputeWorker::connectAll();
+
+    // join ack connector threads
+    ack_conn_thread.join();
+
+    // after socket initialization
+    for (auto &item : blk_sockets_map)
+    {
+        uint16_t conn_id = item.first;
+        if (self_conn_id != self_conn_id) 
+        {
+            blk_handler_threads_map[conn_id] = new thread(&ComputeWorker::handleBlkTransfer, this, conn_id, data_transfer_buffers[conn_id]);
+        }
+    }
 }
 
 ComputeWorker::~ComputeWorker()
 {
+    blk_acceptor->close();
+    delete blk_acceptor;
+    free(data_transfer_buffers);
     free(pm_buffers);
     free(re_buffers);
     free(buffer);
@@ -147,7 +197,7 @@ void ComputeWorker::run()
                 uint8_t thread_id = 0;
                 for (auto &item : src_node_block_buffers_map) 
                 {
-                    notfiy_threads[thread_id++] = thread(&ComputeWorker::notifyMultipleData, this, &parity_compute_task, item.first, item.second);
+                    notfiy_threads[thread_id++] = thread(&ComputeWorker::notifyMultipleAgent, this, &parity_compute_task, item.first, item.second);
                 }
                 for (uint idx = 0; idx < src_node_block_buffers_map.size(); idx++)
                 {
@@ -281,28 +331,7 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
 {
     ParityComputeTask src_block_task;
 
-    MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
-
     printf("ComputeWorker::retrieveTask start to retrieve task from pc_task_queue %u, post: (%u, %u)\n", src_node_id, src_block_task.post_stripe_id, src_block_task.post_block_id);
-
-    while (true)
-    {
-        if (pc_src_task_queue.Pop(src_block_task) == true)
-        {
-            // printf("ComputeWorker::run received src block task");
-            // src_block_task.print();
-
-            if (src_block_task.post_stripe_id == parity_compute_task.post_stripe_id)
-            {
-                break;
-            }
-            else
-            {
-                fprintf(stderr, "ComputeWorker::retrieveTask error: invalid data block retrieval content\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
 
     printf("ComputeWorker::retrieveTask retrieved task from pc_task_queue %u, post: (%u, %u)\n", src_node_id, src_block_task.post_stripe_id, src_block_task.post_block_id);
 
@@ -319,15 +348,15 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
     else
     { // transfer task
         // recv block
-        auto &skt = sockets_map[src_node_id];
-        if (BlockIO::recvBlock(skt, buffer, config.block_size) != config.block_size)
+        auto &blk_skt = blk_sockets_map[src_node_id];
+        if (BlockIO::recvBlock(blk_skt, buffer, config.block_size) != config.block_size)
         {
-            fprintf(stderr, "CmdHandler::retrieveData error recv block from Node (%u)\n", src_node_id);
+            fprintf(stderr, "ComputeWorker::retrieveData error recv block from ComputeWorker (%u)\n", src_node_id);
             exit(EXIT_FAILURE);
         }
     }
 
-    printf("ComputeWorker::retrieveData retrieved data from Node %u\n", src_node_id);
+    printf("ComputeWorker::retrieveData retrieved data from ComputeWorker %u\n", src_node_id);
 
     MessageQueue<ParityComputeTask> &pc_reply_queue = *pc_reply_queues[src_node_id];
 
@@ -336,26 +365,26 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
     printf("ComputeWorker::sendReplyTask reply task to queue %u, post: (%u, %u)\n", src_node_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
 }
 
-void ComputeWorker::notifyData(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer)
+void ComputeWorker::notifyAgent(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer)
 {
     ParityComputeTask src_block_task;
 
     // MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
 
-    printf("ComputeWorker::notifyData start to notify agent %u", src_node_id);
+    printf("ComputeWorker::notifyAgent start to notify agent %u", src_node_id);
 
-    if (self_conn_id == src_node_id)
-    {
-        // local read
-    }
-    else
+    if (self_conn_id != src_node_id)
     {
         // notify other nodes to send
-        Command cmd_forward; 
-        string src_block_path = src_block_task.parity_block_src_path;
-        cmd_forward.buildCommand(CMD_TRANSFER_BLK, self_conn_id, src_node_id, src_block_path); // TODO
-                    
-        cmd_dist_queues[src_node_id]->Push(cmd_forward);
+        auto &blk_connector = blk_connectors_map[src_node_id];
+        Command cmd_forward;
+        cmd_forward.buildCommand(CommandType::CMD_TRANSFER_BLK, self_conn_id, src_node_id, parity_compute_task.parity_block_src_path);
+
+        if (blk_connector.write_n(cmd_forward.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+        {
+            fprintf(stderr, "ComputeWorker::notifyAgent error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_forward.type, cmd_forward.src_conn_id, cmd_forward.dst_conn_id);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -367,10 +396,227 @@ void ComputeWorker::retrieveMultipleDataAndReply(ParityComputeTask *parity_compu
     }
 }
 
-void ComputeWorker::notifyMultipleData(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers) 
+void ComputeWorker::notifyMultipleAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers) 
 {
     for (auto buffer : buffers)
     {
-        notifyData(*parity_compute_task, src_node_id, buffer);
+        notifyAgent(*parity_compute_task, src_node_id, buffer);
     }
+}
+
+void ComputeWorker::handleBlkTransfer(uint16_t src_conn_id, unsigned char *buffer)
+{
+    printf("ComputeWorker::handleBlkTransfer [ComputeWorker %u] start to listen for block transfer command from ComputeWorker %u\n", self_conn_id, src_conn_id);
+
+    auto &blk_skt = blk_sockets_map[src_conn_id];
+
+    while (true)
+    {
+        Command cmd;
+
+        ssize_t ret_val = blk_skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
+        if (ret_val == -1)
+        {
+            fprintf(stderr, "ComputeWorker::handleBlkTransfer error reading command\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (ret_val == 0)
+        {
+            // currently, no cmd coming in
+            printf("ComputeWorker::handleBlkTransfer no command coming in, break\n");
+            break;
+        }
+
+        // parse the command
+        cmd.parse();
+        cmd.print();
+
+        // validate command
+        if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
+        {
+            fprintf(stderr, "ComputeWorker::handleBlkTransfer error: invalid command content\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (cmd.type == CommandType::CMD_TRANSFER_BLK)
+        {
+            printf("ComputeWorker::handleBlkTransfer recevied tranfer command from Agent %u, transfer block %s\n", cmd.src_conn_id, cmd.dst_block_path.c_str());
+            // read block
+            if (BlockIO::readBlock(cmd.dst_block_path, buffer, config.block_size) != config.block_size)
+            {
+                fprintf(stderr, "ComputeWorker::handleBlkTransfer error reading block: %s\n", cmd.dst_block_path.c_str());
+                exit(EXIT_FAILURE);
+            }
+            
+            // send block
+            auto &blk_connector = blk_connectors_map[cmd.src_conn_id];
+            if (BlockIO::sendBlock(blk_connector, buffer, config.block_size) != config.block_size)
+            {
+                fprintf(stderr, "ComputeWorker::handleBlkTransfer error sending block: %s to ComputeWorker %u\n", cmd.dst_block_path.c_str(), cmd.src_conn_id);
+                exit(EXIT_FAILURE);
+            }
+
+            printf("ComputeWorker::handleBlkTransfer send block to ComputeWorker %u, block_path: %s\n", cmd.src_conn_id, cmd.dst_block_path.c_str());
+        }
+        else if (cmd.type == CommandType::CMD_STOP)
+        {
+            printf("ComputeWorker::handleBlkTransfer received stop command from ComputeWorker %u, call socket.close()\n", cmd.src_conn_id);
+            blk_skt.close();
+            break;
+        }
+    }
+}
+
+void ComputeWorker::connectAll() 
+{
+    unordered_map<uint16_t, thread *> conn_threads;
+
+    // create connect threads
+    for (auto &item : blk_connectors_map)
+    {
+        uint16_t conn_id = item.first;
+        string ip;
+        unsigned int port;
+        if (conn_id != self_conn_id)
+        {
+            ip = std::get<0>(config.agent_addr_map[conn_id]);
+            port = std::get<2>(config.agent_addr_map[conn_id]);
+        }
+
+        conn_threads[conn_id] = new thread(&ComputeWorker::connectOne, this, conn_id, ip, port);
+    }
+
+    for (auto &item : conn_threads)
+    {
+        item.second->join();
+        delete item.second;
+    }
+
+    // create handle ack threads
+    unordered_map<uint16_t, thread *> ack_threads;
+    for (auto &item : blk_connectors_map)
+    {
+        uint16_t conn_id = item.first;
+        ack_threads[conn_id] = new thread(&ComputeWorker::handleAckOne, this, conn_id);
+    }
+
+    for (auto &item : ack_threads)
+    {
+        item.second->join();
+        delete item.second;
+    }
+
+    printf("ComputeWorker %u: successfully connected to %lu nodes\n", self_conn_id, blk_connectors_map.size());
+}
+
+void ComputeWorker::connectOne(uint16_t conn_id, string ip, uint16_t port)
+{
+    // create connection
+    sockpp::tcp_connector &connector = blk_connectors_map[conn_id];
+    while (!(connector = sockpp::tcp_connector(sockpp::inet_address(ip, port))))
+    {
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+
+    // printf("Successfully created connection to conn_id: %u\n", conn_id);
+
+    // send the connection command
+    Command cmd_conn;
+    cmd_conn.buildCommand(CommandType::CMD_CONN, self_conn_id, conn_id);
+
+    // printf("ComputeWorker %u connected to ComputeWorker %u: \n", self_conn_id, conn_id);
+    // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
+
+    if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+    {
+        fprintf(stderr, "error send cmd_conn\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void ComputeWorker::ackConnAll()
+{
+    uint16_t num_acked_nodes = 0;
+    uint16_t num_conns = blk_connectors_map.size();
+    while (num_acked_nodes < num_conns)
+    {
+        sockpp::inet_address conn_addr;
+        sockpp::tcp_socket skt = blk_acceptor->accept(&conn_addr);
+
+        if (!skt)
+        {
+            fprintf(stderr, "invalid socket: %s\n", blk_acceptor->last_error_str().c_str());
+            exit(EXIT_FAILURE);
+        }
+
+        // parse the connection command
+        Command cmd_conn;
+        if (skt.read_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+        {
+            fprintf(stderr, "error reading cmd_conn\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // printf("Received at ComputeWorker %u: \n", self_conn_id);
+        // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
+
+        cmd_conn.parse();
+
+        if (cmd_conn.type != CommandType::CMD_CONN || cmd_conn.dst_conn_id != self_conn_id)
+        {
+            fprintf(stderr, "invalid cmd_conn: type: %u, dst_conn_id: %u\n", cmd_conn.type, cmd_conn.dst_conn_id);
+            exit(EXIT_FAILURE);
+        }
+
+        // maintain the socket
+        uint16_t conn_id = cmd_conn.src_conn_id;
+        blk_sockets_map[conn_id] = move(skt);
+
+        // send the ack command
+        auto &connector = blk_sockets_map[conn_id];
+
+        Command cmd_ack;
+        cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
+
+        // printf("Reply ack at ComputeWorker %u -> %u \n", self_conn_id, conn_id);
+        // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
+
+        if (connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+        {
+            fprintf(stderr, "error send cmd_ack\n");
+            exit(EXIT_FAILURE);
+        }
+
+        num_acked_nodes++;
+
+        // printf("ComputeWorker %u: received connection and acked to ComputeWorker %u; connected to (%u / %u) Nodes\n", self_conn_id, conn_id, num_acked_nodes, num_conns);
+    }
+}
+
+void ComputeWorker::handleAckOne(uint16_t conn_id)
+{
+    sockpp::tcp_connector &connector = blk_connectors_map[conn_id];
+
+    // parse the ack command
+    Command cmd_ack;
+    if (connector.read_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+    {
+        fprintf(stderr, "error reading cmd_ack from %u\n", conn_id);
+        exit(EXIT_FAILURE);
+    }
+    cmd_ack.parse();
+
+    // printf("Handle ack at ComputeWorker %u -> %u \n", self_conn_id, conn_id);
+    // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
+
+    if (cmd_ack.type != CommandType::CMD_ACK)
+    {
+        fprintf(stderr, "invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
+        exit(EXIT_FAILURE);
+    }
+
+    // printf("ComputeWorker %u: received ack from ComputeWorker %u\n", self_conn_id, conn_id);
+
+    printf("ComputeWorker:: successfully connected to conn_id: %u\n", conn_id);
 }

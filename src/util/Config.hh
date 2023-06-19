@@ -31,6 +31,8 @@ public:
     string post_block_mapping_filename; // post-transition block mapping
     string sg_meta_filename;            // stripe group metadata
 
+    unsigned int blk_transfer_port_start;      // compute worker port start for data transfer
+
     // Agent
     uint16_t agent_id;
 

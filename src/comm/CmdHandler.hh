@@ -27,8 +27,6 @@ public:
     uint16_t self_conn_id;
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
 
-    unordered_map<uint16_t, sockpp::tcp_connector> &blk_connectors_map;
-
     // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
     unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
 
@@ -57,7 +55,6 @@ public:
 
     CmdHandler(Config &_config, uint16_t _self_conn_id,
                unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
-               unordered_map<uint16_t, sockpp::tcp_connector> &_blk_connectors_map,
                unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues,
                unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
                unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues,

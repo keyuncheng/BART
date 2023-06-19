@@ -9,9 +9,7 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
     {
         // add controller
         connectors_map[CTRL_NODE_ID] = sockpp::tcp_connector();
-        blk_connectors_map[CTRL_NODE_ID] = sockpp::tcp_connector();
         sockets_map[CTRL_NODE_ID] = sockpp::tcp_socket();
-        blk_sockets_map[CTRL_NODE_ID] = sockpp::tcp_socket();
     }
 
     // add Agent
@@ -21,9 +19,7 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
         if (self_conn_id != conn_id)
         {
             connectors_map[conn_id] = sockpp::tcp_connector();
-            blk_connectors_map[conn_id] = sockpp::tcp_connector();
             sockets_map[conn_id] = sockpp::tcp_socket();
-            blk_sockets_map[conn_id] = sockpp::tcp_socket();
         }
     }
 
@@ -42,20 +38,6 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
 
     acceptor = new sockpp::tcp_acceptor(self_port);
 
-
-    // add blk_acceptor
-    unsigned int self_blk_port = 0;
-    if (self_conn_id == CTRL_NODE_ID)
-    {
-        self_blk_port = std::get<2>(config.controller_addr);
-    }
-    else
-    {
-        self_blk_port = std::get<2>(config.agent_addr_map[self_conn_id]);
-    }
-
-    blk_acceptor = new sockpp::tcp_acceptor(self_blk_port); // hcpuyang: change the port
-
     printf("Node %u: start connection\n", self_conn_id);
 
     // create ack connector threads
@@ -73,15 +55,11 @@ Node::~Node()
 {
     acceptor->close();
     delete acceptor;
-
-    blk_acceptor->close();
-    delete blk_acceptor;
 }
 
 void Node::connectAll()
 {
     unordered_map<uint16_t, thread *> conn_threads;
-    unordered_map<uint16_t, thread *> blk_conn_threads;
 
     // create connect threads
     for (auto &item : connectors_map)
@@ -107,32 +85,7 @@ void Node::connectAll()
         conn_threads[conn_id] = new thread(&Node::connectOne, this, conn_id, ip, port);
     }
 
-    for (auto &item : blk_connectors_map)
-    {
-        uint16_t conn_id = item.first;
-        string ip;
-        unsigned int port;
-        if (conn_id == CTRL_NODE_ID)
-        {
-            ip = std::get<0>(config.controller_addr);
-            port = std::get<2>(config.controller_addr);
-        }
-        else
-        {
-            ip = std::get<0>(config.agent_addr_map[conn_id]);
-            port = std::get<2>(config.agent_addr_map[conn_id]);
-        }
-
-        blk_conn_threads[conn_id] = new thread(&Node::connectOneBlk, this, conn_id, ip, port); // hcpuyang todo: change the ip and port
-    }
-
     for (auto &item : conn_threads)
-    {
-        item.second->join();
-        delete item.second;
-    }
-
-    for (auto &item : blk_conn_threads) 
     {
         item.second->join();
         delete item.second;
@@ -146,20 +99,7 @@ void Node::connectAll()
         ack_threads[conn_id] = new thread(&Node::handleAckOne, this, conn_id);
     }
 
-    unordered_map<uint16_t, thread *> blk_ack_threads;
-    for (auto &item : blk_connectors_map)
-    {
-        uint16_t conn_id = item.first;
-        blk_ack_threads[conn_id] = new thread(&Node::handleAckOne, this, conn_id);
-    }
-
     for (auto &item : ack_threads)
-    {
-        item.second->join();
-        delete item.second;
-    }
-
-    for (auto &item : blk_ack_threads)
     {
         item.second->join();
         delete item.second;
@@ -193,31 +133,6 @@ void Node::connectOne(uint16_t conn_id, string ip, uint16_t port)
     }
 }
 
-void Node::connectOneBlk(uint16_t conn_id, string ip, uint16_t port)
-{
-    // create connection
-    sockpp::tcp_connector &connector = blk_connectors_map[conn_id];
-    while (!(connector = sockpp::tcp_connector(sockpp::inet_address(ip, port))))
-    {
-        this_thread::sleep_for(chrono::milliseconds(1));
-    }
-
-    // printf("Successfully created connection to conn_id: %u\n", conn_id);
-
-    // send the connection command
-    Command cmd_conn;
-    cmd_conn.buildCommand(CommandType::CMD_CONN, self_conn_id, conn_id);
-
-    // printf("Node %u connected to Node %u: \n", self_conn_id, conn_id);
-    // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
-
-    if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    {
-        fprintf(stderr, "error send cmd_conn\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
 void Node::ackConnAll()
 {
     uint16_t num_acked_nodes = 0;
@@ -225,18 +140,11 @@ void Node::ackConnAll()
     while (num_acked_nodes < num_conns)
     {
         sockpp::inet_address conn_addr;
-        sockpp::inet_address blk_conn_addr;
         sockpp::tcp_socket skt = acceptor->accept(&conn_addr);
-        sockpp::tcp_socket blk_skt = blk_acceptor->accept(&blk_conn_addr);
 
         if (!skt)
         {
             fprintf(stderr, "invalid socket: %s\n", acceptor->last_error_str().c_str());
-            exit(EXIT_FAILURE);
-        }
-        else if (!blk_skt)
-        {
-            fprintf(stderr, "invalid socket: %s\n", blk_acceptor->last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
@@ -248,18 +156,10 @@ void Node::ackConnAll()
             exit(EXIT_FAILURE);
         }
 
-        Command blk_cmd_conn;
-        if (blk_skt.read_n(blk_cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-        {
-            fprintf(stderr, "error reading blk_cmd_conn\n");
-            exit(EXIT_FAILURE);
-        }
-
         // printf("Received at Node %u: \n", self_conn_id);
         // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
 
         cmd_conn.parse();
-        blk_cmd_conn.parse();
 
         if (cmd_conn.type != CommandType::CMD_CONN || cmd_conn.dst_conn_id != self_conn_id)
         {
@@ -267,20 +167,12 @@ void Node::ackConnAll()
             exit(EXIT_FAILURE);
         }
 
-        if (blk_cmd_conn.type != CommandType::CMD_CONN || blk_cmd_conn.dst_conn_id != self_conn_id)
-        {
-            fprintf(stderr, "invalid blk_cmd_conn: type: %u, dst_conn_id: %u\n", blk_cmd_conn.type, blk_cmd_conn.dst_conn_id);
-            exit(EXIT_FAILURE);
-        }
-
         // maintain the socket
         uint16_t conn_id = cmd_conn.src_conn_id;
         sockets_map[conn_id] = move(skt);
-        blk_sockets_map[conn_id] = move(blk_skt);
 
         // send the ack command
         auto &connector = sockets_map[conn_id];
-        auto &blk_connector = blk_sockets_map[conn_id];
 
         Command cmd_ack;
         cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
@@ -289,12 +181,6 @@ void Node::ackConnAll()
         // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
 
         if (connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-        {
-            fprintf(stderr, "error send cmd_ack\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if (blk_connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
             fprintf(stderr, "error send cmd_ack\n");
             exit(EXIT_FAILURE);
@@ -309,33 +195,6 @@ void Node::ackConnAll()
 void Node::handleAckOne(uint16_t conn_id)
 {
     sockpp::tcp_connector &connector = connectors_map[conn_id];
-
-    // parse the ack command
-    Command cmd_ack;
-    if (connector.read_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    {
-        fprintf(stderr, "error reading cmd_ack from %u\n", conn_id);
-        exit(EXIT_FAILURE);
-    }
-    cmd_ack.parse();
-
-    // printf("Handle ack at Node %u -> %u \n", self_conn_id, conn_id);
-    // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
-
-    if (cmd_ack.type != CommandType::CMD_ACK)
-    {
-        fprintf(stderr, "invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
-        exit(EXIT_FAILURE);
-    }
-
-    // printf("Node %u: received ack from Node %u\n", self_conn_id, conn_id);
-
-    printf("Node:: successfully connected to conn_id: %u\n", conn_id);
-}
-
-void Node::handleAckOneBlk(uint16_t conn_id)
-{
-    sockpp::tcp_connector &connector = blk_connectors_map[conn_id];
 
     // parse the ack command
     Command cmd_ack;
