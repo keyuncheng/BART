@@ -2,7 +2,7 @@
 
 ComputeWorker::ComputeWorker(
     Config &_config, uint16_t _self_conn_id,
-    unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_task_queues, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_reply_queues, MessageQueue<ParityComputeTask> &_parity_reloc_task_queue, MemoryPool &_memory_pool, unsigned _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), pc_task_queues(_pc_task_queues), pc_reply_queues(_pc_reply_queues), parity_reloc_task_queue(_parity_reloc_task_queue), memory_pool(_memory_pool)
+    unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_task_queues, unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_reply_queues, unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues, MessageQueue<ParityComputeTask> &_parity_reloc_task_queue, MemoryPool &_memory_pool, unsigned _num_threads) : ThreadPool(_num_threads), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), pc_task_queues(_pc_task_queues), pc_reply_queues(_pc_reply_queues), cmd_dist_queues(_cmd_dist_queues), parity_reloc_task_queue(_parity_reloc_task_queue), memory_pool(_memory_pool)
 {
     ConvertibleCode &code = config.code;
 
@@ -141,9 +141,24 @@ void ComputeWorker::run()
                     src_node_block_buffers_map[src_node_id].push_back(pm_buffers[pre_stripe_id]);
                 }
 
-                thread *retrieve_threads = new thread[src_node_block_buffers_map.size()];
+                // hcpuyang: add send requests to source nodes for data retrival
+                thread *notfiy_threads = new thread[src_node_block_buffers_map.size()];
 
                 uint8_t thread_id = 0;
+                for (auto &item : src_node_block_buffers_map) 
+                {
+                    notfiy_threads[thread_id++] = thread(&ComputeWorker::notifyMultipleData, this, &parity_compute_task, item.first, item.second);
+                }
+                for (uint idx = 0; idx < src_node_block_buffers_map.size(); idx++)
+                {
+                    notfiy_threads[idx].join();
+                }
+                delete[] notfiy_threads;
+
+
+                thread *retrieve_threads = new thread[src_node_block_buffers_map.size()];
+
+                thread_id = 0;
                 for (auto &item : src_node_block_buffers_map)
                 {
                     retrieve_threads[thread_id++] = thread(&ComputeWorker::retrieveMultipleDataAndReply, this, &parity_compute_task, item.first, item.second);
@@ -153,8 +168,8 @@ void ComputeWorker::run()
                 {
                     retrieve_threads[idx].join();
                 }
-
                 delete[] retrieve_threads;
+
                 // Optimize (end): parallelize read data across the cluster
 
                 // // Before Optimization (start) : sequentially read data
@@ -321,10 +336,41 @@ void ComputeWorker::retrieveDataAndReply(ParityComputeTask &parity_compute_task,
     printf("ComputeWorker::sendReplyTask reply task to queue %u, post: (%u, %u)\n", src_node_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
 }
 
+void ComputeWorker::notifyData(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer)
+{
+    ParityComputeTask src_block_task;
+
+    // MessageQueue<ParityComputeTask> &pc_src_task_queue = *pc_task_queues[src_node_id];
+
+    printf("ComputeWorker::notifyData start to notify agent %u", src_node_id);
+
+    if (self_conn_id == src_node_id)
+    {
+        // local read
+    }
+    else
+    {
+        // notify other nodes to send
+        Command cmd_forward; 
+        string src_block_path = src_block_task.parity_block_src_path;
+        cmd_forward.buildCommand(CMD_TRANSFER_BLK, self_conn_id, src_node_id, src_block_path); // TODO
+                    
+        cmd_dist_queues[src_node_id]->Push(cmd_forward);
+    }
+}
+
 void ComputeWorker::retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers)
 {
     for (auto buffer : buffers)
     {
         retrieveDataAndReply(*parity_compute_task, src_node_id, buffer);
+    }
+}
+
+void ComputeWorker::notifyMultipleData(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers) 
+{
+    for (auto buffer : buffers)
+    {
+        notifyData(*parity_compute_task, src_node_id, buffer);
     }
 }

@@ -27,14 +27,14 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     // memory pool
     memory_pool = new MemoryPool(MAX_MEM_POOL_SIZE * config.code.lambda_i * config.agent_addr_map.size(), config.block_size);
 
-    // create command distributor
+    // create command distributor, only sending cmd
     cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues, memory_pool, 1);
 
-    // create command handler
-    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, &cmd_dist_queues, &pc_task_queues, &pc_reply_queues, parity_reloc_task_queue, memory_pool, 1);
+    // create command handler, receiving cmd and forwarding block
+    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, blk_connectors_map, &cmd_dist_queues, &pc_task_queues, &pc_reply_queues, parity_reloc_task_queue, memory_pool, 1);
 
     // create compute worker
-    compute_worker = new ComputeWorker(config, self_conn_id, sockets_map, pc_task_queues, pc_reply_queues, *parity_reloc_task_queue, *memory_pool, 1);
+    compute_worker = new ComputeWorker(config, self_conn_id, sockets_map, pc_task_queues, pc_reply_queues, cmd_dist_queues, *parity_reloc_task_queue, *memory_pool, 1);
 }
 
 AgentNode::~AgentNode()

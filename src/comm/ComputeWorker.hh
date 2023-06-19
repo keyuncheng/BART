@@ -11,6 +11,7 @@
 #include "../util/Config.hh"
 #include "../util/MemoryPool.hh"
 #include "BlockIO.hh"
+#include "Command.hh"
 
 class ComputeWorker : public ThreadPool
 {
@@ -28,6 +29,9 @@ public:
 
     // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
     unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &pc_reply_queues;
+
+    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
+    unordered_map<uint16_t, MessageQueue<Command> *> &cmd_dist_queues;
 
     MessageQueue<ParityComputeTask> &parity_reloc_task_queue;
 
@@ -50,6 +54,7 @@ public:
                   unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
                   unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_task_queues,
                   unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> &_pc_reply_queues,
+                  unordered_map<uint16_t, MessageQueue<Command> *> &_cmd_dist_queues,
                   MessageQueue<ParityComputeTask> &_parity_reloc_task_queue,
                   MemoryPool &_memory_pool,
                   unsigned _num_threads);
@@ -64,6 +69,9 @@ public:
 
     void retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
     void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
+    
+    void notifyMultipleData(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
+    void notifyData(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
 };
 
 #endif // __COMPUTE_WORKER_HH__

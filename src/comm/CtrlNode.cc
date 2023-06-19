@@ -11,7 +11,7 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
     }
 
     // create command handler (only handle STOP command from Agents)
-    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, NULL, NULL, NULL, NULL, NULL, 1);
+    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, blk_connectors_map, NULL, NULL, NULL, NULL, NULL, 1);
 
     // create command distributor
     cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues, NULL, 1);
@@ -160,10 +160,12 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 else if (task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::READ_PM_BLK)
                 {
                     cmd_type = CommandType::CMD_READ_COMPUTE_BLK;
+                    continue; // hcpuyang: stop processing for this command
                 }
                 else if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
                 {
                     cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
+                    continue; // hcpuyang: stop processing for this command
                 }
 
                 bool is_re = (task->type == TransTaskType::COMPUTE_RE_BLK || task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK);

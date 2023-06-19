@@ -24,6 +24,7 @@ enum CommandType
     CMD_TRANSFER_COMPUTE_BLK, // read -> transfer -> compute -> write
     CMD_TRANSFER_RELOC_BLK,   // read -> transfer -> write
     CMD_DELETE_BLK,           // delete
+    CMD_TRANSFER_BLK,         // send block to another node // hcpuyang: added 
     CMD_UNKNOWN,
 };
 
@@ -73,6 +74,9 @@ public:
 
     // CMD_READ_COMPUTE_BLK, CMD_TRANSFER_COMPUTE_BLK, CMD_TRANSFER_RELOC_BLK, CMD_DELETE_BLK
     void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _src_block_path, string _dst_block_path);
+
+    // CMD_TRANFER_BLK
+    void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, string _dst_block_path);
 
     // CMD_COMPUTE_RE_BLK, CMD_COMPUTE_PM_BLK
     void buildCommand(CommandType _type, uint16_t _src_conn_id, uint16_t _dst_conn_id, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, uint16_t _dst_node_id, string _src_block_path, string _dst_block_path, EncodeMethod _enc_method, uint8_t _num_src_blocks, vector<uint16_t> _src_block_nodes, uint8_t _num_parity_reloc_blocks, vector<uint16_t> _parity_reloc_nodes);
