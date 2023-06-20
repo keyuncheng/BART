@@ -30,6 +30,7 @@ void Command::print()
     case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
     case CommandType::CMD_DELETE_BLK:
+    case CommandType::CMD_TRANSFER_BLK:
     {
         printf(", post_stripe: (%u, %u), transfer(%u, %u), enc_method: %u, num_src_blocks: %u, num_parity_reloc_blocks: %u\n", post_stripe_id, post_block_id, src_node_id, dst_node_id, enc_method, num_src_blocks, num_parity_reloc_blocks);
         printf("src_block_path: %s, dst_block_path: %s\n", src_block_path.c_str(), dst_block_path.c_str());

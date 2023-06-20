@@ -140,10 +140,6 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
             {
             case TransTaskType::COMPUTE_RE_BLK:
             case TransTaskType::COMPUTE_PM_BLK:
-            case TransTaskType::READ_RE_BLK:
-            case TransTaskType::READ_PM_BLK:
-            case TransTaskType::TRANSFER_COMPUTE_RE_BLK:
-            case TransTaskType::TRANSFER_COMPUTE_PM_BLK:
             {
                 // parse the task
                 is_task_parsed = true;
@@ -157,18 +153,10 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 {
                     cmd_type = CommandType::CMD_COMPUTE_PM_BLK;
                 }
-                else if (task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::READ_PM_BLK)
-                {
-                    cmd_type = CommandType::CMD_READ_COMPUTE_BLK;
-                }
-                else if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
-                {
-                    cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
-                }
 
-                bool is_re = (task->type == TransTaskType::COMPUTE_RE_BLK || task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK);
+                // uint16_t parity_compute_node = INVALID_NODE_ID;
 
-                uint16_t parity_compute_node = INVALID_NODE_ID;
+                bool is_re = task->type == TransTaskType::COMPUTE_RE_BLK;
                 if (is_re == true)
                 {
                     // encode method;
@@ -186,8 +174,8 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                         src_block_nodes[final_data_block_id] = pre_block_mapping[pre_stripe_id_global][pre_block_id].first;
                     }
 
-                    // parity compute node
-                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[0];
+                    // // parity compute node
+                    // parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[0];
 
                     // relocation nodes
                     // for re-encoding, set the relocation nodes for all parity blocks
@@ -197,9 +185,35 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                     {
                         parity_reloc_nodes[parity_id] = post_block_mapping[sg_id][config.code.k_f + parity_id].first;
                     }
+
+                    // src paths (concatenate code.k_f paths for all data blocks)
+                    string delimiter_char = ":";
+                    for (uint8_t final_data_block_id = 0; final_data_block_id < num_src_blocks; final_data_block_id++)
+                    {
+                        if (final_data_block_id > 0)
+                        {
+                            src_block_path = src_block_path + delimiter_char;
+                        }
+
+                        uint8_t pre_stripe_id = final_data_block_id / code.k_i;
+                        uint8_t pre_block_id = final_data_block_id % code.k_i;
+                        uint32_t pre_stripe_id_global = stripe_batch.selected_sgs.at(sg_id).pre_stripes[pre_stripe_id]->id;
+                        src_block_path = src_block_path + pre_block_mapping[pre_stripe_id_global][pre_block_id].second;
+                    }
+
+                    // dst paths (concatenate code.m_f paths for all parity blocks)
+                    delimiter_char = ":";
+                    for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
+                    {
+                        if (parity_id > 0)
+                        {
+                            dst_block_path = dst_block_path + delimiter_char;
+                        }
+                        dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
+                    }
                 }
 
-                bool is_pm = (task->type == TransTaskType::COMPUTE_PM_BLK || task->type == TransTaskType::READ_PM_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK);
+                bool is_pm = (task->type == TransTaskType::COMPUTE_PM_BLK);
                 if (is_pm == true)
                 {
                     // encode method;
@@ -214,54 +228,31 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                         src_block_nodes[pre_stripe_id] = pre_block_mapping[pre_stripe_id_global][task->post_block_id - code.k_f + code.k_i].first;
                     }
 
-                    // parity compute node
-                    parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[task->post_block_id - code.k_f];
+                    // // parity compute node
+                    // parity_compute_node = stripe_batch.selected_sgs.at(sg_id).parity_comp_nodes[task->post_block_id - code.k_f];
 
                     // relocation nodes
                     // for parity merging: set the relocation node for the corresponding parity block
                     num_parity_reloc_nodes = 1;
                     parity_reloc_nodes.resize(num_parity_reloc_nodes);
                     parity_reloc_nodes[0] = post_block_mapping[sg_id][task->post_block_id].first;
-                }
 
-                // src block path
-                if (cmd_type == CommandType::CMD_READ_COMPUTE_BLK || cmd_type == CommandType::CMD_TRANSFER_COMPUTE_BLK)
-                { // assign block paths
-                    src_block_path = pre_block_mapping[task->pre_stripe_id_global][task->pre_block_id].second;
-                }
-
-                // dst block path
-                if (enc_method == EncodeMethod::RE_ENCODE)
-                { // for re-encoding, retrieve the block paths for all parity blocks and concatenate
+                    // src paths (size: code.lambda_i, concatenating the corresponding parity block paths)
                     string delimiter_char = ":";
-                    for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
+                    for (uint8_t pre_stripe_id = 0; pre_stripe_id < config.code.lambda_i; pre_stripe_id++)
                     {
-                        if (parity_id > 0)
+                        if (pre_stripe_id > 0)
                         {
-                            dst_block_path = dst_block_path + delimiter_char;
+                            src_block_path = src_block_path + delimiter_char;
                         }
-                        dst_block_path = dst_block_path + post_block_mapping[sg_id][config.code.k_f + parity_id].second;
+
+                        // pre_stripe_id_global
+                        uint32_t pre_stripe_id_global = stripe_batch.selected_sgs.at(sg_id).pre_stripes[pre_stripe_id]->id;
+                        src_block_path = src_block_path + pre_block_mapping[pre_stripe_id_global][task->post_block_id - code.k_f + code.k_i].second;
                     }
-                }
-                else if (enc_method == EncodeMethod::PARITY_MERGE)
-                { // for parity merging: obtained the corresponding parity block path
-                    dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[sg_id][task->post_block_id].second;
-                }
 
-                // hcpuyang temp
-                if  (cmd_type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd_type == CommandType::CMD_READ_COMPUTE_BLK)
-                {
-                    is_task_parsed = false;
-                }
-
-
-                // NOTE: only parse for local read tasks
-                if (cmd_type == CommandType::CMD_READ_COMPUTE_BLK)
-                {
-                    if (task->src_node_id != parity_compute_node)
-                    {
-                        continue;
-                    }
+                    // dst paths (size: 1, corresponding path for the parity block)
+                    dst_block_path = post_block_mapping[sg_id][task->post_block_id].second;
                 }
 
                 break;
@@ -312,6 +303,10 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 dst_block_path = ""; // empty string
                 break;
             }
+            case TransTaskType::READ_RE_BLK:
+            case TransTaskType::READ_PM_BLK:
+            case TransTaskType::TRANSFER_COMPUTE_RE_BLK:
+            case TransTaskType::TRANSFER_COMPUTE_PM_BLK:
             case TransTaskType::READ_RELOC_BLK:
             case TransTaskType::WRITE_BLK:
             case TransTaskType::UNKNOWN:

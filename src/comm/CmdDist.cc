@@ -87,9 +87,6 @@ void CmdDist::distCmdToController()
 
             cmd.print();
 
-            // // add lock (to dst node)
-            // lock_guard<mutex> lck(*dist_mtxs_map[cmd.dst_conn_id]);
-
             // send the command
             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
             {
@@ -126,9 +123,6 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
     MessageQueue<Command> &cmd_dist_queue = *cmd_dist_queues[dst_conn_id];
     bool is_finished = false;
 
-    // allocate block buffer
-    unsigned char *local_block_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
-
     while (true)
     {
         if (cmd_dist_queue.IsEmpty() == true && is_finished == true)
@@ -158,27 +152,24 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
             // For block transfer command (sent from Agent only)
             if (self_conn_id != CTRL_NODE_ID)
             {
-                // if (cmd.type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
                 { // after sending the command to Agent, we send the corresponding block
 
-                    // read block
-                    if (BlockIO::readBlock(cmd.src_block_path, local_block_buffer, config.block_size) != config.block_size)
-                    {
-                        fprintf(stderr, "CmdDist::distCmdToAgent error reading block: %s\n", cmd.src_block_path.c_str());
-                        exit(EXIT_FAILURE);
-                    }
+                    // // read block
+                    // if (BlockIO::readBlock(cmd.src_block_path, local_block_buffer, config.block_size) != config.block_size)
+                    // {
+                    //     fprintf(stderr, "CmdDist::distCmdToAgent error reading block: %s\n", cmd.src_block_path.c_str());
+                    //     exit(EXIT_FAILURE);
+                    // }
 
-                    // send block
-                    // hcpuyang: separate the connector, should be used as dedicated for block transfer
-
+                    // // send block
                     // if (BlockIO::sendBlock(connector, local_block_buffer, config.block_size) != config.block_size)
                     // {
                     //     fprintf(stderr, "CmdDist::distCmdToAgent error sending block: %s to Node %u\n", cmd.src_block_path.c_str(), cmd.dst_conn_id);
                     //     exit(EXIT_FAILURE);
                     // }
 
-                    printf("CmdDist::distCmdToAgent send block to Node %u, block_path: %s\n", dst_conn_id, cmd.src_block_path.c_str());
+                    printf("CmdDist::distCmdToAgent \n\n\n\n\nI didn't send the physical block to Node %u, block_path: %s\n\n\n\n\n", dst_conn_id, cmd.src_block_path.c_str());
                     // Utils::printUCharBuffer(block_buffer, 10);
                 }
             }
@@ -191,9 +182,6 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
             }
         }
     }
-
-    // free block buffer
-    free(local_block_buffer);
 
     printf("CmdDist::distCmdToAgent [Node %u] finished distribute commands to Agent %u\n", self_conn_id, dst_conn_id);
 }
