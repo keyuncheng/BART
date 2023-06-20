@@ -35,6 +35,7 @@ public:
     // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
     unordered_map<uint16_t, MessageQueue<Command> *> &cmd_dist_queues;
 
+    // parity block relocation task queue
     MessageQueue<ParityComputeTask> &parity_reloc_task_queue;
 
     // memory pool (passed from CmdHandler, used to free blocks only)
@@ -51,16 +52,16 @@ public:
     unsigned char *buffer;
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
-    unsigned char **data_transfer_buffers;
 
+    // buffers for data transfer
+    unordered_map<uint16_t, unsigned char *> data_buffers_map;
     // sockets for data transfer
-    unordered_map<uint16_t, sockpp::tcp_connector> blk_connectors_map;
-    unordered_map<uint16_t, sockpp::tcp_socket> blk_sockets_map;
-    unordered_map<uint16_t, bool> blk_sockets_data_map;
+    unordered_map<uint16_t, sockpp::tcp_connector> data_connectors_map;
+    unordered_map<uint16_t, sockpp::tcp_socket> data_sockets_map;
+    sockpp::tcp_acceptor *data_acceptor;
 
-    sockpp::tcp_acceptor *blk_acceptor;
-
-    unordered_map<uint16_t, thread *> blk_handler_threads_map;
+    // data handler threads
+    unordered_map<uint16_t, thread *> data_handler_threads_map;
 
     ComputeWorker(Config &_config, uint16_t _self_conn_id,
                   unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
@@ -82,7 +83,7 @@ public:
     // block transfer receive and read
     void retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
     void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
-    
+
     // block transfer send
     void notifyMultipleAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
     void notifyAgent(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);

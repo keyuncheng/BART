@@ -27,13 +27,11 @@ Node::Node(uint16_t _self_conn_id, Config &_config) : self_conn_id(_self_conn_id
     unsigned int self_port = 0;
     if (self_conn_id == CTRL_NODE_ID)
     {
-        self_port = std::get<1>(config.controller_addr);
-        // self_port = config.controller_addr.second;
+        self_port = config.controller_addr.second;
     }
     else
     {
-        self_port = std::get<1>(config.agent_addr_map[self_conn_id]);
-        // self_port = config.agent_addr_map[self_conn_id].second;
+        self_port = config.agent_addr_map[self_conn_id].second;
     }
 
     acceptor = new sockpp::tcp_acceptor(self_port);
@@ -60,7 +58,6 @@ Node::~Node()
 void Node::connectAll()
 {
     unordered_map<uint16_t, thread *> conn_threads;
-
     // create connect threads
     for (auto &item : connectors_map)
     {
@@ -69,17 +66,13 @@ void Node::connectAll()
         unsigned int port;
         if (conn_id == CTRL_NODE_ID)
         {
-            ip = std::get<0>(config.controller_addr);
-            port = std::get<1>(config.controller_addr);
-            // ip = config.controller_addr.first;
-            // port = config.controller_addr.second;
+            ip = config.controller_addr.first;
+            port = config.controller_addr.second;
         }
         else
         {
-            ip = std::get<0>(config.agent_addr_map[conn_id]);
-            port = std::get<1>(config.agent_addr_map[conn_id]);
-            // ip = config.agent_addr_map[conn_id].first;
-            // port = config.agent_addr_map[conn_id].second;
+            ip = config.agent_addr_map[conn_id].first;
+            port = config.agent_addr_map[conn_id].second;
         }
 
         conn_threads[conn_id] = new thread(&Node::connectOne, this, conn_id, ip, port);
@@ -173,7 +166,6 @@ void Node::ackConnAll()
 
         // send the ack command
         auto &connector = sockets_map[conn_id];
-
         Command cmd_ack;
         cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
 

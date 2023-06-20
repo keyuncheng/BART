@@ -15,26 +15,26 @@ public:
     // erasure coding
     uint32_t post_stripe_id; // post_stripe_id (stripe group id)
     uint8_t post_block_id;   // post block id
-    uint8_t pre_stripe_id;   // for parity merging only
-    uint16_t src_node_id;    // source node id
     EncodeMethod enc_method; // encoding method
 
-    vector<uint16_t> src_block_nodes; // source block nodes (for re-encoding, reloc_nodes stores code.k_f nodes; for parity merging, reloc_nodes stores code.lambda_i nodes)
+    // source block nodes (for re-encoding, src_block_nodes stores code.k_f nodes; for parity merging, src_block_nodes stores code.lambda_i nodes)
+    vector<uint16_t> src_block_nodes;
 
-    vector<uint16_t> parity_reloc_nodes; // parity relocation nodes (for re-encoding, reloc_nodes stores code.m_f nodes; for parity merging, reloc_nodes store the corresponding parity node only)
+    // block reloc nodes (for re-encoding, parity_reloc_nodes stores code.m_f nodes; for parity merging, parity_reloc_nodes stores corresponding node only)
+    vector<uint16_t> parity_reloc_nodes;
 
-    string parity_block_src_path; // source block path
+    // source block paths (for re-encoding, src_block_paths stores code.k_f paths; for parity merging, src_block_paths store code.lambda_i paths)
+    vector<string> src_block_paths;
 
-    // dst block paths (for re-encoding, reloc_nodes stores code.m_f nodes; for parity merging, reloc_nodes store the corresponding parity node only)
-    vector<string>
-        parity_block_dst_paths;
+    // dst block paths (for re-encoding, dst_block_paths stores code.m_f paths; for parity merging, dst_block_paths store the path for corresponding parity block only)
+    vector<string> dst_block_paths;
 
     // terminate signal
     bool all_tasks_finished;
 
     ParityComputeTask();
     ParityComputeTask(bool _all_tasks_finished);
-    ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, EncodeMethod _enc_method, vector<uint16_t> &_src_block_nodes, vector<uint16_t> &_parity_reloc_nodes, string &_parity_block_src_path, string &_raw_dst_block_paths);
+    ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, EncodeMethod _enc_method, vector<uint16_t> &_src_block_nodes, vector<uint16_t> &_parity_reloc_nodes, string &_raw_src_block_paths, string &_raw_dst_block_paths);
     ~ParityComputeTask();
 
     void print();
