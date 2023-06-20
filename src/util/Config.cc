@@ -31,6 +31,7 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Controller"], "pre_block_mapping_filename", pre_block_mapping_filename);
     inipp::get_value(ini.sections["Controller"], "post_placement_filename", post_placement_filename);
     inipp::get_value(ini.sections["Controller"], "post_block_mapping_filename", post_block_mapping_filename);
+    inipp::get_value(ini.sections["Controller"], "sg_meta_filename", sg_meta_filename);
 
     // controller ip, ports
     std::vector<std::string> controller_parts;

@@ -160,12 +160,10 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 else if (task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::READ_PM_BLK)
                 {
                     cmd_type = CommandType::CMD_READ_COMPUTE_BLK;
-                    continue; // hcpuyang: stop processing for this command
                 }
                 else if (task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_PM_BLK)
                 {
                     cmd_type = CommandType::CMD_TRANSFER_COMPUTE_BLK;
-                    continue; // hcpuyang: stop processing for this command
                 }
 
                 bool is_re = (task->type == TransTaskType::COMPUTE_RE_BLK || task->type == TransTaskType::READ_RE_BLK || task->type == TransTaskType::TRANSFER_COMPUTE_RE_BLK);
@@ -249,6 +247,13 @@ void CtrlNode::genCommands(StripeBatch &stripe_batch, TransSolution &trans_solut
                 { // for parity merging: obtained the corresponding parity block path
                     dst_block_path = to_string(task->pre_stripe_id_relative) + string(":") + post_block_mapping[sg_id][task->post_block_id].second;
                 }
+
+                // hcpuyang temp
+                if  (cmd_type == CommandType::CMD_TRANSFER_COMPUTE_BLK || cmd_type == CommandType::CMD_READ_COMPUTE_BLK)
+                {
+                    is_task_parsed = false;
+                }
+
 
                 // NOTE: only parse for local read tasks
                 if (cmd_type == CommandType::CMD_READ_COMPUTE_BLK)

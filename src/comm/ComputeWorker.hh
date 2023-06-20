@@ -56,6 +56,7 @@ public:
     // sockets for data transfer
     unordered_map<uint16_t, sockpp::tcp_connector> blk_connectors_map;
     unordered_map<uint16_t, sockpp::tcp_socket> blk_sockets_map;
+    unordered_map<uint16_t, bool> blk_sockets_data_map;
 
     sockpp::tcp_acceptor *blk_acceptor;
 
