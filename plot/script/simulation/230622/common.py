@@ -3,9 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-black = '#000000'
-
-hcpuyangred = '#AA3474' 
+black = '#000000' 
 
 orange = "#FF4500"
 tomato = "#FF6347"
@@ -19,6 +17,10 @@ darkgreen = "#008B00"
 green = "#00CD00"
 springgreen = "#00EE76"
 palegreen = "#9AFF9A"
+
+RDPM_color="#19376D"
+BWPM_color="#C38154"
+BTPM_color="red"
 
 def embed_fonts(filepath):
     os.system("ps2pdf -dPDFSETTINGS=/prepress {} tmp.out".format(filepath))

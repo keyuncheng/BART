@@ -1,4 +1,4 @@
-code_param_id	code_param	method_id	method	bandwidth	max_load
+code_param_id	code_param	method_id	method	max_load    bandwidth
 a   (4,2,2) a   RDPM    261 21360
 a   (4,2,2) b   BWPM    55  2467
 a   (4,2,2) c   BTPM    33  2467

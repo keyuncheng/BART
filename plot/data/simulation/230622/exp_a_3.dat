@@ -1,4 +1,4 @@
-code_param_id	code_param	method_id	method  num_nodes	bandwidth	max_load
+code_param_id	code_param	method_id	method  num_nodes	max_load    bandwidth
 a   (6,3,3)     a   RDPM        100     440  34971
 a   (6,3,3)     b   BWPM        100     148  8934
 a   (6,3,3)     c   BTPM        100     104  8937

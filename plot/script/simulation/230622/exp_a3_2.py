@@ -28,8 +28,8 @@ with open(filename, "r") as file:
         method_id = row[2]
         method = row[3]
         num_stripes = row[4]
-        bandwidth = int(row[5])
-        max_load = int(row[6])
+        max_load = int(row[5])
+        bandwidth = int(row[6])
 
         if code_param in results.keys():
             results[code_param].append(max_load)
@@ -68,11 +68,10 @@ xlabel_string = "Number of Nodes under (8,4,2)"
 xticks = np.array([0, 1, 2, 3, 4])
 xticklabels = [0, 100, 200, 300, 400]
 ax.set_xlabel(xlabel_string, **labelfont)
-yticks = [0, 10000, 20000, 30000, 40000, 50000]
-yticklabels = ["0", "10000", "20000", "30000", "40000", "50000"]
-# plt.xlim((0, 4))
-plt.ylim((0, 61000))
-ax.set_ylabel("Max Load", **labelfont)
+yticks = [0, 100, 200, 300, 400, 500, 600]
+yticklabels = ["0", "100", "200", "300", "400", "500", "600"]
+plt.ylim((0, 600))
+ax.set_ylabel("Max Load (blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
 ax.set_yticks(yticks)
@@ -102,9 +101,9 @@ BTPM_datalist.append(results["(8,4,2)"][11])
 
 xdata = [1, 2, 3, 4]
 
-plt.plot(xdata, RDPM_datalist, color=dodgerblue, lw=2, ms=5, ls='-', marker='o', label="RDPM")
-plt.plot(xdata, BWPM_datalist, color=darkgreen, lw=2, ms=5, ls='-.', marker='v', label="BWPM")
-plt.plot(xdata, BTPM_datalist, color=orange, lw=2, ms=5, ls='-', marker='^', label="BTPM")
+plt.plot(xdata, RDPM_datalist, color=RDPM_color, lw=2, ms=5, ls='-', marker='o', label="RDPM")
+plt.plot(xdata, BWPM_datalist, color=BWPM_color, lw=2, ms=5, ls='-.', marker='v', label="BWPM")
+plt.plot(xdata, BTPM_datalist, color=BTPM_color, lw=2, ms=5, ls='-', marker='^', label="BTPM")
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
 # print("switch errlist: {} data: {}".format(switch_errlist, switch_data))

@@ -27,8 +27,8 @@ with open(filename, "r") as file:
         code_param = row[1]
         method_id = row[2]
         method = row[3]
-        bandwidth = int(row[4])
-        max_load = int(row[5])
+        max_load = int(row[4])
+        bandwidth = int(row[5])
 
         if code_param in results.keys():
             results[code_param].append(max_load)
@@ -66,10 +66,10 @@ ytickfont = { 'family': 'Times New Roman',
 xticks = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
 xticklabels = [(4,2), (6,2), (8,2), (6,3), (8,3), (12,3), (8,4), (12,4), (16,4)]
 ax.set_xlabel("Encoding Scheme (k,m)", **labelfont)
-yticks = [0, 15000, 30000, 45000, 60000]
-yticklabels = ["0", "15000", "30000", "45000", "60000"]
-plt.ylim((0, 65000))
-ax.set_ylabel("Max Load", **labelfont)
+yticks = [0, 150, 300, 450, 600, 750]
+yticklabels = ["0", "150", "300", "450", "600", "750"]
+plt.ylim((0, 900))
+ax.set_ylabel("Max Load (blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
 ax.set_yticks(yticks)
@@ -89,9 +89,9 @@ for key in results.keys():
     BWPM_datalist.append(results[key][1])
     BTPM_datalist.append(results[key][2])
 
-rects1 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=dodgerblue, label="RDPM")
-rects1 = ax.bar(xticks - 0*width, BWPM_datalist, width=width, color=darkgreen, label="BWPM")
-rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=orange, label="BTPM")
+rects1 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=RDPM_color, label="RDPM")
+rects1 = ax.bar(xticks - 0*width, BWPM_datalist, width=width, color=BWPM_color, label="BWPM")
+rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=BTPM_color, label="BTPM")
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
 # print("switch errlist: {} data: {}".format(switch_errlist, switch_data))

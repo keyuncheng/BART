@@ -1,4 +1,4 @@
-code_param_id	code_param	method_id	method num_stripes	bandwidth	max_load
+code_param_id	code_param	method_id	method num_stripes	max_load    bandwidth
 a   (6,3,3)     a   RDPM    5000    229  17525
 a   (6,3,3)     b   BWPM    5000    105  5108
 a   (6,3,3)     c   BTPM    5000    65   5110
