@@ -49,17 +49,17 @@ ax.margins(0.01, 0)
 labelfont = { 'fontfamily': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 16,
+    'size': 20,
 }
 xtickfont = { 'family': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 16,
+    'size': 17,
 }
 ytickfont = { 'family': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 16,
+    'size': 20,
 }
 
 # Ticks
@@ -103,7 +103,7 @@ rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=BTPM_color, 
 font1 = { 'family': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 16,
+    'size': 28,
 }
 legend = plt.legend(prop=font1, frameon=False,
                     labelspacing=0.1, handlelength=0.7, 
