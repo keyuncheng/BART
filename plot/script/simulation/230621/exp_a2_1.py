@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 from common import *
 
 # Define the file name
-filename = "../../../data/simulation/230622/exp_a_1_2.dat"
+filename = "../../../data/simulation/230622/exp_a_2.dat"
 
 # Define the column names
-column_names = ["code_param_id", "code_param", "method_id", "method", "bandwidth", "max_load"]
+column_names = ["code_param_id", "code_param", "method_id", "method", "num_stripes", "bandwidth", "max_load"]
 
 results = {}
 
@@ -27,15 +27,16 @@ with open(filename, "r") as file:
         code_param = row[1]
         method_id = row[2]
         method = row[3]
-        max_load = int(row[4])
-        bandwidth = int(row[5])
+        num_stripes = row[4]
+        max_load = int(row[5])
+        bandwidth = int(row[6])
 
         if code_param in results.keys():
             results[code_param].append(max_load)
         else:
             results[code_param] = [max_load]
         # Process the row
-        print(f"code_param_id: {code_param_id}, code_param: {code_param}, method_id: {method_id}, method: {method}, bandwidth: {bandwidth}, max_load: {max_load}")
+        print(f"code_param_id: {code_param_id}, code_param: {code_param}, method_id: {method_id}, method: {method}, num_stripes: {num_stripes}, bandwidth: {bandwidth}, max_load: {max_load}")
 
 print(results.keys())
 
@@ -63,13 +64,13 @@ ytickfont = { 'family': 'Times New Roman',
 }
 
 # Ticks
-xlabel_string = "Encoding Scheme (k,m," + chr(955) + ")"
-xticks = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
-xticklabels = [(4,2,2), (4,2,3), (4,2,4), (6,3,2), (6,3,3), (6,3,4), (8,4,2), (8,4,3), (8,4,4)]
+xlabel_string = "Number of Stripes under (6,3,3)"
+xticks = np.array([0, 1, 2, 3, 4])
+xticklabels = [0, 5000, 10000, 15000, 20000]
 ax.set_xlabel(xlabel_string, **labelfont)
-yticks = [0, 150, 300, 450, 600, 750]
-yticklabels = ["0", "150", "300", "450", "600", "750"]
-plt.ylim((0, 900))
+yticks = [0, 200, 400, 600, 800, 1000, 1200]
+yticklabels = ["0", "200", "400", "600", "800", "1000", "1200"]
+plt.ylim((0, 1200))
 ax.set_ylabel("Max Load (blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
@@ -84,15 +85,25 @@ RDPM_datalist = []
 BWPM_datalist = []
 BTPM_datalist = []
 
-for key in ["(4,2,2)", "(4,2,3)", "(4,2,4)", "(6,3,2)", "(6,3,3)", "(6,3,4)", "(8,4,2)", "(8,4,3)", "(8,4,4)"]:
-    print(results[key])
-    RDPM_datalist.append(results[key][0])
-    BWPM_datalist.append(results[key][1])
-    BTPM_datalist.append(results[key][2])
+print(results["(6,3,3)"])
+RDPM_datalist.append(results["(6,3,3)"][0])
+RDPM_datalist.append(results["(6,3,3)"][3])
+RDPM_datalist.append(results["(6,3,3)"][6])
+RDPM_datalist.append(results["(6,3,3)"][9])
+BWPM_datalist.append(results["(6,3,3)"][1])
+BWPM_datalist.append(results["(6,3,3)"][4])
+BWPM_datalist.append(results["(6,3,3)"][7])
+BWPM_datalist.append(results["(6,3,3)"][10])
+BTPM_datalist.append(results["(6,3,3)"][2])
+BTPM_datalist.append(results["(6,3,3)"][5])
+BTPM_datalist.append(results["(6,3,3)"][8])
+BTPM_datalist.append(results["(6,3,3)"][11])
 
-rects1 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=RDPM_color, label="RDPM")
-rects1 = ax.bar(xticks - 0*width, BWPM_datalist, width=width, color=BWPM_color, label="BWPM")
-rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=BTPM_color, label="BTPM")
+xdata = [1, 2, 3, 4]
+
+plt.plot(xdata, RDPM_datalist, color=RDPM_color, lw=2, ms=5, ls='-', marker='o', label="RDPM")
+plt.plot(xdata, BWPM_datalist, color=BWPM_color, lw=2, ms=5, ls='-.', marker='v', label="BWPM")
+plt.plot(xdata, BTPM_datalist, color=BTPM_color, lw=2, ms=5, ls='-', marker='^', label="BTPM")
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
 # print("switch errlist: {} data: {}".format(switch_errlist, switch_data))
@@ -107,7 +118,7 @@ font1 = { 'family': 'Times New Roman',
 }
 legend = plt.legend(prop=font1, frameon=False,
                     labelspacing=0.1, handlelength=0.7, 
-                    loc='upper left',
+                    loc='upper center',
                     #bbox_to_anchor=(-0.15, 1), loc='lower left',
                     handletextpad=0.2, borderaxespad=0.001,
                     ncol=3, columnspacing=0.3)
@@ -116,7 +127,7 @@ plt.subplots_adjust(right=1.0)
 
 # Save figure
 fig.tight_layout()
-filepath = "../../../pdf/simulation/230622/exp_a1_2.pdf"
+filepath = "../../../pdf/simulation/230621/exp_a2_1.pdf"
 fig.savefig(filepath, dpi=600)
 
 # Embed fonts

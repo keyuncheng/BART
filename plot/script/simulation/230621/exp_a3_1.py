@@ -117,17 +117,17 @@ font1 = { 'family': 'Times New Roman',
     'size': 16,
 }
 legend = plt.legend(prop=font1, frameon=False,
-                        labelspacing=0.5, handlelength=0.7, 
-                        #loc='upper right',
-                        bbox_to_anchor=(0, 1.03), loc='lower left',
-                        handletextpad=0.2, borderaxespad=0.005,
-                        ncol=3, columnspacing=0.2)
+                    labelspacing=0.1, handlelength=0.7, 
+                    loc='upper center',
+                    #bbox_to_anchor=(-0.15, 1), loc='lower left',
+                    handletextpad=0.2, borderaxespad=0.001,
+                    ncol=3, columnspacing=0.3)
 
 plt.subplots_adjust(right=1.0)
 
 # Save figure
 fig.tight_layout()
-filepath = "../../../pdf/simulation/230622/exp_a3_1.pdf"
+filepath = "../../../pdf/simulation/230621/exp_a3_1.pdf"
 fig.savefig(filepath, dpi=600)
 
 # Embed fonts

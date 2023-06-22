@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from common import *
 
 # Define the file name
-filename = "../../../data/simulation/230622/exp_a_2.dat"
+filename = "../../../data/simulation/230622/exp_a_3.dat"
 
 # Define the column names
 column_names = ["code_param_id", "code_param", "method_id", "method", "num_stripes", "bandwidth", "max_load"]
@@ -64,13 +64,13 @@ ytickfont = { 'family': 'Times New Roman',
 }
 
 # Ticks
-xlabel_string = "Number of Stripes under (6,3,3)"
+xlabel_string = "Number of Nodes under (8,4,2)"
 xticks = np.array([0, 1, 2, 3, 4])
-xticklabels = [0, 5000, 10000, 15000, 20000]
+xticklabels = [0, 100, 200, 300, 400]
 ax.set_xlabel(xlabel_string, **labelfont)
-yticks = [0, 200, 400, 600, 800, 1000, 1200]
-yticklabels = ["0", "200", "400", "600", "800", "1000", "1200"]
-plt.ylim((0, 1200))
+yticks = [0, 100, 200, 300, 400, 500, 600]
+yticklabels = ["0", "100", "200", "300", "400", "500", "600"]
+plt.ylim((0, 600))
 ax.set_ylabel("Max Load (blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
@@ -85,19 +85,19 @@ RDPM_datalist = []
 BWPM_datalist = []
 BTPM_datalist = []
 
-print(results["(6,3,3)"])
-RDPM_datalist.append(results["(6,3,3)"][0])
-RDPM_datalist.append(results["(6,3,3)"][3])
-RDPM_datalist.append(results["(6,3,3)"][6])
-RDPM_datalist.append(results["(6,3,3)"][9])
-BWPM_datalist.append(results["(6,3,3)"][1])
-BWPM_datalist.append(results["(6,3,3)"][4])
-BWPM_datalist.append(results["(6,3,3)"][7])
-BWPM_datalist.append(results["(6,3,3)"][10])
-BTPM_datalist.append(results["(6,3,3)"][2])
-BTPM_datalist.append(results["(6,3,3)"][5])
-BTPM_datalist.append(results["(6,3,3)"][8])
-BTPM_datalist.append(results["(6,3,3)"][11])
+print(results["(8,4,2)"])
+RDPM_datalist.append(results["(8,4,2)"][0])
+RDPM_datalist.append(results["(8,4,2)"][3])
+RDPM_datalist.append(results["(8,4,2)"][6])
+RDPM_datalist.append(results["(8,4,2)"][9])
+BWPM_datalist.append(results["(8,4,2)"][1])
+BWPM_datalist.append(results["(8,4,2)"][4])
+BWPM_datalist.append(results["(8,4,2)"][7])
+BWPM_datalist.append(results["(8,4,2)"][10])
+BTPM_datalist.append(results["(8,4,2)"][2])
+BTPM_datalist.append(results["(8,4,2)"][5])
+BTPM_datalist.append(results["(8,4,2)"][8])
+BTPM_datalist.append(results["(8,4,2)"][11])
 
 xdata = [1, 2, 3, 4]
 
@@ -117,17 +117,17 @@ font1 = { 'family': 'Times New Roman',
     'size': 16,
 }
 legend = plt.legend(prop=font1, frameon=False,
-                        labelspacing=0.1, handlelength=0.7, 
-                        #loc='upper right',
-                        bbox_to_anchor=(0, 1.03), loc='lower left',
-                        handletextpad=0.2, borderaxespad=0.001,
-                        ncol=3, columnspacing=0.2)
+                    labelspacing=0.1, handlelength=0.7, 
+                    loc='upper center',
+                    #bbox_to_anchor=(-0.15, 1), loc='lower left',
+                    handletextpad=0.2, borderaxespad=0.001,
+                    ncol=3, columnspacing=0.3)
 
 plt.subplots_adjust(right=1.0)
 
 # Save figure
 fig.tight_layout()
-filepath = "../../../pdf/simulation/230622/exp_a2_1.pdf"
+filepath = "../../../pdf/simulation/230621/exp_a3_2.pdf"
 fig.savefig(filepath, dpi=600)
 
 # Embed fonts

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from common import *
 
 # Define the file name
-filename = "../../../data/simulation/230622/exp_a_1_1.dat"
+filename = "../../../data/simulation/230622/exp_a_1_2.dat"
 
 # Define the column names
 column_names = ["code_param_id", "code_param", "method_id", "method", "bandwidth", "max_load"]
@@ -63,9 +63,10 @@ ytickfont = { 'family': 'Times New Roman',
 }
 
 # Ticks
+xlabel_string = "Encoding Scheme (k,m," + chr(955) + ")"
 xticks = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
-xticklabels = [(4,2), (6,2), (8,2), (6,3), (8,3), (12,3), (8,4), (12,4), (16,4)]
-ax.set_xlabel("Encoding Scheme (k,m)", **labelfont)
+xticklabels = [(4,2,2), (4,2,3), (4,2,4), (6,3,2), (6,3,3), (6,3,4), (8,4,2), (8,4,3), (8,4,4)]
+ax.set_xlabel(xlabel_string, **labelfont)
 yticks = [0, 150, 300, 450, 600, 750]
 yticklabels = ["0", "150", "300", "450", "600", "750"]
 plt.ylim((0, 900))
@@ -83,7 +84,7 @@ RDPM_datalist = []
 BWPM_datalist = []
 BTPM_datalist = []
 
-for key in results.keys():
+for key in ["(4,2,2)", "(4,2,3)", "(4,2,4)", "(6,3,2)", "(6,3,3)", "(6,3,4)", "(8,4,2)", "(8,4,3)", "(8,4,4)"]:
     print(results[key])
     RDPM_datalist.append(results[key][0])
     BWPM_datalist.append(results[key][1])
@@ -106,7 +107,7 @@ font1 = { 'family': 'Times New Roman',
 }
 legend = plt.legend(prop=font1, frameon=False,
                     labelspacing=0.1, handlelength=0.7, 
-                    loc='upper left',
+                    loc='upper center',
                     #bbox_to_anchor=(-0.15, 1), loc='lower left',
                     handletextpad=0.2, borderaxespad=0.001,
                     ncol=3, columnspacing=0.3)
@@ -115,7 +116,7 @@ plt.subplots_adjust(right=1.0)
 
 # Save figure
 fig.tight_layout()
-filepath = "../../../pdf/simulation/230622/exp_a1_1.pdf"
+filepath = "../../../pdf/simulation/230621/exp_a1_2.pdf"
 fig.savefig(filepath, dpi=600)
 
 # Embed fonts
