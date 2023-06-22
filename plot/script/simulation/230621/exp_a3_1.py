@@ -101,9 +101,9 @@ BTPM_datalist.append(results["(6,3,3)"][11])
 
 xdata = [1, 2, 3, 4]
 
-plt.plot(xdata, RDPM_datalist, color=RDPM_color, lw=2, ms=5, ls='-', marker='o', label="RDPM")
-plt.plot(xdata, BWPM_datalist, color=BWPM_color, lw=2, ms=5, ls='-.', marker='v', label="BWPM")
-plt.plot(xdata, BTPM_datalist, color=BTPM_color, lw=2, ms=5, ls='-', marker='^', label="BTPM")
+plt.plot(xdata, RDPM_datalist, color=RDPM_color, lw=2, ms=5, ls='-', marker='o', label="RD")
+plt.plot(xdata, BWPM_datalist, color=BWPM_color, lw=2, ms=5, ls='-.', marker='v', label="BW")
+plt.plot(xdata, BTPM_datalist, color=BTPM_color, lw=2, ms=5, ls='-', marker='^', label="BART")
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
 # print("switch errlist: {} data: {}".format(switch_errlist, switch_data))

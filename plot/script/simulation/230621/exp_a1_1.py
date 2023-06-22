@@ -89,9 +89,9 @@ for key in results.keys():
     BWPM_datalist.append(results[key][1])
     BTPM_datalist.append(results[key][2])
 
-rects1 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=RDPM_color, label="RDPM")
-rects1 = ax.bar(xticks - 0*width, BWPM_datalist, width=width, color=BWPM_color, label="BWPM")
-rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=BTPM_color, label="BTPM")
+rects1 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=RDPM_color, label="RD")
+rects1 = ax.bar(xticks - 0*width, BWPM_datalist, width=width, color=BWPM_color, label="BW")
+rects1 = ax.bar(xticks + 1*width, BTPM_datalist, width=width, color=BTPM_color, label="BART")
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
 # print("switch errlist: {} data: {}".format(switch_errlist, switch_data))
