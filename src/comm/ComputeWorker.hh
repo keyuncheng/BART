@@ -49,14 +49,21 @@ public:
     unsigned char **pm_encode_gftbl;
 
     // parity buffer for re-encoding and parity merging
-    unsigned char *buffer;
+    unsigned char *block_buffer;
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
 
-    // sockets for data transfer
-    unordered_map<uint16_t, sockpp::tcp_connector> data_connectors_map;
-    unordered_map<uint16_t, sockpp::tcp_socket> data_sockets_map;
-    sockpp::tcp_acceptor *data_acceptor;
+    // sockets for data commands distribution
+    unordered_map<uint16_t, pair<string, unsigned int>> data_cmd_addrs_map;
+    unordered_map<uint16_t, sockpp::tcp_connector> data_cmd_connectors_map;
+    unordered_map<uint16_t, sockpp::tcp_socket> data_cmd_sockets_map;
+    sockpp::tcp_acceptor *data_cmd_acceptor;
+
+    // sockets for data content distribution
+    unordered_map<uint16_t, pair<string, unsigned int>> data_content_addrs_map;
+    unordered_map<uint16_t, sockpp::tcp_connector> data_content_connectors_map;
+    unordered_map<uint16_t, sockpp::tcp_socket> data_content_sockets_map;
+    sockpp::tcp_acceptor *data_content_acceptor;
 
     // data handler threads
     unordered_map<uint16_t, thread *> data_handler_threads_map;
@@ -85,10 +92,10 @@ public:
     void handleDataTransfer(uint16_t src_conn_id);
 
     // sockets connections
-    void ackConnAll();
-    void connectAll();
-    void connectOne(uint16_t conn_id, string ip, uint16_t port);
-    void handleAckOne(uint16_t conn_id);
+    void connectAll(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, unordered_map<uint16_t, pair<string, unsigned int>> *addrs_map);
+    void connectOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id, string ip, uint16_t port);
+    void handleAckOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id);
+    void ackConnAll(unordered_map<uint16_t, sockpp::tcp_socket> *sockets_map, sockpp::tcp_acceptor *acceptor);
 };
 
 #endif // __COMPUTE_WORKER_HH__

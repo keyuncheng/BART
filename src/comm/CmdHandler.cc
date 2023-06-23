@@ -283,35 +283,35 @@ void CmdHandler::handleParityRelocTask()
             {
                 for (uint8_t parity_id = 0; parity_id < config.code.m_f; parity_id++)
                 {
-                    // uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[parity_id];
-                    // string &dst_block_path = parity_reloc_task.parity_block_dst_paths[parity_id];
+                    uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[parity_id];
+                    string &dst_block_path = parity_reloc_task.dst_block_paths[parity_id];
 
-                    // // check whether needs relocation
-                    // if (self_conn_id != dst_conn_id)
-                    // {
-                    //     Command cmd_reloc;
-                    //     cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
+                    // check whether needs relocation
+                    if (self_conn_id != dst_conn_id)
+                    {
+                        Command cmd_reloc;
+                        cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
-                    //     // add to cmd_dist_queue[dst_node_id]
-                    //     (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
+                        // add to cmd_dist_queue[dst_node_id]
+                        (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
 
-                    //     printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
-                    // }
+                        printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
+                    }
                 }
             }
             else if (parity_reloc_task.enc_method == EncodeMethod::PARITY_MERGE)
             {
-                // // send only one block
-                // uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[0];
-                // string &dst_block_path = parity_reloc_task.parity_block_dst_paths[0];
+                // send only one block
+                uint16_t dst_conn_id = parity_reloc_task.parity_reloc_nodes[0];
+                string &dst_block_path = parity_reloc_task.dst_block_paths[0];
 
-                // Command cmd_reloc;
-                // cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
+                Command cmd_reloc;
+                cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_reloc_task.post_stripe_id, parity_reloc_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
-                // // add to cmd_dist_queue[dst_node_id]
-                // (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
+                // add to cmd_dist_queue[dst_node_id]
+                (*cmd_dist_queues)[dst_conn_id]->Push(cmd_reloc);
 
-                // printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
+                printf("CmdHandler::handleCmdFromController created block reloc task (type: %u, Node %u -> %u), forwarded to CmdDist\n", cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id);
             }
         }
     }

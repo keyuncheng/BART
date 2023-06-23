@@ -129,7 +129,7 @@ void Node::connectOne(uint16_t conn_id, string ip, uint16_t port)
 void Node::ackConnAll()
 {
     uint16_t num_acked_nodes = 0;
-    uint16_t num_conns = connectors_map.size();
+    uint16_t num_conns = sockets_map.size();
     while (num_acked_nodes < num_conns)
     {
         sockpp::inet_address conn_addr;
