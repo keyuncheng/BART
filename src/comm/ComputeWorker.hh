@@ -53,8 +53,6 @@ public:
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
 
-    // buffers for data transfer
-    unordered_map<uint16_t, unsigned char *> data_buffers_map;
     // sockets for data transfer
     unordered_map<uint16_t, sockpp::tcp_connector> data_connectors_map;
     unordered_map<uint16_t, sockpp::tcp_socket> data_sockets_map;
@@ -80,14 +78,11 @@ public:
 
     unsigned char gfPow(unsigned char val, unsigned int times);
 
-    // block transfer receive and read
-    void retrieveMultipleDataAndReply(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
-    void retrieveDataAndReply(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
+    // data request thread
+    void requestDataFromAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> data_buffers);
 
-    // block transfer send
-    void notifyMultipleAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> buffers);
-    void notifyAgent(ParityComputeTask &parity_compute_task, uint16_t src_node_id, unsigned char *buffer);
-    void handleBlkTransfer(uint16_t src_conn_id, unsigned char *buffer);
+    // data transfer thread handler
+    void handleDataTransfer(uint16_t src_conn_id);
 
     // sockets connections
     void ackConnAll();

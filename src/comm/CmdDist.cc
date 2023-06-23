@@ -85,7 +85,8 @@ void CmdDist::distCmdToController()
                 exit(EXIT_FAILURE);
             }
 
-            cmd.print();
+            // cmd.print();
+            // printf("CmdHandler::distCmdToController get command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
             // send the command
             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
@@ -103,7 +104,7 @@ void CmdDist::distCmdToController()
         }
     }
 
-    printf("CmdDist::distCmdToController [Node %u] finished distribute commands to Controller\n", self_conn_id);
+    printf("CmdDist::distCmdToController [Node %u] finished distributing commands to Controller\n", self_conn_id);
 }
 
 void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
@@ -140,7 +141,8 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
                 exit(EXIT_FAILURE);
             }
 
-            cmd.print();
+            // cmd.print();
+            // printf("CmdHandler::distControllerCmd get command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
             // send the command
             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
@@ -183,5 +185,5 @@ void CmdDist::distCmdToAgent(uint16_t dst_conn_id)
         }
     }
 
-    printf("CmdDist::distCmdToAgent [Node %u] finished distribute commands to Agent %u\n", self_conn_id, dst_conn_id);
+    printf("CmdDist::distCmdToAgent [Node %u] finished distributing commands to Agent %u\n", self_conn_id, dst_conn_id);
 }

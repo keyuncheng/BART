@@ -98,7 +98,7 @@ void Node::connectAll()
         delete item.second;
     }
 
-    printf("Node %u: successfully connected to %lu nodes\n", self_conn_id, connectors_map.size());
+    printf("Node::connectAll successfully connected to %lu nodes\n", connectors_map.size());
 }
 
 void Node::connectOne(uint16_t conn_id, string ip, uint16_t port)
@@ -121,7 +121,7 @@ void Node::connectOne(uint16_t conn_id, string ip, uint16_t port)
 
     if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
     {
-        fprintf(stderr, "error send cmd_conn\n");
+        fprintf(stderr, "Node::connectOne error send cmd_conn\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -137,7 +137,7 @@ void Node::ackConnAll()
 
         if (!skt)
         {
-            fprintf(stderr, "invalid socket: %s\n", acceptor->last_error_str().c_str());
+            fprintf(stderr, "Node::ackConnAll invalid socket: %s\n", acceptor->last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
@@ -145,7 +145,7 @@ void Node::ackConnAll()
         Command cmd_conn;
         if (skt.read_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
-            fprintf(stderr, "error reading cmd_conn\n");
+            fprintf(stderr, "Node::ackConnAll error reading cmd_conn\n");
             exit(EXIT_FAILURE);
         }
 
@@ -156,7 +156,7 @@ void Node::ackConnAll()
 
         if (cmd_conn.type != CommandType::CMD_CONN || cmd_conn.dst_conn_id != self_conn_id)
         {
-            fprintf(stderr, "invalid cmd_conn: type: %u, dst_conn_id: %u\n", cmd_conn.type, cmd_conn.dst_conn_id);
+            fprintf(stderr, "Node::ackConnAll invalid cmd_conn: type: %u, dst_conn_id: %u\n", cmd_conn.type, cmd_conn.dst_conn_id);
             exit(EXIT_FAILURE);
         }
 
@@ -174,7 +174,7 @@ void Node::ackConnAll()
 
         if (connector.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
         {
-            fprintf(stderr, "error send cmd_ack\n");
+            fprintf(stderr, "Node::ackConnAll error send cmd_ack\n");
             exit(EXIT_FAILURE);
         }
 
@@ -192,7 +192,7 @@ void Node::handleAckOne(uint16_t conn_id)
     Command cmd_ack;
     if (connector.read_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
     {
-        fprintf(stderr, "error reading cmd_ack from %u\n", conn_id);
+        fprintf(stderr, "Node::handleAckOne error reading cmd_ack from %u\n", conn_id);
         exit(EXIT_FAILURE);
     }
     cmd_ack.parse();
@@ -202,11 +202,11 @@ void Node::handleAckOne(uint16_t conn_id)
 
     if (cmd_ack.type != CommandType::CMD_ACK)
     {
-        fprintf(stderr, "invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
+        fprintf(stderr, "Node::handleAckOne invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
         exit(EXIT_FAILURE);
     }
 
     // printf("Node %u: received ack from Node %u\n", self_conn_id, conn_id);
 
-    printf("Node:: successfully connected to conn_id: %u\n", conn_id);
+    printf("Node::handleAckOne successfully connected to conn_id: %u\n", conn_id);
 }

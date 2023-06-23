@@ -100,7 +100,8 @@ void CmdHandler::handleCmdFromController()
 
         // parse the command
         cmd.parse();
-        cmd.print();
+        // cmd.print();
+        // printf("CmdHandler::handleCmdFromController handle command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
         // validate command
         if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
@@ -146,7 +147,7 @@ void CmdHandler::handleCmdFromController()
             }
 
             // forward the command to another node
-            cmd.print();
+            // cmd.print();
 
             Command cmd_forward;
             cmd_forward.buildCommand(cmd.type, self_conn_id, dst_conn_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, dst_conn_id, cmd.src_block_path, cmd.dst_block_path);
@@ -172,7 +173,7 @@ void CmdHandler::handleCmdFromController()
             // close socket
             skt.close();
 
-            printf("CmdHandler::handleCmdFromController received stop command from Controller, call socket.close()\n");
+            // printf("CmdHandler::handleCmdFromController received stop command from Controller, call socket.close()\n");
             break;
         }
     }
@@ -215,9 +216,8 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
 
         // parse the command
         cmd.parse();
-
-        printf("CmdHandler::handleCmdFromAgent received new command\n");
-        cmd.print();
+        // cmd.print();
+        // printf("CmdHandler::handleCmdFromAgent handle command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
         // validate command
         if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
@@ -247,7 +247,7 @@ void CmdHandler::handleCmdFromAgent(uint16_t src_conn_id)
         }
         else if (cmd.type == CommandType::CMD_STOP)
         {
-            printf("CmdHandler::handleCmdFromAgent received stop command from Agent %u, call socket.close()\n", cmd.src_conn_id);
+            // printf("CmdHandler::handleCmdFromAgent received stop command from Agent %u, call socket.close()\n", cmd.src_conn_id);
             skt.close();
             break;
         }
@@ -316,7 +316,7 @@ void CmdHandler::handleParityRelocTask()
         }
     }
 
-    printf("CmdHandler::handleParityRelocTask [Node %u] end handling parity relocation task\n", self_conn_id);
+    printf("CmdHandler::handleParityRelocTask [Node %u] finished handling parity relocation task\n", self_conn_id);
 }
 
 void CmdHandler::distStopCmds()
