@@ -65,9 +65,6 @@ public:
     uint8_t getMinTransBW(string approach, u16string &enc_nodes);
     uint8_t getDataRelocBW();
     uint8_t getMinREBW(u16string &enc_nodes);
-
-    uint8_t getMinPMBWBF(u16string &enc_nodes);
-    uint8_t getMinPMBWForParities(u16string &enc_nodes);
     uint8_t getMinPMBW(u16string &enc_nodes);
     bool isPerfectParityMerging();
 
