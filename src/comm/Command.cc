@@ -26,13 +26,15 @@ void Command::print()
     }
     case CommandType::CMD_COMPUTE_RE_BLK:
     case CommandType::CMD_COMPUTE_PM_BLK:
-    case CommandType::CMD_READ_COMPUTE_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
     case CommandType::CMD_DELETE_BLK:
+    case CommandType::CMD_READ_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     {
         printf(", post_stripe: (%u, %u), transfer(%u, %u), enc_method: %u, num_src_blocks: %u, num_parity_reloc_blocks: %u\n", post_stripe_id, post_block_id, src_node_id, dst_node_id, enc_method, num_src_blocks, num_parity_reloc_blocks);
-        printf("src_block_path: %s, dst_block_path: %s\n", src_block_path.c_str(), dst_block_path.c_str());
+        printf("src_block_path: %s\n", src_block_path.c_str());
+        printf("dst_block_path: %s\n", dst_block_path.c_str());
 
         if (type == CommandType::CMD_COMPUTE_RE_BLK || type == CommandType::CMD_COMPUTE_PM_BLK)
         {
@@ -121,10 +123,11 @@ void Command::parse()
     case CommandType::CMD_COMPUTE_RE_BLK:
     case CommandType::CMD_COMPUTE_PM_BLK:
     case CommandType::CMD_STOP:
-    case CommandType::CMD_READ_COMPUTE_BLK:
-    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_BLK:
     case CommandType::CMD_TRANSFER_RELOC_BLK:
     case CommandType::CMD_DELETE_BLK:
+    case CommandType::CMD_READ_COMPUTE_BLK:
+    case CommandType::CMD_TRANSFER_COMPUTE_BLK:
     {
         post_stripe_id = readUInt();
         post_block_id = readUInt16();
@@ -152,9 +155,6 @@ void Command::parse()
             }
         }
 
-        if (type == CommandType::CMD_TRANSFER_RELOC_BLK)
-        {
-        }
         break;
     }
     case CommandType::CMD_UNKNOWN:

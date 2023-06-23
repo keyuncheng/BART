@@ -20,10 +20,11 @@ enum CommandType
     CMD_STOP,
     CMD_COMPUTE_RE_BLK,       // re-encoding compute command
     CMD_COMPUTE_PM_BLK,       // parity merging compute command
-    CMD_READ_COMPUTE_BLK,     // read -> compute -> write
-    CMD_TRANSFER_COMPUTE_BLK, // read -> transfer -> compute -> write
+    CMD_TRANSFER_BLK,         // send block to another node
     CMD_TRANSFER_RELOC_BLK,   // read -> transfer -> write
     CMD_DELETE_BLK,           // delete
+    CMD_READ_COMPUTE_BLK,     // read -> compute -> write
+    CMD_TRANSFER_COMPUTE_BLK, // read -> transfer -> compute -> write
     CMD_UNKNOWN,
 };
 

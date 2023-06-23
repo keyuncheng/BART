@@ -16,6 +16,7 @@ private:
 public:
     uint16_t self_conn_id; // 0 - node_id: Agent;
     Config &config;
+    unordered_map<uint16_t, pair<string, unsigned int>> addrs_map;
     unordered_map<uint16_t, sockpp::tcp_connector> connectors_map;
     unordered_map<uint16_t, sockpp::tcp_socket> sockets_map;
     sockpp::tcp_acceptor *acceptor;
@@ -23,10 +24,11 @@ public:
     Node(uint16_t _self_conn_id, Config &_config);
     ~Node();
 
-    void connectAll();
-    void connectOne(uint16_t conn_id, string ip, uint16_t port);
-    void ackConnAll();
-    void handleAckOne(uint16_t conn_id);
+    // sockets connections
+    static void connectAllSockets(uint16_t self_conn_id, unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, unordered_map<uint16_t, pair<string, unsigned int>> *addrs_map);
+    static void connectOneSocket(uint16_t self_conn_id, unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id, string ip, uint16_t port);
+    static void handleAckOneSocket(uint16_t self_conn_id, unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id);
+    static void ackConnAllSockets(uint16_t self_conn_id, unordered_map<uint16_t, sockpp::tcp_socket> *sockets_map, sockpp::tcp_acceptor *acceptor);
 };
 
 #endif // __NODE_HH__

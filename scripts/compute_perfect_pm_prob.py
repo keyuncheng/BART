@@ -47,8 +47,7 @@ def main():
     total_num_stripe_groups = pow(total_num_placements, eclambda)
     total_num_perfect_pm_stripe_groups = total_num_placements * num_perfect_pm(eck, ecm, eclambda, M)
     prob_perfect_pm = 1.0 * total_num_perfect_pm_stripe_groups / total_num_stripe_groups
-    
-    print("results_1:")
+
     print("total_num_placements: {}", total_num_placements)
     print("total_num_stripe_groups: {}", total_num_stripe_groups)
     print("total_num_perfect_pm_stripe_groups: {}", total_num_perfect_pm_stripe_groups)
@@ -63,7 +62,6 @@ def main():
     print("total_num_stripe_groups: {}", total_num_stripe_groups)
     print("total_num_perfect_pm_stripe_groups: {}", total_num_perfect_pm_stripe_groups)
     print("prob_perfect_pm: {}", prob_perfect_pm)
-
 
 if __name__ == "__main__":
     main()

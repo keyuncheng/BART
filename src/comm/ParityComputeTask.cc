@@ -13,48 +13,60 @@ ParityComputeTask::ParityComputeTask(bool _all_tasks_finished) : all_tasks_finis
 {
 }
 
-ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, uint16_t _src_node_id, EncodeMethod _enc_method, vector<uint16_t> &_src_block_nodes, vector<uint16_t> &_parity_reloc_nodes, string &_parity_block_src_path, string &_raw_dst_block_paths) : code(_code), post_stripe_id(_post_stripe_id), post_block_id(_post_block_id), src_node_id(_src_node_id), enc_method(_enc_method), src_block_nodes(_src_block_nodes), parity_reloc_nodes(_parity_reloc_nodes), parity_block_src_path(_parity_block_src_path)
+ParityComputeTask::ParityComputeTask(ConvertibleCode *_code, uint32_t _post_stripe_id, uint8_t _post_block_id, EncodeMethod _enc_method, vector<uint16_t> &_src_block_nodes, vector<uint16_t> &_parity_reloc_nodes, string &_raw_src_block_paths, string &_raw_dst_block_paths) : code(_code), post_stripe_id(_post_stripe_id), post_block_id(_post_block_id), enc_method(_enc_method), src_block_nodes(_src_block_nodes), parity_reloc_nodes(_parity_reloc_nodes)
 {
-    // skip instructions
-    if (_post_stripe_id == INVALID_STRIPE_ID_GLOBAL)
-    {
-        return;
-    }
+    string delimiter_char = ":";
+    size_t pos = 0;
+    string token;
 
     // process the paths
     if (enc_method == EncodeMethod::RE_ENCODE)
     {
-        parity_block_dst_paths.resize(code->m_f);
+        // src block paths
+        src_block_paths.resize(code->k_f);
+        pos = 0;
+        uint8_t data_block_id = 0;
+        while ((pos = _raw_src_block_paths.find(delimiter_char)) != std::string::npos)
+        {
+            token = _raw_src_block_paths.substr(0, pos);
+            src_block_paths[data_block_id] = token;
+            _raw_src_block_paths.erase(0, pos + delimiter_char.length());
+            data_block_id++;
+        }
+        src_block_paths[code->k_f - 1] = _raw_src_block_paths;
 
-        // parity paths
-        string delimiter_char = ":";
-        size_t pos = 0;
-        string token;
+        // dst block paths
+        dst_block_paths.resize(code->m_f);
+        pos = 0;
         uint8_t parity_id = 0;
 
         while ((pos = _raw_dst_block_paths.find(delimiter_char)) != std::string::npos)
         {
             token = _raw_dst_block_paths.substr(0, pos);
-            parity_block_dst_paths[parity_id] = token;
+            dst_block_paths[parity_id] = token;
             _raw_dst_block_paths.erase(0, pos + delimiter_char.length());
             parity_id++;
         }
-        parity_block_dst_paths[code->m_f - 1] = _raw_dst_block_paths;
+        dst_block_paths[code->m_f - 1] = _raw_dst_block_paths;
     }
     else if (enc_method == EncodeMethod::PARITY_MERGE)
     {
-        parity_block_dst_paths.resize(1);
-        // pre_stripe_id
-        string delimiter_char = ":";
-        size_t pos = _raw_dst_block_paths.find(delimiter_char);
-        string token = _raw_dst_block_paths.substr(0, pos);
-        _raw_dst_block_paths.erase(0, pos + delimiter_char.length());
+        // src block paths
+        src_block_paths.resize(code->lambda_i);
+        pos = 0;
+        uint8_t pre_stripe_id = 0;
+        while ((pos = _raw_src_block_paths.find(delimiter_char)) != std::string::npos)
+        {
+            token = _raw_src_block_paths.substr(0, pos);
+            src_block_paths[pre_stripe_id] = token;
+            _raw_src_block_paths.erase(0, pos + delimiter_char.length());
+            pre_stripe_id++;
+        }
+        src_block_paths[code->lambda_i - 1] = _raw_src_block_paths;
 
-        // pre-stripe-id
-        pre_stripe_id = atoi(token.c_str());
-
-        // parity block path
-        parity_block_dst_paths[0] = _raw_dst_block_paths;
+        // dst block paths
+        dst_block_paths.resize(1);
+        dst_block_paths[0] = _raw_dst_block_paths;
     }
 
     // init all_tasks_finished (false)
@@ -67,20 +79,24 @@ ParityComputeTask::~ParityComputeTask()
 
 void ParityComputeTask::print()
 {
-    printf("\nParityComputeTask enc_method: %u, pre_stripe_id: %u, post-stripe: (%u, %u), src_node_id: %u\n", enc_method, pre_stripe_id, post_stripe_id, post_block_id, src_node_id);
+    printf("\nParityComputeTask post-stripe: (%u, %u), enc_method: %u\n", post_stripe_id, post_block_id, enc_method);
 
-    // printf("src_block_nodes:\n");
-    // Utils::printVector(src_block_nodes);
+    printf("src_block_nodes:\n");
+    Utils::printVector(src_block_nodes);
 
-    // printf("parity_reloc_nodes\n");
-    // Utils::printVector(parity_reloc_nodes);
+    printf("parity_reloc_nodes\n");
+    Utils::printVector(parity_reloc_nodes);
 
-    // printf("parity_block_src_path: %s\n", parity_block_src_path.c_str());
+    printf("src_block_paths:\n");
+    for (auto path : src_block_paths)
+    {
+        printf("%s\n", path.c_str());
+    }
 
-    // printf("parity_block_dst_path(s):\n");
-    // for (auto path : parity_block_dst_paths)
-    // {
-    //     printf("%s\n", path.c_str());
-    // }
-    // printf("\n\n");
+    printf("dst_block_paths:\n");
+    for (auto path : dst_block_paths)
+    {
+        printf("%s\n", path.c_str());
+    }
+    printf("\n\n");
 }
