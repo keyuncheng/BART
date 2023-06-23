@@ -53,9 +53,9 @@ ComputeWorker::ComputeWorker(
     // create data command acceptor
     data_cmd_acceptor = new sockpp::tcp_acceptor(self_port + 1000);
 
-    thread data_cmd_ack_conn_thread(&ComputeWorker::ackConnAll, this, &data_cmd_sockets_map, data_cmd_acceptor);
+    thread data_cmd_ack_conn_thread(Node::ackConnAllSockets, self_conn_id, &data_cmd_sockets_map, data_cmd_acceptor);
     // connect all nodes
-    ComputeWorker::connectAll(&data_cmd_connectors_map, &data_cmd_addrs_map);
+    Node::connectAllSockets(self_conn_id, &data_cmd_connectors_map, &data_cmd_addrs_map);
 
     // join ack connector threads
     data_cmd_ack_conn_thread.join();
@@ -65,9 +65,9 @@ ComputeWorker::ComputeWorker(
     // create data content acceptor
     data_content_acceptor = new sockpp::tcp_acceptor(self_port + 2000);
 
-    thread data_content_ack_conn_thread(&ComputeWorker::ackConnAll, this, &data_content_sockets_map, data_content_acceptor);
+    thread data_content_ack_conn_thread(Node::ackConnAllSockets, self_conn_id, &data_content_sockets_map, data_content_acceptor);
     // connect all nodes
-    ComputeWorker::connectAll(&data_content_connectors_map, &data_content_addrs_map);
+    Node::connectAllSockets(self_conn_id, &data_content_connectors_map, &data_content_addrs_map);
 
     // join ack connector threads
     data_content_ack_conn_thread.join();
@@ -482,151 +482,4 @@ unsigned char ComputeWorker::gfPow(unsigned char val, unsigned int times)
     }
 
     return ret_val;
-}
-
-void ComputeWorker::connectAll(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, unordered_map<uint16_t, pair<string, unsigned int>> *addrs_map)
-{
-    unordered_map<uint16_t, thread *> conn_threads;
-
-    // create connect threads
-    for (auto &item : *connectors_map)
-    {
-        uint16_t conn_id = item.first;
-        string ip = addrs_map->at(conn_id).first;
-        unsigned int port = addrs_map->at(conn_id).second;
-        conn_threads[conn_id] = new thread(&ComputeWorker::connectOne, this, connectors_map, conn_id, ip, port);
-    }
-
-    for (auto &item : conn_threads)
-    {
-        item.second->join();
-        delete item.second;
-    }
-
-    // create handle ack threads
-    unordered_map<uint16_t, thread *> ack_threads;
-    for (auto &item : *connectors_map)
-    {
-        uint16_t conn_id = item.first;
-        ack_threads[conn_id] = new thread(&ComputeWorker::handleAckOne, this, connectors_map, conn_id);
-    }
-
-    for (auto &item : ack_threads)
-    {
-        item.second->join();
-        delete item.second;
-    }
-
-    printf("ComputeWorker::connectAll successfully connected to %lu nodes\n", connectors_map->size());
-}
-
-void ComputeWorker::connectOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id, string ip, uint16_t port)
-{
-    // create connection
-    sockpp::tcp_connector &connector = connectors_map->at(conn_id);
-    while (!(connector = sockpp::tcp_connector(sockpp::inet_address(ip, port))))
-    {
-        this_thread::sleep_for(chrono::milliseconds(1));
-    }
-
-    // printf("Successfully created connection to conn_id: %u (%s, %u)\n", conn_id, ip.c_str(), port);
-
-    // send the connection command
-    Command cmd_conn;
-    cmd_conn.buildCommand(CommandType::CMD_CONN, self_conn_id, conn_id);
-
-    if (connector.write_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    {
-        fprintf(stderr, "error send cmd_conn\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // printf("ComputeWorker::connectOne send connection command to %u \n", conn_id);
-    // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
-}
-
-void ComputeWorker::handleAckOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id)
-{
-    sockpp::tcp_connector &connector = connectors_map->at(conn_id);
-
-    // parse the ack command
-    Command cmd_ack;
-    if (connector.read_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    {
-        fprintf(stderr, "ComputeWorker::handleAckOne error reading cmd_ack from %u\n", conn_id);
-        exit(EXIT_FAILURE);
-    }
-    cmd_ack.parse();
-
-    // printf("ComputeWorker::handleAckOne received command from %u \n", conn_id);
-    // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
-
-    if (cmd_ack.type != CommandType::CMD_ACK)
-    {
-        fprintf(stderr, "ComputeWorker::handleAckOne invalid command type %d from connection %u\n", cmd_ack.type, conn_id);
-        exit(EXIT_FAILURE);
-    }
-
-    // printf("ComputeWorker %u: received ack from ComputeWorker %u\n", self_conn_id, conn_id);
-
-    printf("ComputeWorker::handleAckOne successfully connected to conn_id: %u\n", conn_id);
-}
-
-void ComputeWorker::ackConnAll(unordered_map<uint16_t, sockpp::tcp_socket> *sockets_map, sockpp::tcp_acceptor *acceptor)
-{
-    uint16_t num_acked_nodes = 0;
-    uint16_t num_conns = sockets_map->size();
-    while (num_acked_nodes < num_conns)
-    {
-        sockpp::inet_address conn_addr;
-        sockpp::tcp_socket skt = acceptor->accept(&conn_addr);
-
-        if (!skt)
-        {
-            fprintf(stderr, "ComputeWorker::ackConnAll invalid socket: %s\n", acceptor->last_error_str().c_str());
-            exit(EXIT_FAILURE);
-        }
-
-        // printf("ComputeWorker::ackConnAll received from %s\n", conn_addr.to_string().c_str());
-
-        // parse the connection command
-        Command cmd_conn;
-        if (skt.read_n(cmd_conn.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-        {
-            fprintf(stderr, "ComputeWorker::ackConnAll error reading cmd_conn\n");
-            exit(EXIT_FAILURE);
-        }
-
-        cmd_conn.parse();
-
-        if (cmd_conn.type != CommandType::CMD_CONN || cmd_conn.dst_conn_id != self_conn_id)
-        {
-            fprintf(stderr, "ComputeWorker::ackConnAll invalid cmd_conn: type: %u, dst_conn_id: %u\n", cmd_conn.type, cmd_conn.dst_conn_id);
-            exit(EXIT_FAILURE);
-        }
-
-        // printf("ComputeWorker::ackConnAll received connection command\n");
-        // Utils::printUCharBuffer(cmd_conn.content, MAX_CMD_LEN);
-
-        // maintain the socket
-        uint16_t conn_id = cmd_conn.src_conn_id;
-        sockets_map->at(conn_id) = move(skt);
-
-        // send the ack command
-        auto &reply_skt = sockets_map->at(conn_id);
-
-        Command cmd_ack;
-        cmd_ack.buildCommand(CommandType::CMD_ACK, self_conn_id, conn_id);
-
-        if (reply_skt.write_n(cmd_ack.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-        {
-            fprintf(stderr, "ComputeWorker::ackConnAll error send cmd_ack\n");
-            exit(EXIT_FAILURE);
-        }
-
-        num_acked_nodes++;
-
-        // printf("ComputeWorker::ackConnAll received connection and acked to %u; connected to (%u / %u) Nodes\n", conn_id, num_acked_nodes, num_conns);
-        // Utils::printUCharBuffer(cmd_ack.content, MAX_CMD_LEN);
-    }
 }

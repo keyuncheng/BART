@@ -3,6 +3,8 @@
 
 #include <mutex>
 #include <isa-l.h>
+#include "sockpp/tcp_connector.h"
+#include "sockpp/tcp_acceptor.h"
 
 #include "../include/include.hh"
 #include "../util/ThreadPool.hh"
@@ -12,8 +14,7 @@
 #include "../util/MemoryPool.hh"
 #include "BlockIO.hh"
 #include "Command.hh"
-#include "sockpp/tcp_connector.h"
-#include "sockpp/tcp_acceptor.h"
+#include "Node.hh"
 
 class ComputeWorker : public ThreadPool
 {
@@ -90,12 +91,6 @@ public:
 
     // data transfer thread handler
     void handleDataTransfer(uint16_t src_conn_id);
-
-    // sockets connections
-    void connectAll(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, unordered_map<uint16_t, pair<string, unsigned int>> *addrs_map);
-    void connectOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id, string ip, uint16_t port);
-    void handleAckOne(unordered_map<uint16_t, sockpp::tcp_connector> *connectors_map, uint16_t conn_id);
-    void ackConnAll(unordered_map<uint16_t, sockpp::tcp_socket> *sockets_map, sockpp::tcp_acceptor *acceptor);
 };
 
 #endif // __COMPUTE_WORKER_HH__
