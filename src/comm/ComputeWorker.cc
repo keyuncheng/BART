@@ -263,8 +263,8 @@ void ComputeWorker::run()
                     Command cmd_reloc;
                     cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
-                    // pass to corresponding relocation worker
-                    reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
+                    // // pass to corresponding relocation worker
+                    // reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
 
                     printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                 }

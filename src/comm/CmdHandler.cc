@@ -120,7 +120,7 @@ void CmdHandler::handleCmdFromController()
 
             // push the relocation task to specific relocation task queue
             unsigned int assigned_worker_id = cmd_reloc.post_stripe_id % config.num_reloc_workers;
-            (*reloc_task_queues)[assigned_worker_id]->Push(cmd_reloc);
+            // (*reloc_task_queues)[assigned_worker_id]->Push(cmd_reloc);
 
             printf("CmdHandler::handleCmdFromAgent received relocation task, forward to RelocWorker %u, post: (%u, %u)\n", assigned_worker_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id);
         }
