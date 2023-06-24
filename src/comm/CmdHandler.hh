@@ -7,68 +7,68 @@
 
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
+
 #include "../include/include.hh"
 #include "../util/Utils.hh"
+#include "../util/Config.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/MessageQueue.hh"
-#include "../util/Config.hh"
-#include "ComputeWorker.hh"
-#include "BlockIO.hh"
+#include "../util/MultiWriterQueue.h"
 #include "Command.hh"
 #include "ParityComputeTask.hh"
-#include "../util/MemoryPool.hh"
+#include "BlockIO.hh"
 
 class CmdHandler : public ThreadPool
 {
 private:
     /* data */
 public:
+    // config
     Config &config;
+
+    // current connection id
     uint16_t self_conn_id;
+
+    // Node sockets
     unordered_map<uint16_t, sockpp::tcp_socket> &sockets_map;
 
     // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
     unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
 
-    // parity compute task queue: each retrieves parity computation task from Controller and pass to ComputeWorker (CmdHandler -> ComputeWorker)
-    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *pc_task_queues;
+    // compute task queues: each retrieves computation task from Controller, and pass to a ComputeWorker (CmdHandler -> ComputeWorker<worker_id>)
+    unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> *compute_task_queues;
 
-    // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
-    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *pc_reply_queues;
-
-    // parity relocation task queue (ComputeWorker -> CmdHandler)
-    MessageQueue<ParityComputeTask> *parity_reloc_task_queue;
-
-    // memory pool (for allocating blocks for parity computation)
-    MemoryPool *memory_pool;
-
-    // mutex for hand1lers
-    mutex ready_mtx;
-    condition_variable ready_cv;
-    atomic<bool> is_ready;
+    // parity block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
+    unordered_map<unsigned int, MultiWriterQueue<Command> *> *reloc_task_queues;
 
     // command handler threads
     unordered_map<uint16_t, thread *> handler_threads_map;
 
-    // parity relocation task thread
-    thread *parity_reloc_task_thread;
-
     CmdHandler(Config &_config, uint16_t _self_conn_id,
                unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
                unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues,
-               unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_task_queues,
-               unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> *_pc_reply_queues,
-               MessageQueue<ParityComputeTask> *_pc_reloc_task_queue, MemoryPool *_memory_pool, unsigned int _num_threads);
+               unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> *_compute_task_queues,
+               unordered_map<unsigned int, MultiWriterQueue<Command> *> *_reloc_task_queues);
     ~CmdHandler();
 
+    /**
+     * @brief thread initializer
+     *
+     */
     void run() override;
 
-    // handle command thread
+    /**
+     * @brief handle commands from Controller
+     *
+     */
     void handleCmdFromController();
-    void handleCmdFromAgent(uint16_t src_conn_id);
 
-    // parity relocation thread
-    void handleParityRelocTask();
+    /**
+     * @brief handle commands from Agent <src_conn_id>
+     *
+     * @param src_conn_id source connection id
+     */
+    void handleCmdFromAgent(uint16_t src_conn_id);
 
     void distStopCmds();
 };

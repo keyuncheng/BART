@@ -4,36 +4,39 @@
 #include "../include/include.hh"
 #include "../util/Config.hh"
 #include "../util/MessageQueue.hh"
+#include "../util/MultiWriterQueue.h"
 #include "Node.hh"
-#include "CmdDist.hh"
-#include "CmdHandler.hh"
 #include "ParityComputeTask.hh"
+#include "CmdHandler.hh"
+#include "CmdDist.hh"
 #include "ComputeWorker.hh"
-#include "../util/MemoryPool.hh"
+#include "RelocWorker.hh"
 
 class AgentNode : public Node
 {
 private:
     /* data */
 public:
-    CmdHandler *cmd_handler;       // handler commands from Controller and Agents
-    CmdDist *cmd_distributor;      // distribute send block commands
-    ComputeWorker *compute_worker; // compute worker
-
-    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler -> CmdDist)
+    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler<conn_id> -> CmdDist<conn_id>)
     unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
 
-    // parity compute task queue: each retrieves parity computation task from Controller and pass to ComputeWorker (CmdHandler -> ComputeWorker)
-    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> pc_task_queues;
+    // compute task queues: each retrieves computation task from Controller, and pass to a ComputeWorker (CmdHandler -> ComputeWorker<worker_id>)
+    unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> compute_task_queues;
 
-    // parity compute result queue: each retrieves parity computation result from ComputeWorker and pass to CmdHandler (ComputeWorker -> CmdHandler)
-    unordered_map<uint16_t, MessageQueue<ParityComputeTask> *> pc_reply_queues;
+    // block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
+    unordered_map<unsigned int, MultiWriterQueue<Command> *> reloc_task_queues;
 
-    // parity block relocation task queue (ComputeWorker -> CmdHandler)
-    MessageQueue<ParityComputeTask> *parity_reloc_task_queue;
+    // distribute commands
+    CmdDist *cmd_distributor;
 
-    // memory pool
-    MemoryPool *memory_pool;
+    // handler commands
+    CmdHandler *cmd_handler;
+
+    // compute workers <worker_id, worker>
+    unordered_map<unsigned int, ComputeWorker *> compute_workers;
+
+    // relocation workers <worker_id, worker>
+    unordered_map<unsigned int, RelocWorker *> reloc_workers;
 
     AgentNode(uint16_t _self_conn_id, Config &_config);
     ~AgentNode();

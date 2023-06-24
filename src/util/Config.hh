@@ -13,11 +13,7 @@ public:
     // Common
     ConvertibleCode code;
     ClusterSettings settings;
-    string approach;
-    bool enable_HDFS;
-    uint64_t block_size; // block size in Bytes
-    unsigned int num_cmd_handler_thread;
-    unsigned int num_cmd_dist_thread;
+    string approach; // transitioning approach
 
     // Controller
     pair<string, unsigned int> controller_addr;
@@ -29,7 +25,9 @@ public:
     string sg_meta_filename;            // stripe group metadata
 
     // Agent
-    uint16_t agent_id;
+    uint64_t block_size;              // block size in Bytes
+    unsigned int num_compute_workers; // number of compute workers
+    unsigned int num_reloc_workers;   // number of relocation workers
 
     Config(string filename);
     ~Config();

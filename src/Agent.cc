@@ -14,10 +14,9 @@ int main(int argc, char **argv)
     string config_filename = argv[2];
 
     Config config(config_filename);
-    config.agent_id = agent_id; // now set as cmd line input
     config.print();
 
-    AgentNode agent_node(config.agent_id, config);
+    AgentNode agent_node(agent_id, config);
 
     // benchmarking
     double finish_time = 0.0;

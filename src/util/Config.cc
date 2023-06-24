@@ -18,10 +18,9 @@ Config::Config(string filename)
     inipp::get_value(ini.sections["Common"], "num_nodes", num_nodes);
     inipp::get_value(ini.sections["Common"], "num_stripes", num_stripes);
     inipp::get_value(ini.sections["Common"], "approach", approach);
-    inipp::get_value(ini.sections["Common"], "enable_HDFS", enable_HDFS);
-    inipp::get_value(ini.sections["Common"], "block_size", block_size);
-    inipp::get_value(ini.sections["Common"], "num_cmd_handler_thread", num_cmd_handler_thread);
-    inipp::get_value(ini.sections["Common"], "num_cmd_dist_thread", num_cmd_dist_thread);
+
+    code = ConvertibleCode(k_i, m_i, k_f, m_f);
+    settings = ClusterSettings(num_nodes, num_stripes);
 
     // Controller
     string controller_addr_raw;
@@ -64,10 +63,10 @@ Config::Config(string filename)
 
     free(raw_str);
 
-    inipp::get_value(ini.sections["Agent"], "id", agent_id);
-
-    code = ConvertibleCode(k_i, m_i, k_f, m_f);
-    settings = ClusterSettings(num_nodes, num_stripes);
+    // Agent
+    inipp::get_value(ini.sections["Agent"], "block_size", block_size);
+    inipp::get_value(ini.sections["Agent"], "num_compute_workers", num_compute_workers);
+    inipp::get_value(ini.sections["Agent"], "num_reloc_workers", num_reloc_workers);
 }
 
 Config::~Config()
@@ -76,19 +75,16 @@ Config::~Config()
 
 void Config::print()
 {
-    printf("========= Config ==========\n");
-    printf("Common:\n");
+    printf("========= Configurations ==========\n");
+
+    printf("========= Common ==========\n");
     code.print();
     settings.print();
-    printf("Transition approach: %s\n", approach.c_str());
-    printf("enable_HDFS: %u\n", enable_HDFS);
-    printf("block_size: %lu\n", block_size);
-    printf("num_cmd_handler_thread: %u\n", num_cmd_handler_thread);
-    printf("num_cmd_dist_thread: %u\n", num_cmd_dist_thread);
+    printf("transitioning approach: %s\n", approach.c_str());
     printf("===========================\n");
 
-    printf("Controller:\n");
-    printf("addr: %s:%u\n", controller_addr.first.c_str(), controller_addr.second);
+    printf("========= Controller ==========\n");
+    printf("address: %s:%u\n", controller_addr.first.c_str(), controller_addr.second);
     printf("pre_placement_filename: %s\n", pre_placement_filename.c_str());
     printf("pre_block_mapping_filename: %s\n", pre_block_mapping_filename.c_str());
     printf("post_placement_filename: %s\n", post_placement_filename.c_str());
@@ -96,16 +92,15 @@ void Config::print()
     printf("sg_meta_filename: %s\n", sg_meta_filename.c_str());
     printf("===========================\n");
 
-    printf("Agents (%lu):\n", agent_addr_map.size());
+    printf("========= Agents ==========\n");
+    printf("block_size: %lu\n", block_size);
+    printf("num_compute_workers: %u\n", num_compute_workers);
+    printf("num_reloc_workers: %u\n", num_reloc_workers);
+    printf("addresses: (%lu)\n", agent_addr_map.size());
     for (auto &item : agent_addr_map)
     {
         auto &agent_addr = item.second;
-        string is_current;
-        if (agent_id == item.first)
-        {
-            is_current = " (current)";
-        }
-        printf("Agent %u%s, ip: %s:%d\n", item.first, is_current.c_str(), agent_addr.first.c_str(), agent_addr.second);
+        printf("Agent %u, ip: %s:%d\n", item.first, agent_addr.first.c_str(), agent_addr.second);
     }
     printf("===========================\n");
 }

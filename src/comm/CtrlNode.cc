@@ -11,10 +11,10 @@ CtrlNode::CtrlNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_id
     }
 
     // create command handler (only handle STOP command from Agents)
-    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, NULL, NULL, NULL, NULL, NULL, 1);
+    cmd_handler = new CmdHandler(config, self_conn_id, sockets_map, NULL, NULL, NULL);
 
     // create command distributor
-    cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues, NULL, 1);
+    cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues);
 }
 
 CtrlNode::~CtrlNode()
