@@ -119,17 +119,15 @@ void ComputeWorker::run()
             if (parity_compute_task.all_tasks_finished == true)
             {
                 // forward the terminate signal to reloc queues
-                if (self_worker_id == 0)
-                { // only use the first worker to send the signals
-                    for (auto &item : reloc_task_queues)
-                    {
-                        Command cmd_stop;
-                        cmd_stop.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
+                for (auto &item : reloc_task_queues)
+                {
+                    Command cmd_stop;
+                    cmd_stop.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
 
-                        auto &reloc_task_queue = item.second;
-                        reloc_task_queue->Push(cmd_stop);
-                    }
+                    auto &reloc_task_queue = item.second;
+                    reloc_task_queue->Push(cmd_stop);
                 }
+
                 setFinished();
                 continue;
             }
@@ -264,7 +262,7 @@ void ComputeWorker::run()
                     cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
                     // // pass to corresponding relocation worker
-                    // reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
+                    reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
 
                     printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                 }

@@ -96,8 +96,8 @@ void RelocWorker::run()
             {
                 num_term_signals++;
 
-                // term signals (one from CmdHandler; another from ComputeWorker)
-                if (num_term_signals == 2)
+                // term signals (one from CmdHandler; anothers ares from ComputeWorker)
+                if (num_term_signals == config.num_compute_workers + 1)
                 {
                     setFinished();
                 }
