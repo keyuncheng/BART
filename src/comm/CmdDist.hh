@@ -1,10 +1,6 @@
 #ifndef __CMD_DIST_HH__
 #define __CMD_DIST_HH__
 
-#include <mutex>
-#include <condition_variable>
-#include <atomic>
-
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
 #include "../include/include.hh"

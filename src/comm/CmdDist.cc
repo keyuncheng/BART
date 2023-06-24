@@ -37,8 +37,8 @@ void CmdDist::distCmdToNode(uint16_t dst_conn_id)
 
     auto &connector = connectors_map[dst_conn_id];
     MessageQueue<Command> &cmd_dist_queue = *cmd_dist_queues[dst_conn_id];
-    bool is_finished = false;
 
+    bool is_finished = false;
     while (true)
     {
         if (cmd_dist_queue.IsEmpty() == true && is_finished == true)
@@ -57,7 +57,7 @@ void CmdDist::distCmdToNode(uint16_t dst_conn_id)
             }
 
             // cmd.print();
-            // printf("CmdHandler::distControllerCmd get command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
+            printf("CmdHandler::distControllerCmd get command, type: %u, (%u -> %u), post: (%u, %u)\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
             // send the command
             if (connector.write_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
@@ -68,12 +68,13 @@ void CmdDist::distCmdToNode(uint16_t dst_conn_id)
 
             if (cmd.type == CommandType::CMD_STOP)
             { // stop connection command
-                // close the connector
-                connector.close();
                 is_finished = true;
             }
         }
     }
+
+    // close the connector
+    connector.close();
 
     printf("[Node %u] CmdDist::distCmdToNode finished distributing commands to Node %u\n", self_conn_id, dst_conn_id);
 }

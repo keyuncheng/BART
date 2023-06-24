@@ -1,9 +1,9 @@
 #ifndef __RELOC_WORKER_HH__
 #define __RELOC_WORKER_HH__
 
-#include "../include/include.hh"
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
+
 #include "../include/include.hh"
 #include "../util/ThreadPool.hh"
 #include "../util/Config.hh"
@@ -49,6 +49,10 @@ public:
     RelocWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MultiWriterQueue<Command> &_reloc_task_queue);
     ~RelocWorker();
 
+    /**
+     * @brief thread initializer
+     *
+     */
     void run() override;
 
     // send data thread

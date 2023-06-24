@@ -18,11 +18,14 @@ class CtrlNode : public Node
 private:
     /* data */
 public:
-    CmdHandler *cmd_handler; // handler commands from Agents
+    // command distribution queues: each retrieves command from CmdHandler and distributes commands to the corresponding CmdDist (CmdHandler<conn_id> -> CmdDist<conn_id>)
+    unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
+
+    // distribute commands
     CmdDist *cmd_distributor;
 
-    // command distribution queue (each is a single reader single writer queue)
-    unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
+    // handler commands
+    CmdHandler *cmd_handler;
 
     CtrlNode(uint16_t _self_conn_id, Config &_config);
     ~CtrlNode();

@@ -38,20 +38,17 @@ def main():
     m_f = int(config["Common"]["m_f"])
     num_nodes = int(config["Common"]["num_nodes"])
     num_stripes = int(config["Common"]["num_stripes"])
-    enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
-    block_size = int(config["Common"]["block_size"])
 
     # Controller
     pre_placement_filename = config["Controller"]["pre_placement_filename"]
     pre_block_mapping_filename = config["Controller"]["pre_block_mapping_filename"]
 
-    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; enable_HDFS: {}".format(k_i, m_i, num_stripes, num_nodes, enable_HDFS))
+    # Agent
+    block_size = int(config["Agent"]["block_size"])
+
+    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}".format(k_i, m_i, num_stripes, num_nodes))
 
     print("pre_placement_filename: {}; pre_block_mapping_filename: {}".format(pre_placement_filename, pre_block_mapping_filename))
-
-    if enable_HDFS == True:
-        print("pre-transition placement and block mapping should be obtained from HDFS; skipped")
-        return
 
     # Others
     root_dir = Path("..").absolute()

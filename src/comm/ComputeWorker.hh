@@ -1,9 +1,9 @@
 #ifndef __COMPUTE_WORKER_HH__
 #define __COMPUTE_WORKER_HH__
 
+#include <isa-l.h>
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tcp_acceptor.h"
-#include <isa-l.h>
 
 #include "../include/include.hh"
 #include "../util/ThreadPool.hh"
@@ -65,6 +65,10 @@ public:
     ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<ParityComputeTask> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues);
     ~ComputeWorker();
 
+    /**
+     * @brief thread initializer
+     *
+     */
     void run() override;
 
     // data request thread

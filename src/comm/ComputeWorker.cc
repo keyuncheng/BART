@@ -23,7 +23,7 @@ ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint
     }
 
     // create buffers, sockets and handlers for each Agent
-    unsigned int data_cmd_port_offset = (self_worker_id + 1) * (config.settings.num_nodes * 2);
+    unsigned int data_cmd_port_offset = (self_worker_id + 1) * (config.settings.num_nodes * 4);
     unsigned int data_content_port_offset = data_cmd_port_offset + config.settings.num_nodes;
     for (auto &item : config.agent_addr_map)
     {
@@ -72,6 +72,8 @@ ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint
     // join ack connector threads
     data_content_ack_conn_thread.join();
     /****************************************/
+
+    printf("[Node %u, Worker %u] ComputeWorker::ComputeWorker finished initialization\n", self_conn_id, self_worker_id);
 }
 
 ComputeWorker::~ComputeWorker()
@@ -106,7 +108,6 @@ void ComputeWorker::run()
 
     while (true)
     {
-
         if (finished() == true && compute_task_queue.IsEmpty() == true)
         {
             break;
@@ -119,22 +120,21 @@ void ComputeWorker::run()
             {
                 // forward the terminate signal to reloc queues
                 if (self_worker_id == 0)
-                {
+                { // only use the first worker to send the signals
                     for (auto &item : reloc_task_queues)
                     {
-                        auto &reloc_task_queue = item.second;
-
                         Command cmd_stop;
                         cmd_stop.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
+
+                        auto &reloc_task_queue = item.second;
                         reloc_task_queue->Push(cmd_stop);
                     }
                 }
-
                 setFinished();
                 continue;
             }
 
-            printf("[Node %u, Worker %u] ComputeWorker::run received parity computation task, post: (%u, %u)\n", self_conn_id, self_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_stripe_id);
+            printf("[Node %u, Worker %u] ComputeWorker::run received parity computation task, post: (%u, %u)\n", self_conn_id, self_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
             // parity_compute_task.print();
 
             if (parity_compute_task.enc_method == EncodeMethod::RE_ENCODE)
@@ -188,7 +188,7 @@ void ComputeWorker::run()
                 // step 4: relocate parity blocks
 
                 // push the relocation task to specific compute task queue
-                unsigned int assigned_queue_id = parity_compute_task.post_stripe_id % reloc_task_queues.size();
+                unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
 
                 for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
                 {
@@ -201,10 +201,10 @@ void ComputeWorker::run()
                         Command cmd_reloc;
                         cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
-                        // add to cmd_dist_queue[dst_node_id]
-                        reloc_task_queues[assigned_queue_id]->Push(cmd_reloc);
+                        // pass to corresponding relocation worker
+                        reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
 
-                        printf("[Node %u, Worker %u] ComputeWorker::run created parity block reloc task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_queue_id);
+                        printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                     }
                 }
             }
@@ -254,7 +254,7 @@ void ComputeWorker::run()
                 // printf("ComputeWorker::run finished writing parity block %s\n", dst_block_path.c_str());
 
                 // step 4: relocate parity blocks
-                unsigned int assigned_queue_id = parity_compute_task.post_stripe_id % reloc_task_queues.size();
+                unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
 
                 // check whether needs relocation
                 uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
@@ -263,14 +263,14 @@ void ComputeWorker::run()
                     Command cmd_reloc;
                     cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
-                    // add to cmd_dist_queue[dst_node_id]
-                    reloc_task_queues[assigned_queue_id]->Push(cmd_reloc);
+                    // pass to corresponding relocation worker
+                    reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
 
-                    printf("[Node %u, Worker %u] ComputeWorker::run created parity block reloc task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_queue_id);
+                    printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                 }
             }
 
-            printf("ComputeWorker::run finished parity computation task, post(%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+            printf("[Node %u, Worker %u] ComputeWorker::run finished parity computation task, post(%u, %u)\n", self_conn_id, self_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
         }
     }
 
@@ -405,7 +405,7 @@ void ComputeWorker::handleDataTransfer(uint16_t src_conn_id)
         }
 
         // parse the command
-        // cmd.parse();
+        cmd.parse();
         // cmd.print();
 
         // validate command

@@ -26,6 +26,8 @@ def main():
     if not args:
         exit()
 
+    enable_HDFS = False # DEBUG: hard code
+
     # read config
     config_filename = args.config_filename
     config = configparser.ConfigParser()
@@ -39,7 +41,6 @@ def main():
     num_nodes = int(config["Common"]["num_nodes"])
     num_stripes = int(config["Common"]["num_stripes"])
     approach = config["Common"]["approach"]
-    enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
 
     # Controller
     pre_placement_filename = config["Controller"]["pre_placement_filename"]
@@ -48,13 +49,10 @@ def main():
     post_block_mapping_filename = config["Controller"]["post_block_mapping_filename"]
     sg_meta_filename = config["Controller"]["sg_meta_filename"]
 
-    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; approach: {}, enable_HDFS: {}".format(k_i, m_i, num_stripes, num_nodes, approach, enable_HDFS))
+    print("(k_i, m_i): ({}, {}); num_nodes: {}; num_stripes: {}; approach: {}".format(k_i, m_i, num_stripes, num_nodes, approach))
 
     print("pre_placement_filename: {}; pre_block_mapping_filename: {}; post_placement_filename: {}; post_block_mapping_filename: {}, sg_meta_filename: {}".format(pre_placement_filename, pre_block_mapping_filename, post_placement_filename, post_block_mapping_filename, sg_meta_filename))
 
-    if enable_HDFS == True:
-        print("pre-transition placement and block mapping should be obtained from HDFS; skipped")
-        return
 
     # Others
     lambda_ = int(k_f / k_i)
