@@ -20,7 +20,7 @@ palegreen = "#9AFF9A"
 
 RDPM_color="#1077AE"
 # RDPM_color="#19376D"
-BWPM_color="#4E2B14"
+BWPM_color="#008A2A"
 BTPM_color="red"
 
 def embed_fonts(filepath):
