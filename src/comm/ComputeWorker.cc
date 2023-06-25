@@ -22,6 +22,9 @@ ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint
         pm_buffers[block_id] = &block_buffer[block_id * config.block_size];
     }
 
+    // create memory pools for parity writes
+    memory_pool = new MemoryPool(5, config.block_size);
+
     // create buffers, sockets and handlers for each Agent
     unsigned int data_cmd_port_offset = (self_worker_id + 1) * (config.settings.num_nodes * 4);
     unsigned int data_content_port_offset = data_cmd_port_offset + config.settings.num_nodes;
@@ -83,6 +86,8 @@ ComputeWorker::~ComputeWorker()
 
     data_cmd_acceptor->close();
     delete data_cmd_acceptor;
+
+    delete memory_pool;
 
     free(pm_buffers);
     free(re_buffers);
@@ -243,10 +248,23 @@ void ComputeWorker::run()
                 // step 3: write data to disk
                 // write the parity block to disk
                 string dst_block_path = parity_compute_task.dst_block_paths[0];
-                if (BlockIO::writeBlock(dst_block_path, pm_buffers[code.lambda_i], config.block_size) != config.block_size)
-                {
-                    fprintf(stderr, "error writing block: %s\n", dst_block_path.c_str());
-                    exit(EXIT_FAILURE);
+                uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
+                if (self_conn_id == dst_conn_id)
+                { // need to write to disk, and can be detached
+                    unsigned char *req_buffer = memory_pool->getBlock();
+                    // copy data to requested memory
+                    memcpy(req_buffer, pm_buffers[code.lambda_i], config.block_size * sizeof(unsigned char));
+
+                    thread write_data_thread(&ComputeWorker::writeBlockToDisk, this, dst_block_path, req_buffer, config.block_size);
+                    write_data_thread.detach();
+                }
+                else
+                { // need to write to disk, and cannot be detached
+                    if (BlockIO::writeBlock(dst_block_path, pm_buffers[code.lambda_i], config.block_size) != config.block_size)
+                    {
+                        fprintf(stderr, "error writing block: %s\n", dst_block_path.c_str());
+                        exit(EXIT_FAILURE);
+                    }
                 }
 
                 // printf("ComputeWorker::run finished writing parity block %s\n", dst_block_path.c_str());
@@ -255,7 +273,6 @@ void ComputeWorker::run()
                 unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
 
                 // check whether needs relocation
-                uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
                 if (self_conn_id != dst_conn_id)
                 {
                     Command cmd_reloc;
@@ -449,6 +466,17 @@ void ComputeWorker::handleDataTransfer(uint16_t src_conn_id)
     free(data_buffer);
 
     printf("[Node %u, Worker %u] ComputeWorker::handleDataTransfer finished handling data transfer from ComputeWorker %u\n", self_conn_id, self_worker_id, src_conn_id);
+}
+
+void ComputeWorker::writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size)
+{
+    if (BlockIO::writeBlock(block_path, data_buffer, block_size) != block_size)
+    {
+        fprintf(stderr, "error writing block: %s\n", block_path.c_str());
+        exit(EXIT_FAILURE);
+    }
+
+    memory_pool->freeBlock(data_buffer);
 }
 
 void ComputeWorker::initECTables()

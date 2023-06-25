@@ -10,6 +10,7 @@
 #include "../util/Config.hh"
 #include "../util/MessageQueue.hh"
 #include "../util/MultiWriterQueue.h"
+#include "../util/MemoryPool.hh"
 #include "ParityComputeTask.hh"
 #include "Command.hh"
 #include "Node.hh"
@@ -62,6 +63,9 @@ public:
     // data handler threads
     unordered_map<uint16_t, thread *> data_handler_threads_map;
 
+    // memory pool
+    MemoryPool *memory_pool;
+
     ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<ParityComputeTask> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues);
     ~ComputeWorker();
 
@@ -76,6 +80,9 @@ public:
 
     // data transfer thread handler
     void handleDataTransfer(uint16_t src_conn_id);
+
+    // detach write
+    void writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size);
 
     // erasure coding initializer
     void initECTables();

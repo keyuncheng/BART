@@ -2,6 +2,9 @@
 
 RelocWorker::RelocWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MultiWriterQueue<Command> &_reloc_task_queue) : ThreadPool(1), config(_config), self_worker_id(_self_worker_id), self_conn_id(_self_conn_id), reloc_task_queue(_reloc_task_queue)
 {
+    // create memory pools for parity writes
+    memory_pool = new MemoryPool(5, config.block_size);
+
     // create buffers, sockets and handlers for each Agent
     unsigned int data_cmd_port_offset = (self_worker_id + 1) * (config.settings.num_nodes * 4) + config.settings.num_nodes * 2;
     unsigned int data_content_port_offset = data_cmd_port_offset + config.settings.num_nodes;
@@ -63,6 +66,8 @@ RelocWorker::~RelocWorker()
 
     data_cmd_acceptor->close();
     delete data_cmd_acceptor;
+
+    delete memory_pool;
 }
 
 void RelocWorker::run()
@@ -224,19 +229,34 @@ void RelocWorker::handleDataTransfer(uint16_t src_conn_id)
         {
             // printf("RelocWorker::handleDataTransfer received data from Node %u, post: (%u, %u), src_block_path: %s\n", cmd.src_conn_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_block_path.c_str());
 
+            /** original flow: start */
+            // // recv block
+            // if (BlockIO::recvBlock(data_content_socket, data_buffer, config.block_size) != config.block_size)
+            // {
+            //     fprintf(stderr, "RelocWorker::handleDataTransfer error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
+            //     exit(EXIT_FAILURE);
+            // }
+
+            // // write block
+            // if (BlockIO::writeBlock(cmd.dst_block_path, data_buffer, config.block_size) != config.block_size)
+            // {
+            //     fprintf(stderr, "RelocWorker::handleDataTransfer error writing block: %s\n", cmd.dst_block_path.c_str());
+            //     exit(EXIT_FAILURE);
+            // }
+            /** original flow: end */
+
+            // request data buffer
+            unsigned char *req_buffer = memory_pool->getBlock();
+
             // recv block
-            if (BlockIO::recvBlock(data_content_socket, data_buffer, config.block_size) != config.block_size)
+            if (BlockIO::recvBlock(data_content_socket, req_buffer, config.block_size) != config.block_size)
             {
                 fprintf(stderr, "RelocWorker::handleDataTransfer error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
                 exit(EXIT_FAILURE);
             }
 
-            // read block
-            if (BlockIO::writeBlock(cmd.dst_block_path, data_buffer, config.block_size) != config.block_size)
-            {
-                fprintf(stderr, "RelocWorker::handleDataTransfer error writing block: %s\n", cmd.dst_block_path.c_str());
-                exit(EXIT_FAILURE);
-            }
+            thread write_data_thread(&RelocWorker::writeBlockToDisk, this, cmd.dst_block_path, req_buffer, config.block_size);
+            write_data_thread.detach();
 
             printf("RelocWorker::handleDataTransfer finished handling relocation block, post: (%u, %u), dst_block_path: %s\n", cmd.post_stripe_id, cmd.post_block_id, cmd.dst_block_path.c_str());
         }
@@ -255,4 +275,15 @@ void RelocWorker::handleDataTransfer(uint16_t src_conn_id)
     free(data_buffer);
 
     printf("[Node %u, Worker %u] RelocWorker::handleDataTransfer finished handling data transfer from RelocWorker %u\n", self_conn_id, self_worker_id, src_conn_id);
+}
+
+void RelocWorker::writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size)
+{
+    if (BlockIO::writeBlock(block_path, data_buffer, block_size) != block_size)
+    {
+        fprintf(stderr, "error writing block: %s\n", block_path.c_str());
+        exit(EXIT_FAILURE);
+    }
+
+    memory_pool->freeBlock(data_buffer);
 }

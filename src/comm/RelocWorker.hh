@@ -8,6 +8,7 @@
 #include "../util/ThreadPool.hh"
 #include "../util/Config.hh"
 #include "../util/MultiWriterQueue.h"
+#include "../util/MemoryPool.hh"
 #include "Command.hh"
 #include "Node.hh"
 #include "BlockIO.hh"
@@ -46,6 +47,9 @@ public:
     // data handler threads
     unordered_map<uint16_t, thread *> data_handler_threads_map;
 
+    // memory pool
+    MemoryPool *memory_pool;
+
     RelocWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MultiWriterQueue<Command> &_reloc_task_queue);
     ~RelocWorker();
 
@@ -60,6 +64,9 @@ public:
 
     // data transfer thread handler
     void handleDataTransfer(uint16_t src_conn_id);
+
+    // detach write
+    void writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size);
 };
 
 #endif // __RELOC_WORKER_HH__
