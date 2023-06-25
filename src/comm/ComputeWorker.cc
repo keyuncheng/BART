@@ -111,6 +111,8 @@ void ComputeWorker::run()
     // allocate parity block buffers for parity merging
     ParityComputeTask parity_compute_task;
 
+    unsigned int reloc_task_counter = 0;
+
     while (true)
     {
         if (finished() == true && compute_task_queue.IsEmpty() == true)
@@ -191,7 +193,8 @@ void ComputeWorker::run()
                 // step 4: relocate parity blocks
 
                 // push the relocation task to specific compute task queue
-                unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                unsigned int assigned_worker_id = reloc_task_counter % config.num_reloc_workers;
 
                 for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
                 {
@@ -206,6 +209,8 @@ void ComputeWorker::run()
 
                         // pass to corresponding relocation worker
                         reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
+
+                        reloc_task_counter++;
 
                         printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                     }
@@ -270,7 +275,8 @@ void ComputeWorker::run()
                 // printf("ComputeWorker::run finished writing parity block %s\n", dst_block_path.c_str());
 
                 // step 4: relocate parity blocks
-                unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                unsigned int assigned_worker_id = reloc_task_counter % config.num_reloc_workers;
 
                 // check whether needs relocation
                 if (self_conn_id != dst_conn_id)
@@ -280,6 +286,8 @@ void ComputeWorker::run()
 
                     // // pass to corresponding relocation worker
                     reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
+
+                    reloc_task_counter++;
 
                     printf("[Node %u, Worker %u] ComputeWorker::run created parity block relocation task (type: %u, Node %u -> %u), forwarded to RelocWorker %u\n", self_conn_id, self_worker_id, cmd_reloc.type, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, assigned_worker_id);
                 }

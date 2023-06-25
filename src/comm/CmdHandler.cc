@@ -55,6 +55,9 @@ void CmdHandler::handleCmdFromController()
     uint16_t src_conn_id = CTRL_NODE_ID;
     auto &skt = sockets_map[src_conn_id];
 
+    unsigned int compute_task_counter = 0;
+    unsigned int reloc_task_counter = 0;
+
     while (true)
     {
         Command cmd;
@@ -99,8 +102,12 @@ void CmdHandler::handleCmdFromController()
             ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, cmd.enc_method, cmd.src_block_nodes, cmd.parity_reloc_nodes, cmd.src_block_path, cmd.dst_block_path);
 
             // push the compute task to specific compute task queue
-            unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_compute_workers;
+
+            // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_compute_workers;
+            unsigned int assigned_worker_id = compute_task_counter % config.num_compute_workers;
             (*compute_task_queues)[assigned_worker_id]->Push(parity_compute_task);
+
+            compute_task_counter++;
 
             printf("CmdHandler::handleCmdFromController received parity computation task, forward to ComputeWorker %u, post: (%u, %u), enc_method: %u\n", assigned_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, parity_compute_task.enc_method);
         }
@@ -119,8 +126,11 @@ void CmdHandler::handleCmdFromController()
             cmd_reloc.buildCommand(cmd.type, self_conn_id, cmd.dst_node_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_node_id, cmd.dst_node_id, cmd.src_block_path, cmd.dst_block_path);
 
             // push the relocation task to specific relocation task queue
-            unsigned int assigned_worker_id = cmd_reloc.post_stripe_id % config.num_reloc_workers;
+            // unsigned int assigned_worker_id = cmd_reloc.post_stripe_id % config.num_reloc_workers;
+            unsigned int assigned_worker_id = reloc_task_counter % config.num_reloc_workers;
             (*reloc_task_queues)[assigned_worker_id]->Push(cmd_reloc);
+
+            reloc_task_counter++;
 
             printf("CmdHandler::handleCmdFromAgent received relocation task, forward to RelocWorker %u, post: (%u, %u)\n", assigned_worker_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id);
         }
