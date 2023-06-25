@@ -248,17 +248,36 @@ void ComputeWorker::run()
 
                 // step 2: encode data
                 uint8_t parity_id = parity_compute_task.post_block_id - code.k_f;
-                ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+                uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
+                unsigned char *req_buffer;
+                if (self_conn_id == dst_conn_id)
+                {
+                    // temporarily hold the memory
+                    unsigned char *temp_buffer = pm_buffers[code.lambda_i];
+
+                    // request memory
+                    req_buffer = memory_pool->getBlock();
+
+                    // temporarily assign memory
+                    pm_buffers[code.lambda_i] = req_buffer;
+
+                    // encode
+                    ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+
+                    // return the memory
+                    pm_buffers[code.lambda_i] = temp_buffer;
+                }
+                else
+                {
+                    ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+                }
 
                 // step 3: write data to disk
                 // write the parity block to disk
                 string dst_block_path = parity_compute_task.dst_block_paths[0];
-                uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
                 if (self_conn_id == dst_conn_id)
                 { // need to write to disk, and can be detached
-                    unsigned char *req_buffer = memory_pool->getBlock();
-                    // copy data to requested memory
-                    memcpy(req_buffer, pm_buffers[code.lambda_i], config.block_size * sizeof(unsigned char));
+                    // now
 
                     thread write_data_thread(&ComputeWorker::writeBlockToDisk, this, dst_block_path, req_buffer, config.block_size);
                     write_data_thread.detach();
