@@ -62,7 +62,7 @@ void Node::connectAllSockets(uint16_t self_conn_id, unordered_map<uint16_t, sock
     unordered_map<uint16_t, thread *> conn_threads;
 
     // create connect threads
-    for (auto &item : *connectors_map)
+    for (auto &item : *addrs_map)
     {
         uint16_t conn_id = item.first;
         string ip = addrs_map->at(conn_id).first;

@@ -48,17 +48,17 @@ public:
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
 
-    // sockets for data commands distribution
-    unordered_map<uint16_t, pair<string, unsigned int>> data_cmd_addrs_map;
-    unordered_map<uint16_t, sockpp::tcp_connector> data_cmd_connectors_map;
-    unordered_map<uint16_t, sockpp::tcp_socket> data_cmd_sockets_map;
-    sockpp::tcp_acceptor *data_cmd_acceptor;
+    // // sockets for data commands distribution
+    // unordered_map<uint16_t, pair<string, unsigned int>> data_cmd_addrs_map;
+    // unordered_map<uint16_t, sockpp::tcp_connector> data_cmd_connectors_map;
+    // unordered_map<uint16_t, sockpp::tcp_socket> data_cmd_sockets_map;
+    // sockpp::tcp_acceptor *data_cmd_acceptor;
 
-    // sockets for data content distribution
-    unordered_map<uint16_t, pair<string, unsigned int>> data_content_addrs_map;
-    unordered_map<uint16_t, sockpp::tcp_connector> data_content_connectors_map;
-    unordered_map<uint16_t, sockpp::tcp_socket> data_content_sockets_map;
-    sockpp::tcp_acceptor *data_content_acceptor;
+    // // sockets for data content distribution
+    // unordered_map<uint16_t, pair<string, unsigned int>> data_content_addrs_map;
+    // unordered_map<uint16_t, sockpp::tcp_connector> data_content_connectors_map;
+    // unordered_map<uint16_t, sockpp::tcp_socket> data_content_sockets_map;
+    // sockpp::tcp_acceptor *data_content_acceptor;
 
     // data handler threads
     unordered_map<uint16_t, thread *> data_handler_threads_map;
