@@ -74,11 +74,11 @@ ytickfont = { 'family': 'Times New Roman',
 # Ticks
 xticks = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8])
 xticklabels = [(4,2), (6,2), (8,2), (6,3), (8,3), (12,3), (8,4), (12,4), (16,4)]
-ax.set_xlabel("Encoding Scheme (k,m)", **labelfont)
+ax.set_xlabel("(k, m)", **labelfont)
 yticks = [0, 150, 300, 450, 600, 750]
 yticklabels = ["0", "150", "300", "450", "600", "750"]
-plt.ylim((0, 900))
-ax.set_ylabel("Max Load (blocks)", **labelfont)
+plt.ylim((0, 750))
+ax.set_ylabel("Max Load (Number of Blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
 ax.set_yticks(yticks)
@@ -86,7 +86,7 @@ ax.set_yticklabels(yticklabels, fontdict=ytickfont)
 plt.grid(False)
 
 # Data (<1e-3)
-width = 0.2
+width = 0.3
 
 RDPM_datalist = []
 BWPM_datalist = []
@@ -101,9 +101,9 @@ for key in results.keys():
     BWPM_datalist.append(results[key][1])
     BTPM_datalist.append(results[key][2])
 
-    RDPM_data_errlist.append(err_results[key][0] - err_results[key][1])
-    BWPM_data_errlist.append(err_results[key][2] - err_results[key][3])
-    BTPM_data_errlist.append(err_results[key][4] - err_results[key][5])
+    RDPM_data_errlist.append((err_results[key][0] - err_results[key][1])/2)
+    BWPM_data_errlist.append((err_results[key][2] - err_results[key][3])/2)
+    BTPM_data_errlist.append((err_results[key][4] - err_results[key][5])/2)
 
 
 rects0 = ax.bar(xticks - 1*width, RDPM_datalist, width=width, color=RDPM_color, label="RD")
@@ -122,7 +122,7 @@ ax.errorbar(xticks + 1*width, BTPM_datalist, BTPM_data_errlist, fmt='none', elin
 font1 = { 'family': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 26,
+    'size': 24,
 }
 legend = plt.legend(prop=font1, frameon=False,
                     labelspacing=0.1, handlelength=0.7, 

@@ -73,14 +73,14 @@ ytickfont = { 'family': 'Times New Roman',
 }
 
 # Ticks
-xlabel_string = "Number of Stripes under (6,3,3)"
+xlabel_string = "Number of Stripes"
 xticks = np.array([0, 1, 2, 3, 4])
 xticklabels = [0, 5000, 10000, 15000, 20000]
 ax.set_xlabel(xlabel_string, **labelfont)
-yticks = [0, 200, 400, 600, 800, 1000, 1200]
-yticklabels = ["0", "200", "400", "600", "800", "1000", "1200"]
-plt.ylim((0, 1200))
-ax.set_ylabel("Max Load (blocks)", **labelfont)
+yticks = [0, 200, 400, 600, 800, 1000]
+yticklabels = ["0", "200", "400", "600", "800", "1000"]
+plt.ylim((0, 900))
+ax.set_ylabel("Max Load (Number of Blocks)", **labelfont)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels, fontdict=xtickfont)
 ax.set_yticks(yticks)
@@ -111,19 +111,32 @@ BTPM_datalist.append(results["(6,3,3)"][5])
 BTPM_datalist.append(results["(6,3,3)"][8])
 BTPM_datalist.append(results["(6,3,3)"][11])
 
-RDPM_data_errlist.append(err_results["(6,3,3)"][0]-err_results["(6,3,3)"][1])
-RDPM_data_errlist.append(err_results["(6,3,3)"][6]-err_results["(6,3,3)"][7])
-RDPM_data_errlist.append(err_results["(6,3,3)"][12]-err_results["(6,3,3)"][13])
-RDPM_data_errlist.append(err_results["(6,3,3)"][18]-err_results["(6,3,3)"][19])
-BWPM_data_errlist.append(err_results["(6,3,3)"][2]-err_results["(6,3,3)"][3])
-BWPM_data_errlist.append(err_results["(6,3,3)"][8]-err_results["(6,3,3)"][9])
-BWPM_data_errlist.append(err_results["(6,3,3)"][14]-err_results["(6,3,3)"][15])
-BWPM_data_errlist.append(err_results["(6,3,3)"][20]-err_results["(6,3,3)"][21])
-BTPM_data_errlist.append(err_results["(6,3,3)"][4]-err_results["(6,3,3)"][5])
-BTPM_data_errlist.append(err_results["(6,3,3)"][10]-err_results["(6,3,3)"][11])
-BTPM_data_errlist.append(err_results["(6,3,3)"][16]-err_results["(6,3,3)"][17])
-BTPM_data_errlist.append(err_results["(6,3,3)"][22]-err_results["(6,3,3)"][23])
+RDPM_data_errlist.append((err_results["(6,3,3)"][0]-err_results["(6,3,3)"][1])/2)
+RDPM_data_errlist.append((err_results["(6,3,3)"][6]-err_results["(6,3,3)"][7])/2)
+RDPM_data_errlist.append((err_results["(6,3,3)"][12]-err_results["(6,3,3)"][13])/2)
+RDPM_data_errlist.append((err_results["(6,3,3)"][18]-err_results["(6,3,3)"][19])/2)
+BWPM_data_errlist.append((err_results["(6,3,3)"][2]-err_results["(6,3,3)"][3])/2)
+BWPM_data_errlist.append((err_results["(6,3,3)"][8]-err_results["(6,3,3)"][9])/2)
+BWPM_data_errlist.append((err_results["(6,3,3)"][14]-err_results["(6,3,3)"][15])/2)
+BWPM_data_errlist.append((err_results["(6,3,3)"][20]-err_results["(6,3,3)"][21])/2)
+BTPM_data_errlist.append((err_results["(6,3,3)"][4]-err_results["(6,3,3)"][5])/2)
+BTPM_data_errlist.append((err_results["(6,3,3)"][10]-err_results["(6,3,3)"][11])/2)
+BTPM_data_errlist.append((err_results["(6,3,3)"][16]-err_results["(6,3,3)"][17])/2)
+BTPM_data_errlist.append((err_results["(6,3,3)"][22]-err_results["(6,3,3)"][23])/2)
 
+
+# RDPM_data_errlist.append([err_results["(6,3,3)"][0], err_results["(6,3,3)"][1]])
+# RDPM_data_errlist.append([err_results["(6,3,3)"][6], err_results["(6,3,3)"][7]])
+# RDPM_data_errlist.append([err_results["(6,3,3)"][12], err_results["(6,3,3)"][13]])
+# RDPM_data_errlist.append([err_results["(6,3,3)"][18], err_results["(6,3,3)"][19]])
+# BWPM_data_errlist.append([err_results["(6,3,3)"][2], err_results["(6,3,3)"][3]])
+# BWPM_data_errlist.append([err_results["(6,3,3)"][8], err_results["(6,3,3)"][9]])
+# BWPM_data_errlist.append([err_results["(6,3,3)"][14], err_results["(6,3,3)"][15]])
+# BWPM_data_errlist.append([err_results["(6,3,3)"][20], err_results["(6,3,3)"][21]])
+# BTPM_data_errlist.append([err_results["(6,3,3)"][4], err_results["(6,3,3)"][5]])
+# BTPM_data_errlist.append([err_results["(6,3,3)"][10], err_results["(6,3,3)"][11]])
+# BTPM_data_errlist.append([err_results["(6,3,3)"][16], err_results["(6,3,3)"][17]])
+# BTPM_data_errlist.append([err_results["(6,3,3)"][22], err_results["(6,3,3)"][23]])
 
 xdata = [1, 2, 3, 4]
 
@@ -133,11 +146,11 @@ print(len(RDPM_datalist))
 # plt.plot(xdata, BWPM_datalist, color=BWPM_color, lw=2, ms=5, ls='-.', marker='v', label="BW")
 # plt.plot(xdata, BTPM_datalist, color=BTPM_color, lw=2, ms=5, ls='-', marker='^', label="BART")
 plt.errorbar(x=xdata, y=RDPM_datalist, yerr=RDPM_data_errlist, marker='s', capsize=2,
-             color=RDPM_color, markersize=4, linewidth=1, linestyle='-', label="RD")
+             color=RDPM_color, markersize=5, linewidth=1.5, linestyle='--', label="RD")
 plt.errorbar(x=xdata, y=BWPM_datalist, yerr=RDPM_data_errlist, marker='v', capsize=2,
-             color=BWPM_color, markersize=4, linewidth=1, linestyle='-', label="BW")
+             color=BWPM_color, markersize=5, linewidth=1.5, linestyle=':', label="BW")
 plt.errorbar(x=xdata, y=BTPM_datalist, yerr=RDPM_data_errlist, marker='^', capsize=2,
-             color=BTPM_color, markersize=4, linewidth=1, linestyle='-', label="BART")
+             color=BTPM_color, markersize=5, linewidth=1.5, linestyle='-', label="BART")
 
 
 # print("server errlist: {} data: {}".format(server_errlist, server_data))
@@ -149,10 +162,10 @@ plt.errorbar(x=xdata, y=BTPM_datalist, yerr=RDPM_data_errlist, marker='^', capsi
 font1 = { 'family': 'Times New Roman',
     'weight': 'normal',
     #'size': 33,
-    'size': 26,
+    'size': 24,
 }
 legend = plt.legend(prop=font1, frameon=False,
-                    labelspacing=0.1, handlelength=0.7, 
+                    labelspacing=0.1, handlelength=1.2, 
                     loc='upper center',
                     #bbox_to_anchor=(-0.15, 1), loc='lower left',
                     handletextpad=0.2, borderaxespad=0.001,
