@@ -48,21 +48,6 @@ public:
     unsigned char **re_buffers;
     unsigned char **pm_buffers;
 
-    // // sockets for data commands distribution
-    // unordered_map<uint16_t, pair<string, unsigned int>> data_cmd_addrs_map;
-    // unordered_map<uint16_t, sockpp::tcp_connector> data_cmd_connectors_map;
-    // unordered_map<uint16_t, sockpp::tcp_socket> data_cmd_sockets_map;
-    // sockpp::tcp_acceptor *data_cmd_acceptor;
-
-    // // sockets for data content distribution
-    // unordered_map<uint16_t, pair<string, unsigned int>> data_content_addrs_map;
-    // unordered_map<uint16_t, sockpp::tcp_connector> data_content_connectors_map;
-    // unordered_map<uint16_t, sockpp::tcp_socket> data_content_sockets_map;
-    // sockpp::tcp_acceptor *data_content_acceptor;
-
-    // data handler threads
-    unordered_map<uint16_t, thread *> data_handler_threads_map;
-
     // memory pool
     MemoryPool *memory_pool;
 
@@ -77,9 +62,6 @@ public:
 
     // data request thread
     void requestDataFromAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> data_buffers);
-
-    // data transfer thread handler
-    void handleDataTransfer(uint16_t src_conn_id);
 
     // detach write
     void writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size);

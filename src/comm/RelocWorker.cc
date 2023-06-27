@@ -2,84 +2,15 @@
 
 RelocWorker::RelocWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MultiWriterQueue<Command> &_reloc_task_queue) : ThreadPool(1), config(_config), self_worker_id(_self_worker_id), self_conn_id(_self_conn_id), reloc_task_queue(_reloc_task_queue)
 {
-    // create memory pools for parity writes
-    memory_pool = new MemoryPool(5, config.block_size);
-
-    // // create buffers, sockets and handlers for each Agent
-    // unsigned int data_cmd_port_offset = (self_worker_id + 1) * (config.settings.num_nodes * 4) + config.settings.num_nodes * 2;
-    // unsigned int data_content_port_offset = data_cmd_port_offset + config.settings.num_nodes;
-    // for (auto &item : config.agent_addr_map)
-    // {
-    //     uint16_t conn_id = item.first;
-    //     auto &agent_addr = item.second;
-    //     if (self_conn_id != conn_id)
-    //     {
-    //         // init handler threads
-    //         data_handler_threads_map[conn_id] = NULL;
-
-    //         // init sockets for data commands distribution
-    //         data_cmd_addrs_map[conn_id] = pair<string, unsigned int>(agent_addr.first, agent_addr.second + data_cmd_port_offset);
-    //         data_cmd_connectors_map[conn_id] = sockpp::tcp_connector();
-    //         data_cmd_sockets_map[conn_id] = sockpp::tcp_socket();
-
-    //         // init sockets for data content distribution
-    //         data_content_addrs_map[conn_id] = pair<string, unsigned int>(agent_addr.first, agent_addr.second + data_content_port_offset);
-    //         data_content_connectors_map[conn_id] = sockpp::tcp_connector();
-    //         data_content_sockets_map[conn_id] = sockpp::tcp_socket();
-    //     }
-    // }
-
-    // // create separate connections for data transfer
-    // unsigned int self_port = config.agent_addr_map[self_conn_id].second;
-
-    // /*********data transfer commands**********/
-    // // create data command acceptor
-    // data_cmd_acceptor = new sockpp::tcp_acceptor(self_port + data_cmd_port_offset);
-
-    // thread data_cmd_ack_conn_thread(Node::ackConnAllSockets, self_conn_id, &data_cmd_sockets_map, data_cmd_acceptor);
-    // // connect all nodes
-    // Node::connectAllSockets(self_conn_id, &data_cmd_connectors_map, &data_cmd_addrs_map);
-
-    // // join ack connector threads
-    // data_cmd_ack_conn_thread.join();
-    // /****************************************/
-
-    // /*********data content commands**********/
-    // // create data content acceptor
-    // data_content_acceptor = new sockpp::tcp_acceptor(self_port + data_content_port_offset);
-
-    // thread data_content_ack_conn_thread(Node::ackConnAllSockets, self_conn_id, &data_content_sockets_map, data_content_acceptor);
-    // // connect all nodes
-    // Node::connectAllSockets(self_conn_id, &data_content_connectors_map, &data_content_addrs_map);
-
-    // // join ack connector threads
-    // data_content_ack_conn_thread.join();
-    // /****************************************/
-
-    printf("[Node %u, Worker %u] RelocWorker::RelocWorker finished initialization\n", self_conn_id, self_worker_id);
 }
 
 RelocWorker::~RelocWorker()
 {
-    // data_content_acceptor->close();
-    // delete data_content_acceptor;
-
-    // data_cmd_acceptor->close();
-    // delete data_cmd_acceptor;
-
-    delete memory_pool;
 }
 
 void RelocWorker::run()
 {
     printf("[Node %u, Worker %u] RelocWorker::run start to handle relocation tasks\n", self_conn_id, self_worker_id);
-
-    // create data transfer handlers
-    for (auto &item : data_handler_threads_map)
-    {
-        uint16_t conn_id = item.first;
-        data_handler_threads_map[conn_id] = new thread(&RelocWorker::handleDataTransfer, this, conn_id);
-    }
 
     unsigned char *data_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
 
@@ -118,18 +49,6 @@ void RelocWorker::run()
 
             printf("[Node %u, Worker %u] RelocWorker::run received relocation task, post: (%u, %u)\n", self_conn_id, self_worker_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id);
 
-            // // data command connector (send command)
-            // auto &data_cmd_connector = data_cmd_connectors_map[cmd_reloc.dst_conn_id];
-
-            // // send command to the node
-            // Command cmd_transfer;
-            // cmd_transfer.buildCommand(CommandType::CMD_TRANSFER_BLK, cmd_reloc.src_conn_id, cmd_reloc.dst_conn_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id, cmd_reloc.src_node_id, cmd_reloc.dst_node_id, cmd_reloc.src_block_path, cmd_reloc.dst_block_path);
-            // if (data_cmd_connector.write_n(cmd_transfer.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-            // {
-            //     fprintf(stderr, "RelocWorker::run error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_transfer.type, cmd_transfer.src_conn_id, cmd_transfer.dst_conn_id);
-            //     exit(EXIT_FAILURE);
-            // }
-
             // read block
             if (BlockIO::readBlock(cmd_reloc.src_block_path, data_buffer, config.block_size) != config.block_size)
             {
@@ -137,153 +56,35 @@ void RelocWorker::run()
                 exit(EXIT_FAILURE);
             }
 
-            // auto &data_content_connector = data_content_connectors_map[cmd_reloc.dst_conn_id];
+            // create TCP connection to the block request handler
+            sockpp::tcp_connector connector;
+            string block_req_ip = config.agent_addr_map[cmd_reloc.dst_conn_id].first;
+            unsigned int block_req_port = config.agent_addr_map[cmd_reloc.dst_conn_id].second + config.settings.num_nodes; // DEBUG
 
-            // // send block
-            // if (BlockIO::sendBlock(data_content_connector, data_buffer, config.block_size) != config.block_size)
-            // {
-            //     fprintf(stderr, "RelocWorker::handleDataTransfer error sending block: %s to RelocWorker %u\n", cmd_reloc.dst_block_path.c_str(), cmd_reloc.src_conn_id);
-            //     exit(EXIT_FAILURE);
-            // }
+            // create connection to block request handler
+            while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
+            {
+                this_thread::sleep_for(chrono::milliseconds(1));
+            }
+
+            if (connector.write_n(cmd_reloc.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+            {
+                fprintf(stderr, "RelocWorker::run error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_reloc.type, cmd_reloc.src_conn_id, cmd_reloc.dst_conn_id);
+                exit(EXIT_FAILURE);
+            }
+
+            // send block
+            if (BlockIO::sendBlock(connector, data_buffer, config.block_size) != config.block_size)
+            {
+                fprintf(stderr, "RelocWorker::handleDataTransfer error sending block: %s to RelocWorker %u\n", cmd_reloc.dst_block_path.c_str(), cmd_reloc.src_conn_id);
+                exit(EXIT_FAILURE);
+            }
 
             printf("[Node %u, Worker %u] RelocWorker::run finished relocation task, post: (%u, %u)\n", self_conn_id, self_worker_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id);
         }
     }
 
-    // // send stop commands to data handler threads
-    // for (auto &item : data_cmd_connectors_map)
-    // {
-    //     uint16_t conn_id = item.first;
-    //     auto &data_cmd_connector = item.second;
-    //     Command cmd_disconnect;
-    //     cmd_disconnect.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id);
-    //     if (data_cmd_connector.write_n(cmd_disconnect.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    //     {
-    //         fprintf(stderr, "ComputeWorker::run error sending disconnect cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_disconnect.type, cmd_disconnect.src_conn_id, cmd_disconnect.dst_conn_id);
-    //         exit(EXIT_FAILURE);
-    //     }
-
-    //     // close data command connector
-    //     data_cmd_connector.close();
-
-    //     // close data content connector (don't send data)
-    //     auto &data_content_connector = data_content_connectors_map[conn_id];
-    //     data_content_connector.close();
-    // }
-
-    // stop handlers
-    for (auto &item : data_handler_threads_map)
-    {
-        uint16_t conn_id = item.first;
-        data_handler_threads_map[conn_id]->join();
-        delete data_handler_threads_map[conn_id];
-    }
-
     free(data_buffer);
 
     printf("[Node %u, Worker %u] RelocWorker::run finished handling relocation tasks\n", self_conn_id, self_worker_id);
-}
-
-void RelocWorker::handleDataTransfer(uint16_t src_conn_id)
-{
-    // printf("[Node %u, Worker %u] RelocWorker::handleDataTransfer start to handle data transfer from RelocWorker %u\n", self_conn_id, self_worker_id, src_conn_id);
-
-    // // data command socket (receive command)
-    // auto &data_cmd_skt = data_cmd_sockets_map[src_conn_id];
-
-    // // data content connector (send block)
-    // auto &data_content_socket = data_content_sockets_map[src_conn_id];
-
-    // unsigned char *data_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
-
-    // while (true)
-    // {
-    //     Command cmd;
-
-    //     ssize_t ret_val = data_cmd_skt.read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
-    //     if (ret_val == -1)
-    //     {
-    //         fprintf(stderr, "RelocWorker::handleDataTransfer error reading command\n");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     else if (ret_val == 0)
-    //     {
-    //         // // currently, no cmd coming in
-    //         // printf("RelocWorker::handleDataTransfer no command coming in from RelocWorker %u, break\n", src_conn_id);
-    //         break;
-    //     }
-
-    //     // parse the command
-    //     cmd.parse();
-    //     // cmd.print();
-
-    //     // validate command
-    //     if (cmd.src_conn_id != src_conn_id || cmd.dst_conn_id != self_conn_id)
-    //     {
-    //         fprintf(stderr, "RelocWorker::handleDataTransfer error: invalid command content\n");
-    //         fprintf(stderr, "RelocWorker::handleDataTransfer error: src conn: %u, cmd.type: %u, cmd.src_conn_id: %u, cmd.dst_conn_id: %u\n", src_conn_id, cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
-    //         exit(EXIT_FAILURE);
-    //     }
-
-    //     if (cmd.type == CommandType::CMD_TRANSFER_BLK)
-    //     {
-    //         // printf("RelocWorker::handleDataTransfer received data from Node %u, post: (%u, %u), src_block_path: %s\n", cmd.src_conn_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_block_path.c_str());
-
-    //         /** original flow: start */
-    //         // // recv block
-    //         // if (BlockIO::recvBlock(data_content_socket, data_buffer, config.block_size) != config.block_size)
-    //         // {
-    //         //     fprintf(stderr, "RelocWorker::handleDataTransfer error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
-    //         //     exit(EXIT_FAILURE);
-    //         // }
-
-    //         // // write block
-    //         // if (BlockIO::writeBlock(cmd.dst_block_path, data_buffer, config.block_size) != config.block_size)
-    //         // {
-    //         //     fprintf(stderr, "RelocWorker::handleDataTransfer error writing block: %s\n", cmd.dst_block_path.c_str());
-    //         //     exit(EXIT_FAILURE);
-    //         // }
-    //         /** original flow: end */
-
-    //         // request data buffer
-    //         unsigned char *req_buffer = memory_pool->getBlock();
-
-    //         // recv block
-    //         if (BlockIO::recvBlock(data_content_socket, req_buffer, config.block_size) != config.block_size)
-    //         {
-    //             fprintf(stderr, "RelocWorker::handleDataTransfer error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
-    //             exit(EXIT_FAILURE);
-    //         }
-
-    //         thread write_data_thread(&RelocWorker::writeBlockToDisk, this, cmd.dst_block_path, req_buffer, config.block_size);
-    //         write_data_thread.detach();
-
-    //         printf("RelocWorker::handleDataTransfer finished handling relocation block, post: (%u, %u), dst_block_path: %s\n", cmd.post_stripe_id, cmd.post_block_id, cmd.dst_block_path.c_str());
-    //     }
-    //     else if (cmd.type == CommandType::CMD_STOP)
-    //     {
-    //         // printf("RelocWorker::handleDataTransfer received stop command from RelocWorker %u, call socket.close()\n", cmd.src_conn_id);
-
-    //         // close sockets
-    //         data_cmd_skt.close();
-    //         data_content_socket.close();
-
-    //         break;
-    //     }
-    // }
-
-    // free(data_buffer);
-
-    // printf("[Node %u, Worker %u] RelocWorker::handleDataTransfer finished handling data transfer from RelocWorker %u\n", self_conn_id, self_worker_id, src_conn_id);
-}
-
-void RelocWorker::writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size)
-{
-    if (BlockIO::writeBlock(block_path, data_buffer, block_size) != block_size)
-    {
-        fprintf(stderr, "error writing block: %s\n", block_path.c_str());
-        exit(EXIT_FAILURE);
-    }
-
-    memory_pool->freeBlock(data_buffer);
 }

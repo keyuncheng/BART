@@ -22,6 +22,8 @@ public:
     static void deleteBlock(string block_path);
 
     static uint64_t sendBlock(sockpp::tcp_connector &connector, unsigned char *buffer, uint64_t block_size);
+    static uint64_t sendBlock(sockpp::tcp_socket &skt, unsigned char *buffer, uint64_t block_size);
+    static uint64_t recvBlock(sockpp::tcp_connector &connector, unsigned char *buffer, uint64_t block_size);
     static uint64_t recvBlock(sockpp::tcp_socket &skt, unsigned char *buffer, uint64_t block_size);
 };
 

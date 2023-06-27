@@ -21,6 +21,9 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
         reloc_task_queues[reloc_worker_id] = new MultiWriterQueue<Command>(MAX_MSG_QUEUE_LEN);
     }
 
+    // create block request handler
+    block_req_handler = new BlockReqHandler(config, self_conn_id, config.settings.num_nodes); // DEBUG
+
     // create command distributor
     cmd_distributor = new CmdDist(config, self_conn_id, connectors_map, cmd_dist_queues);
 
@@ -60,6 +63,9 @@ AgentNode::~AgentNode()
     // delete command distributor
     delete cmd_distributor;
 
+    // delete block request handler
+    delete block_req_handler;
+
     // delete relocation task queues
     for (unsigned int reloc_worker_id = 0; reloc_worker_id < config.num_reloc_workers; reloc_worker_id++)
     {
@@ -82,6 +88,9 @@ AgentNode::~AgentNode()
 
 void AgentNode::start()
 {
+    // start block request handlers
+    block_req_handler->start();
+
     // start reloc workers
     for (unsigned int reloc_worker_id = 0; reloc_worker_id < config.num_reloc_workers; reloc_worker_id++)
     {
@@ -120,4 +129,8 @@ void AgentNode::stop()
 
     // wait cmd_handler finish
     cmd_handler->wait();
+
+    // wait block request handler
+    block_req_handler->setFinished();
+    block_req_handler->wait();
 }

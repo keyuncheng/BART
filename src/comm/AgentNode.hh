@@ -9,6 +9,7 @@
 #include "ParityComputeTask.hh"
 #include "CmdHandler.hh"
 #include "CmdDist.hh"
+#include "BlockReqHandler.hh"
 #include "ComputeWorker.hh"
 #include "RelocWorker.hh"
 
@@ -25,6 +26,9 @@ public:
 
     // block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
     unordered_map<unsigned int, MultiWriterQueue<Command> *> reloc_task_queues;
+
+    // block request handlers
+    BlockReqHandler *block_req_handler;
 
     // distribute commands
     CmdDist *cmd_distributor;
