@@ -3,7 +3,7 @@
 CmdHandler::CmdHandler(Config &_config, uint16_t _self_conn_id,
                        unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
                        unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues,
-                       unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> *_compute_task_queues,
+                       unordered_map<unsigned int, MessageQueue<Command> *> *_compute_task_queues,
                        unordered_map<unsigned int, MultiWriterQueue<Command> *> *_reloc_task_queues) : ThreadPool(1), config(_config), self_conn_id(_self_conn_id), sockets_map(_sockets_map), cmd_dist_queues(_cmd_dist_queues), compute_task_queues(_compute_task_queues), reloc_task_queues(_reloc_task_queues)
 {
     for (auto &item : sockets_map)
@@ -98,18 +98,13 @@ void CmdHandler::handleCmdFromController()
                 exit(EXIT_FAILURE);
             }
 
-            // parse to a parity compute task
-            ParityComputeTask parity_compute_task(&config.code, cmd.post_stripe_id, cmd.post_block_id, cmd.enc_method, cmd.src_block_nodes, cmd.parity_reloc_nodes, cmd.src_block_path, cmd.dst_block_path);
-
             // push the compute task to specific compute task queue
-
-            // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_compute_workers;
             unsigned int assigned_worker_id = compute_task_counter % config.num_compute_workers;
-            (*compute_task_queues)[assigned_worker_id]->Push(parity_compute_task);
+            (*compute_task_queues)[assigned_worker_id]->Push(cmd);
 
             compute_task_counter++;
 
-            printf("CmdHandler::handleCmdFromController received parity computation task, forward to ComputeWorker %u, post: (%u, %u), enc_method: %u\n", assigned_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, parity_compute_task.enc_method);
+            printf("CmdHandler::handleCmdFromController received parity computation task, forward to ComputeWorker %u, post: (%u, %u), enc_method: %u\n", assigned_worker_id, cmd.post_stripe_id, cmd.post_block_id, cmd.enc_method);
         }
         else if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
         { // relocate block task
@@ -140,17 +135,17 @@ void CmdHandler::handleCmdFromController()
         }
         else if (cmd.type == CMD_STOP)
         { // stop task
+            Command stop_cmd;
+            stop_cmd.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
+
             // push stop tasks to compute queues
-            ParityComputeTask term_task(true);
             for (auto item : *compute_task_queues)
             {
                 auto &compute_task_queue = item.second;
-                compute_task_queue->Push(term_task);
+                compute_task_queue->Push(stop_cmd);
             }
 
             // push stop tasks to reloc queues
-            Command stop_cmd;
-            stop_cmd.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
             for (auto item : *reloc_task_queues)
             {
                 auto &reloc_task_queue = item.second;

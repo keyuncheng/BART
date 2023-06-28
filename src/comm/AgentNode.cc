@@ -12,7 +12,7 @@ AgentNode::AgentNode(uint16_t _self_conn_id, Config &_config) : Node(_self_conn_
     // create compute task queues
     for (unsigned int cmp_worker_id = 0; cmp_worker_id < config.num_compute_workers; cmp_worker_id++)
     {
-        compute_task_queues[cmp_worker_id] = new MessageQueue<ParityComputeTask>(MAX_MSG_QUEUE_LEN);
+        compute_task_queues[cmp_worker_id] = new MessageQueue<Command>(MAX_MSG_QUEUE_LEN);
     }
 
     // create relocation task queues
@@ -131,6 +131,6 @@ void AgentNode::stop()
     cmd_handler->wait();
 
     // wait block request handler
-    block_req_handler->setFinished();
+    // block_req_handler->stopHandling();
     block_req_handler->wait();
 }

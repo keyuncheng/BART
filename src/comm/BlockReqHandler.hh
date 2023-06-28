@@ -14,6 +14,12 @@
 #include "../util/MessageQueue.hh"
 #include "BlockIO.hh"
 
+typedef struct BlockReq
+{
+    Command cmd;
+    sockpp::tcp_socket *skt;
+} BlockReq;
+
 class BlockReqHandler : public ThreadPool
 {
 private:
@@ -36,7 +42,7 @@ public:
     sockpp::tcp_acceptor *acceptor;
 
     // message queues for request handlers
-    unordered_map<unsigned int, MessageQueue<sockpp::tcp_socket *> *> req_handler_queues;
+    unordered_map<unsigned int, MessageQueue<BlockReq> *> req_handler_queues;
 
     // request handler threads
     unordered_map<uint16_t, thread *> req_handler_threads_map;
@@ -50,7 +56,11 @@ public:
      */
     void run() override;
 
+    // block request handler
     void handleBlockRequest(unsigned int self_worker_id);
+
+    // stop handling for the main thread
+    void stopHandling();
 };
 
 #endif // __BLOCK_REQ_HANDLER_HH__

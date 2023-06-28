@@ -11,7 +11,6 @@
 #include "../util/MessageQueue.hh"
 #include "../util/MultiWriterQueue.h"
 #include "../util/MemoryPool.hh"
-#include "ParityComputeTask.hh"
 #include "Command.hh"
 #include "Node.hh"
 #include "BlockIO.hh"
@@ -31,7 +30,7 @@ public:
     uint16_t self_conn_id;
 
     // compute task queue: retrieves computation task from Controller, and pass to a ComputeWorker (CmdHandler -> ComputeWorker)
-    MessageQueue<ParityComputeTask> &compute_task_queue;
+    MessageQueue<Command> &compute_task_queue;
 
     // block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
     unordered_map<unsigned int, MultiWriterQueue<Command> *> &reloc_task_queues;
@@ -51,7 +50,7 @@ public:
     // memory pool
     MemoryPool *memory_pool;
 
-    ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<ParityComputeTask> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues);
+    ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<Command> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues);
     ~ComputeWorker();
 
     /**
@@ -61,10 +60,13 @@ public:
     void run() override;
 
     // data request thread
-    void requestDataFromAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> data_buffers);
+    void requestDataFromAgent(Command *cmd_compute, uint16_t src_node_id, vector<unsigned char *> data_buffers);
 
     // detach write
     void writeBlockToDisk(string block_path, unsigned char *data_buffer, uint64_t block_size);
+
+    // parse block paths
+    void parseBlockPaths(Command &cmd_compute, vector<string> &src_block_paths, vector<string> &dst_block_paths);
 
     // erasure coding initializer
     void initECTables();

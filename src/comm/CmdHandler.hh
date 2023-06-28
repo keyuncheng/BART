@@ -11,7 +11,6 @@
 #include "../util/MessageQueue.hh"
 #include "../util/MultiWriterQueue.h"
 #include "Command.hh"
-#include "ParityComputeTask.hh"
 #include "BlockIO.hh"
 
 class CmdHandler : public ThreadPool
@@ -32,7 +31,7 @@ public:
     unordered_map<uint16_t, MessageQueue<Command> *> *cmd_dist_queues;
 
     // compute task queues: each retrieves computation task from Controller, and pass to a ComputeWorker (CmdHandler -> ComputeWorker<worker_id>)
-    unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> *compute_task_queues;
+    unordered_map<unsigned int, MessageQueue<Command> *> *compute_task_queues;
 
     // parity block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
     unordered_map<unsigned int, MultiWriterQueue<Command> *> *reloc_task_queues;
@@ -43,7 +42,7 @@ public:
     CmdHandler(Config &_config, uint16_t _self_conn_id,
                unordered_map<uint16_t, sockpp::tcp_socket> &_sockets_map,
                unordered_map<uint16_t, MessageQueue<Command> *> *_cmd_dist_queues,
-               unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> *_compute_task_queues,
+               unordered_map<unsigned int, MessageQueue<Command> *> *_compute_task_queues,
                unordered_map<unsigned int, MultiWriterQueue<Command> *> *_reloc_task_queues);
     ~CmdHandler();
 

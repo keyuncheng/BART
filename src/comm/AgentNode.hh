@@ -6,7 +6,6 @@
 #include "../util/MessageQueue.hh"
 #include "../util/MultiWriterQueue.h"
 #include "Node.hh"
-#include "ParityComputeTask.hh"
 #include "CmdHandler.hh"
 #include "CmdDist.hh"
 #include "BlockReqHandler.hh"
@@ -22,7 +21,7 @@ public:
     unordered_map<uint16_t, MessageQueue<Command> *> cmd_dist_queues;
 
     // compute task queues: each retrieves computation task from Controller, and pass to a ComputeWorker (CmdHandler -> ComputeWorker<worker_id>)
-    unordered_map<unsigned int, MessageQueue<ParityComputeTask> *> compute_task_queues;
+    unordered_map<unsigned int, MessageQueue<Command> *> compute_task_queues;
 
     // block relocation task queue: each retrieves block relocation task (from both CmdHandler and ComputeWorker), and pass to a RelocWorker (ComputerWorker / CmdHandler -> RelocWorker<worker_id>)
     unordered_map<unsigned int, MultiWriterQueue<Command> *> reloc_task_queues;

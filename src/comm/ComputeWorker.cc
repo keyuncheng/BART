@@ -1,6 +1,6 @@
 #include "ComputeWorker.hh"
 
-ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<ParityComputeTask> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues) : ThreadPool(1), config(_config), self_worker_id(_self_worker_id), self_conn_id(_self_conn_id), compute_task_queue(_compute_task_queue), reloc_task_queues(_reloc_task_queues)
+ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint16_t _self_conn_id, MessageQueue<Command> &_compute_task_queue, unordered_map<unsigned int, MultiWriterQueue<Command> *> &_reloc_task_queues) : ThreadPool(1), config(_config), self_worker_id(_self_worker_id), self_conn_id(_self_conn_id), compute_task_queue(_compute_task_queue), reloc_task_queues(_reloc_task_queues)
 {
     ConvertibleCode &code = config.code;
 
@@ -45,8 +45,7 @@ void ComputeWorker::run()
 
     ConvertibleCode &code = config.code;
 
-    // allocate parity block buffers for parity merging
-    ParityComputeTask parity_compute_task;
+    Command cmd_compute;
 
     unsigned int reloc_task_counter = 0;
 
@@ -57,29 +56,30 @@ void ComputeWorker::run()
             break;
         }
 
-        if (compute_task_queue.Pop(parity_compute_task) == true)
+        if (compute_task_queue.Pop(cmd_compute) == true)
         {
             // terminate signal
-            if (parity_compute_task.all_tasks_finished == true)
+            if (cmd_compute.type == CommandType::CMD_STOP)
             {
                 // forward the terminate signal to reloc queues
                 for (auto &item : reloc_task_queues)
                 {
-                    Command cmd_stop;
-                    cmd_stop.buildCommand(CommandType::CMD_STOP, INVALID_NODE_ID, INVALID_NODE_ID);
-
                     auto &reloc_task_queue = item.second;
-                    reloc_task_queue->Push(cmd_stop);
+                    reloc_task_queue->Push(cmd_compute);
                 }
 
                 setFinished();
                 continue;
             }
 
-            printf("[Node %u, Worker %u] ComputeWorker::run received parity computation task, post: (%u, %u)\n", self_conn_id, self_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
-            // parity_compute_task.print();
+            // parse the block paths
+            vector<string> src_block_paths;
+            vector<string> dst_block_paths;
+            parseBlockPaths(cmd_compute, src_block_paths, dst_block_paths);
 
-            if (parity_compute_task.enc_method == EncodeMethod::RE_ENCODE)
+            printf("[Node %u, Worker %u] ComputeWorker::run received parity computation task, post: (%u, %u)\n", self_conn_id, self_worker_id, cmd_compute.post_stripe_id, cmd_compute.post_block_id);
+
+            if (cmd_compute.enc_method == EncodeMethod::RE_ENCODE)
             { // compute re-encoding
 
                 // step 1: retrieve data
@@ -87,18 +87,18 @@ void ComputeWorker::run()
                 unordered_map<uint16_t, vector<unsigned char *>> src_node_block_buffers_map;
                 for (uint8_t data_block_id = 0; data_block_id < code.k_f; data_block_id++)
                 {
-                    uint16_t src_node_id = parity_compute_task.src_block_nodes[data_block_id];
+                    uint16_t src_node_id = cmd_compute.src_block_nodes[data_block_id];
                     src_node_block_buffers_map[src_node_id].push_back(re_buffers[data_block_id]);
                 }
 
-                // printf("ComputeWorker::run start to retrieve all required data for re-encoding, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+                // printf("ComputeWorker::run start to retrieve all required data for re-encoding, post: (%u, %u)\n", cmd_compute.post_stripe_id, cmd_compute.post_block_id);
 
                 // create threads to retrieve data
                 thread *data_request_threads = new thread[src_node_block_buffers_map.size()];
                 uint8_t thread_id = 0;
                 for (auto &item : src_node_block_buffers_map)
                 {
-                    data_request_threads[thread_id++] = thread(&ComputeWorker::requestDataFromAgent, this, &parity_compute_task, item.first, item.second);
+                    data_request_threads[thread_id++] = thread(&ComputeWorker::requestDataFromAgent, this, &cmd_compute, item.first, item.second);
                 }
 
                 // join threads
@@ -108,7 +108,7 @@ void ComputeWorker::run()
                 }
                 delete[] data_request_threads;
 
-                // printf("ComputeWorker::run finished retrieving all required data for re-encoding, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+                // printf("ComputeWorker::run finished retrieving all required data for re-encoding, post: (%u, %u)\n", cmd_compute.post_stripe_id, cmd_compute.post_block_id);
 
                 // step 2: encode data
                 ec_encode_data(config.block_size, code.k_f, code.m_f, re_encode_gftbl, re_buffers, &re_buffers[code.k_f]);
@@ -117,7 +117,7 @@ void ComputeWorker::run()
                 for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
                 {
                     // write parity_id to disk
-                    string dst_block_path = parity_compute_task.dst_block_paths[parity_id];
+                    string dst_block_path = dst_block_paths[parity_id];
                     if (BlockIO::writeBlock(dst_block_path, re_buffers[code.k_f + parity_id], config.block_size) != config.block_size)
                     {
                         fprintf(stderr, "ComputeWorker::run error writing block: %s\n", dst_block_path.c_str());
@@ -130,19 +130,19 @@ void ComputeWorker::run()
                 // step 4: relocate parity blocks
 
                 // push the relocation task to specific compute task queue
-                // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                // unsigned int assigned_worker_id = cmd_compute.post_stripe_id % config.num_reloc_workers;
                 unsigned int assigned_worker_id = reloc_task_counter % config.num_reloc_workers;
 
                 for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
                 {
-                    uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[parity_id];
-                    string &dst_block_path = parity_compute_task.dst_block_paths[parity_id];
+                    uint16_t dst_conn_id = cmd_compute.parity_reloc_nodes[parity_id];
+                    string &dst_block_path = dst_block_paths[parity_id];
 
                     // check whether needs relocation
                     if (self_conn_id != dst_conn_id)
                     {
                         Command cmd_reloc;
-                        cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
+                        cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, cmd_compute.post_stripe_id, cmd_compute.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
                         // pass to corresponding relocation worker
                         reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
@@ -153,25 +153,25 @@ void ComputeWorker::run()
                     }
                 }
             }
-            else if (parity_compute_task.enc_method == EncodeMethod::PARITY_MERGE)
+            else if (cmd_compute.enc_method == EncodeMethod::PARITY_MERGE)
             {
                 // step 1: retrieve data
                 // find nodes to retrieve data
                 unordered_map<uint16_t, vector<unsigned char *>> src_node_block_buffers_map;
                 for (uint8_t pre_stripe_id = 0; pre_stripe_id < code.lambda_i; pre_stripe_id++)
                 {
-                    uint16_t src_node_id = parity_compute_task.src_block_nodes[pre_stripe_id];
+                    uint16_t src_node_id = cmd_compute.src_block_nodes[pre_stripe_id];
                     src_node_block_buffers_map[src_node_id].push_back(pm_buffers[pre_stripe_id]);
                 }
 
-                // printf("ComputeWorker::run start to retrieve all required data for parity merging, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+                // printf("ComputeWorker::run start to retrieve all required data for parity merging, post: (%u, %u)\n", cmd_compute.post_stripe_id, cmd_compute.post_block_id);
 
                 // create threads to retrieve data
                 thread *data_request_threads = new thread[src_node_block_buffers_map.size()];
                 uint8_t thread_id = 0;
                 for (auto &item : src_node_block_buffers_map)
                 {
-                    data_request_threads[thread_id++] = thread(&ComputeWorker::requestDataFromAgent, this, &parity_compute_task, item.first, item.second);
+                    data_request_threads[thread_id++] = thread(&ComputeWorker::requestDataFromAgent, this, &cmd_compute, item.first, item.second);
                 }
 
                 // join threads
@@ -181,11 +181,11 @@ void ComputeWorker::run()
                 }
                 delete[] data_request_threads;
 
-                // printf("ComputeWorker::run finished retrieve all required data for parity merging, post: (%u, %u)\n", parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+                // printf("ComputeWorker::run finished retrieve all required data for parity merging, post: (%u, %u)\n", cmd_compute.post_stripe_id, cmd_compute.post_block_id);
 
                 // step 2: encode data
-                uint8_t parity_id = parity_compute_task.post_block_id - code.k_f;
-                uint16_t dst_conn_id = parity_compute_task.parity_reloc_nodes[0];
+                uint8_t parity_id = cmd_compute.post_block_id - code.k_f;
+                uint16_t dst_conn_id = cmd_compute.parity_reloc_nodes[0];
                 unsigned char *req_buffer;
                 if (self_conn_id == dst_conn_id)
                 {
@@ -211,7 +211,7 @@ void ComputeWorker::run()
 
                 // step 3: write data to disk
                 // write the parity block to disk
-                string dst_block_path = parity_compute_task.dst_block_paths[0];
+                string dst_block_path = dst_block_paths[0];
                 if (self_conn_id == dst_conn_id)
                 { // need to write to disk, and can be detached
                     // now
@@ -231,14 +231,14 @@ void ComputeWorker::run()
                 // printf("ComputeWorker::run finished writing parity block %s\n", dst_block_path.c_str());
 
                 // step 4: relocate parity blocks
-                // unsigned int assigned_worker_id = parity_compute_task.post_stripe_id % config.num_reloc_workers;
+                // unsigned int assigned_worker_id = cmd_compute.post_stripe_id % config.num_reloc_workers;
                 unsigned int assigned_worker_id = reloc_task_counter % config.num_reloc_workers;
 
                 // check whether needs relocation
                 if (self_conn_id != dst_conn_id)
                 {
                     Command cmd_reloc;
-                    cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
+                    cmd_reloc.buildCommand(CommandType::CMD_TRANSFER_RELOC_BLK, self_conn_id, dst_conn_id, cmd_compute.post_stripe_id, cmd_compute.post_block_id, self_conn_id, dst_conn_id, dst_block_path, dst_block_path);
 
                     // // pass to corresponding relocation worker
                     reloc_task_queues[assigned_worker_id]->Push(cmd_reloc);
@@ -249,21 +249,25 @@ void ComputeWorker::run()
                 }
             }
 
-            printf("[Node %u, Worker %u] ComputeWorker::run finished parity computation task, post(%u, %u)\n", self_conn_id, self_worker_id, parity_compute_task.post_stripe_id, parity_compute_task.post_block_id);
+            printf("[Node %u, Worker %u] ComputeWorker::run finished parity computation task, post(%u, %u)\n", self_conn_id, self_worker_id, cmd_compute.post_stripe_id, cmd_compute.post_block_id);
         }
     }
 
     printf("[Node %u, Worker %u] ComputeWorker::run finished handling parity computation tasks\n", self_conn_id, self_worker_id);
 }
 
-void ComputeWorker::requestDataFromAgent(ParityComputeTask *parity_compute_task, uint16_t src_node_id, vector<unsigned char *> data_buffers)
+void ComputeWorker::requestDataFromAgent(Command *cmd_compute, uint16_t src_node_id, vector<unsigned char *> data_buffers)
 {
+    vector<string> src_block_paths;
+    vector<string> dst_block_paths;
+    parseBlockPaths(*cmd_compute, src_block_paths, dst_block_paths);
+
     uint8_t num_blocks_to_retrieve = INVALID_BLK_ID;
-    if (parity_compute_task->enc_method == EncodeMethod::RE_ENCODE)
+    if (cmd_compute->enc_method == EncodeMethod::RE_ENCODE)
     {
         num_blocks_to_retrieve = config.code.k_f;
     }
-    else if (parity_compute_task->enc_method == EncodeMethod::PARITY_MERGE)
+    else if (cmd_compute->enc_method == EncodeMethod::PARITY_MERGE)
     {
         num_blocks_to_retrieve = config.code.m_f;
     }
@@ -271,8 +275,8 @@ void ComputeWorker::requestDataFromAgent(ParityComputeTask *parity_compute_task,
 
     for (uint8_t block_id = 0; block_id < num_blocks_to_retrieve; block_id++)
     {
-        uint16_t block_src_node_id = parity_compute_task->src_block_nodes[block_id];
-        string src_block_path = parity_compute_task->src_block_paths[block_id];
+        uint16_t block_src_node_id = cmd_compute->src_block_nodes[block_id];
+        string src_block_path = src_block_paths[block_id];
         unsigned char *data_buffer = data_buffers[cur_buffer_id];
 
         // only retrieve the block from src_node_id
@@ -289,14 +293,16 @@ void ComputeWorker::requestDataFromAgent(ParityComputeTask *parity_compute_task,
                 exit(EXIT_FAILURE);
             }
 
-            printf("ComputeWorker::requestDataFromAgent finished read local data at Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, parity_compute_task->post_stripe_id, parity_compute_task->post_block_id, src_block_path.c_str());
+            printf("ComputeWorker::requestDataFromAgent finished read local data at Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_block_path.c_str());
         }
         else
         { // retrieve data from other Nodes
 
+            printf("ComputeWorker::requestDataFromAgent start to retrieve data from Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_block_path.c_str());
+
             // send command to the node to retrieve data
             Command cmd_transfer;
-            cmd_transfer.buildCommand(CommandType::CMD_TRANSFER_BLK, self_conn_id, src_node_id, parity_compute_task->post_stripe_id, parity_compute_task->post_block_id, src_node_id, self_conn_id, src_block_path, string());
+            cmd_transfer.buildCommand(CommandType::CMD_TRANSFER_BLK, self_conn_id, src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_node_id, self_conn_id, src_block_path, string());
 
             // create connection to the node
             sockpp::tcp_connector connector;
@@ -323,7 +329,7 @@ void ComputeWorker::requestDataFromAgent(ParityComputeTask *parity_compute_task,
                 exit(EXIT_FAILURE);
             }
 
-            printf("ComputeWorker::requestDataFromAgent finished retrieving data from Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, parity_compute_task->post_stripe_id, parity_compute_task->post_block_id, src_block_path.c_str());
+            printf("ComputeWorker::requestDataFromAgent finished retrieving data from Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_block_path.c_str());
         }
 
         cur_buffer_id++;
@@ -341,6 +347,68 @@ void ComputeWorker::writeBlockToDisk(string block_path, unsigned char *data_buff
     }
 
     memory_pool->freeBlock(data_buffer);
+}
+
+void ComputeWorker::parseBlockPaths(Command &cmd_compute, vector<string> &src_block_paths, vector<string> &dst_block_paths)
+{
+    ConvertibleCode &code = config.code;
+
+    string delimiter_char = ":";
+    size_t pos = 0;
+    string token;
+
+    string raw_src_block_path = cmd_compute.src_block_path;
+    string raw_dst_block_path = cmd_compute.dst_block_path;
+
+    // process the paths
+    if (cmd_compute.enc_method == EncodeMethod::RE_ENCODE)
+    {
+        // src block paths
+        src_block_paths.resize(code.k_f);
+        pos = 0;
+        uint8_t data_block_id = 0;
+        while ((pos = raw_src_block_path.find(delimiter_char)) != std::string::npos)
+        {
+            token = raw_src_block_path.substr(0, pos);
+            src_block_paths[data_block_id] = token;
+            raw_src_block_path.erase(0, pos + delimiter_char.length());
+            data_block_id++;
+        }
+        src_block_paths[code.k_f - 1] = raw_src_block_path;
+
+        // dst block paths
+        dst_block_paths.resize(code.m_f);
+        pos = 0;
+        uint8_t parity_id = 0;
+
+        while ((pos = raw_dst_block_path.find(delimiter_char)) != std::string::npos)
+        {
+            token = raw_dst_block_path.substr(0, pos);
+            dst_block_paths[parity_id] = token;
+            raw_dst_block_path.erase(0, pos + delimiter_char.length());
+            parity_id++;
+        }
+        dst_block_paths[code.m_f - 1] = raw_dst_block_path;
+    }
+    else if (cmd_compute.enc_method == EncodeMethod::PARITY_MERGE)
+    {
+        // src block paths
+        src_block_paths.resize(code.lambda_i);
+        pos = 0;
+        uint8_t pre_stripe_id = 0;
+        while ((pos = raw_src_block_path.find(delimiter_char)) != std::string::npos)
+        {
+            token = raw_src_block_path.substr(0, pos);
+            src_block_paths[pre_stripe_id] = token;
+            raw_src_block_path.erase(0, pos + delimiter_char.length());
+            pre_stripe_id++;
+        }
+        src_block_paths[code.lambda_i - 1] = raw_src_block_path;
+
+        // dst block paths
+        dst_block_paths.resize(1);
+        dst_block_paths[0] = raw_dst_block_path;
+    }
 }
 
 void ComputeWorker::initECTables()

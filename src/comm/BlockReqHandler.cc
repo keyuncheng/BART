@@ -9,7 +9,7 @@ BlockReqHandler::BlockReqHandler(Config &_config, uint16_t _self_conn_id, unsign
     // queues for worker threads
     for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
     {
-        req_handler_queues[worker_id] = new MessageQueue<sockpp::tcp_socket *>(MAX_MSG_QUEUE_LEN);
+        req_handler_queues[worker_id] = new MessageQueue<BlockReq>(MAX_MSG_QUEUE_LEN);
     }
 
     // add acceptor
@@ -54,69 +54,15 @@ void BlockReqHandler::run()
         // accept socket
         sockpp::inet_address conn_addr;
         sockpp::tcp_socket *skt = new sockpp::tcp_socket();
-        *skt = acceptor->accept(&conn_addr);
 
+        *skt = acceptor->accept(&conn_addr);
         if (!skt)
         {
             fprintf(stderr, "BlockReqHandler::run invalid socket: %s\n", acceptor->last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
-        // distribute the socket to worker
-        unsigned int assigned_worker_id = block_request_counter % num_workers;
-
-        req_handler_queues[assigned_worker_id]->Push(skt);
-
-        // increment number of connections
-        cur_conn++;
-    }
-
-    // distribute stop requests
-    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
-    {
-        sockpp::tcp_socket *term_skt = new sockpp::tcp_socket();
-        req_handler_queues[worker_id]->Push(term_skt);
-    }
-
-    // join block request handlers
-    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
-    {
-        req_handler_threads_map[worker_id]->join();
-        delete req_handler_threads_map[worker_id];
-    }
-
-    printf("[Node %u] BlockReqHandler::run finished handling block requests\n", self_conn_id);
-}
-
-void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
-{
-    printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest start to handle block requests\n", self_conn_id, self_worker_id);
-
-    auto &req_handler_queue = req_handler_queues[self_worker_id];
-
-    bool is_finished = false;
-    unsigned char *data_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
-
-    sockpp::tcp_socket *skt;
-    while (true)
-    {
-        // accept block request
-        if (is_finished == true && req_handler_queue->IsEmpty())
-        {
-            break;
-        }
-
-        if (req_handler_queue->Pop(skt) == true)
-        {
-            // terminate signal
-            if (skt->is_open() == false)
-            {
-                is_finished = true;
-                continue;
-            }
-        }
-
-        // read command
+        // command
         Command cmd;
 
         ssize_t ret_val = skt->read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
@@ -138,61 +84,158 @@ void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
             exit(EXIT_FAILURE);
         }
 
+        // stop request
+        if (cmd.type == CommandType::CMD_STOP)
+        {
+            setFinished();
+            continue;
+        }
+
         // obtain block request socket
-        printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest obtained block request\n", self_conn_id, self_worker_id);
+        printf("[Node %u] BlockReqHandler::handleBlockRequest obtained block request, post: (%u, %u)\n", self_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
-        if (cmd.type == CommandType::CMD_TRANSFER_BLK)
+        BlockReq req;
+        req.cmd = cmd;
+        req.skt = skt;
+
+        // distribute the socket to worker
+        unsigned int assigned_worker_id = block_request_counter % num_workers;
+
+        req_handler_queues[assigned_worker_id]->Push(req);
+
+        // increment number of connections
+        cur_conn++;
+    }
+
+    // join block request handlers
+    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
+    {
+        req_handler_threads_map[worker_id]->join();
+        delete req_handler_threads_map[worker_id];
+    }
+
+    printf("[Node %u] BlockReqHandler::run finished handling block requests\n", self_conn_id);
+}
+
+void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
+{
+    printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest start to handle block requests\n", self_conn_id, self_worker_id);
+
+    auto &req_handler_queue = req_handler_queues[self_worker_id];
+
+    bool is_finished = false;
+    unsigned char *data_buffer = (unsigned char *)malloc(config.block_size * sizeof(unsigned char));
+
+    BlockReq req;
+    while (true)
+    {
+        // accept block request
+        if (is_finished == true && req_handler_queue->IsEmpty())
         {
-            // read block
-            if (BlockIO::readBlock(cmd.src_block_path, data_buffer, config.block_size) != config.block_size)
-            {
-                fprintf(stderr, "BlockReqHandler::handleBlockRequest error reading block: %s\n", cmd.src_block_path.c_str());
-                exit(EXIT_FAILURE);
-            }
-
-            // send block
-            if (BlockIO::sendBlock(*skt, data_buffer, config.block_size) != config.block_size)
-            {
-                fprintf(stderr, "BlockReqHandler::handleBlockRequest error sending block: %s to BlockReqHandler %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
-                exit(EXIT_FAILURE);
-            }
-
-            // obtain block request socket
-            printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest handled block transfer request\n", self_conn_id, self_worker_id);
+            break;
         }
-        else if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+
+        if (req_handler_queue->Pop(req) == true)
         {
-            // retrieve block from the same socket, and write to disk
+            Command &cmd = req.cmd;
+            sockpp::tcp_socket *skt = req.skt;
 
-            // recv block
-            if (BlockIO::recvBlock(*skt, data_buffer, config.block_size) != config.block_size)
+            // terminate signal
+            if (cmd.type == CommandType::CMD_STOP && skt == NULL)
             {
-                fprintf(stderr, "BlockReqHandler::handleBlockRequest error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
-                exit(EXIT_FAILURE);
+                is_finished = true;
+                continue;
             }
 
-            // write block
-            if (BlockIO::writeBlock(cmd.dst_block_path, data_buffer, config.block_size) != config.block_size)
+            if (cmd.type == CommandType::CMD_TRANSFER_BLK)
             {
-                fprintf(stderr, "error writing block: %s\n", cmd.dst_block_path.c_str());
-                exit(EXIT_FAILURE);
+                // read block
+                if (BlockIO::readBlock(cmd.src_block_path, data_buffer, config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "BlockReqHandler::handleBlockRequest error reading block: %s\n", cmd.src_block_path.c_str());
+                    exit(EXIT_FAILURE);
+                }
+
+                // send block
+                if (BlockIO::sendBlock(*skt, data_buffer, config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "BlockReqHandler::handleBlockRequest error sending block: %s to BlockReqHandler %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
+                    exit(EXIT_FAILURE);
+                }
+
+                // obtain block request socket
+                printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest handled block transfer request, post: (%u, %u), src_block_path: %s\n", self_conn_id, self_worker_id, cmd.post_stripe_id, cmd.post_block_id, cmd.src_block_path.c_str());
+            }
+            else if (cmd.type == CommandType::CMD_TRANSFER_RELOC_BLK)
+            {
+                // retrieve block from the same socket, and write to disk
+
+                // recv block
+                if (BlockIO::recvBlock(*skt, data_buffer, config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "BlockReqHandler::handleBlockRequest error receiving block: %s to RelocWorker %u\n", cmd.src_block_path.c_str(), cmd.src_conn_id);
+                    exit(EXIT_FAILURE);
+                }
+
+                // write block
+                if (BlockIO::writeBlock(cmd.dst_block_path, data_buffer, config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "BlockReqHandler::handleBlockRequest error writing block: %s\n", cmd.dst_block_path.c_str());
+                    exit(EXIT_FAILURE);
+                }
+
+                // obtain block request socket
+                printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest handled block relocation request, post: (%u, %u), dst_block_path: %s\n", self_conn_id, self_worker_id, cmd.post_stripe_id, cmd.post_block_id, cmd.dst_block_path.c_str());
             }
 
-            // obtain block request socket
-            printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest handled block relocation request\n", self_conn_id, self_worker_id);
+            // close socket
+            skt->close();
+            delete skt;
+
+            // reduce connections
+            unique_lock<mutex> lck(max_conn_mutex);
+            cur_conn--;
+            lck.unlock();
+            max_conn_cv.notify_one();
         }
-
-        // close socket
-        skt->close();
-
-        // reduce connections
-        unique_lock<mutex> lck(max_conn_mutex);
-        cur_conn--;
-        lck.unlock();
-        max_conn_cv.notify_one();
     }
 
     free(data_buffer);
 
     printf("[Node %u, Worker: %u] BlockReqHandler::handleBlockRequest finished handling block requests\n", self_conn_id, self_worker_id);
+}
+
+void BlockReqHandler::stopHandling()
+{
+    // distribute stop requests
+    Command cmd_stop;
+    cmd_stop.buildCommand(CommandType::CMD_STOP, self_conn_id, self_conn_id);
+
+    BlockReq req;
+    req.cmd = cmd_stop;
+    req.skt = NULL;
+    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
+    {
+        req_handler_queues[worker_id]->Push(req);
+    }
+
+    // create tcp connection to main thread
+    sockpp::tcp_connector connector;
+    string block_req_ip = config.agent_addr_map[self_conn_id].first;
+    unsigned int block_req_port = config.agent_addr_map[self_conn_id].second + config.settings.num_nodes; // DEBUG
+
+    // create connection to block request handler
+    while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
+    {
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+
+    // send block transfer request
+    if (connector.write_n(cmd_stop.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+    {
+        fprintf(stderr, "ComputeWorker::requestDataFromAgent error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_stop.type, cmd_stop.src_conn_id, cmd_stop.dst_conn_id);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("[Node %u] BlockReqHandler::stopHandling trigger stop handling request\n", self_conn_id);
 }
