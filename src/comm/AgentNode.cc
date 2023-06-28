@@ -131,6 +131,6 @@ void AgentNode::stop()
     cmd_handler->wait();
 
     // wait block request handler
-    // block_req_handler->stopHandling();
+    block_req_handler->stopHandling();
     block_req_handler->wait();
 }

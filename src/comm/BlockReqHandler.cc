@@ -39,17 +39,21 @@ void BlockReqHandler::run()
         req_handler_threads_map[worker_id] = new thread(&BlockReqHandler::handleBlockRequest, this, worker_id);
     }
 
+    // stop counter
+    uint16_t stop_counter = 0;
+
+    // block request counter
     uint32_t block_request_counter = 0;
 
     while (finished() == false)
     {
-        // check lock
-        unique_lock<mutex> lck(max_conn_mutex);
-        while (cur_conn > max_conn)
-        {
-            max_conn_cv.wait(lck, [&]
-                             { return cur_conn <= max_conn; });
-        }
+        // // check lock
+        // unique_lock<mutex> lck(max_conn_mutex);
+        // while (cur_conn > max_conn)
+        // {
+        //     max_conn_cv.wait(lck, [&]
+        //                      { return cur_conn <= max_conn; });
+        // }
 
         // accept socket
         sockpp::inet_address conn_addr;
@@ -68,7 +72,7 @@ void BlockReqHandler::run()
         ssize_t ret_val = skt->read_n(cmd.content, MAX_CMD_LEN * sizeof(unsigned char));
         if (ret_val == -1 || ret_val == 0)
         {
-            fprintf(stderr, "BlockReqHandler::handleBlockRequest error reading command\n");
+            fprintf(stderr, "BlockReqHandler::run error reading command\n");
             exit(EXIT_FAILURE);
         }
 
@@ -79,20 +83,21 @@ void BlockReqHandler::run()
         // validate command
         if (cmd.dst_conn_id != self_conn_id)
         {
-            // fprintf(stderr, "BlockReqHandler::handleBlockRequest error: invalid command content\n");
-            fprintf(stderr, "BlockReqHandler::handleBlockRequest error: cmd.type: %u, cmd.src_conn_id: %u, cmd.dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
+            // fprintf(stderr, "BlockReqHandler::run error: invalid command content\n");
+            fprintf(stderr, "BlockReqHandler::run error: cmd.type: %u, cmd.src_conn_id: %u, cmd.dst_conn_id: %u\n", cmd.type, cmd.src_conn_id, cmd.dst_conn_id);
             exit(EXIT_FAILURE);
         }
 
         // stop request
         if (cmd.type == CommandType::CMD_STOP)
         {
-            setFinished();
+            stop_counter++;
+            if (stop_counter == config.settings.num_nodes - 1)
+            { // set finished if received stop command from other Agent nodes
+                setFinished();
+            }
             continue;
         }
-
-        // obtain block request socket
-        printf("[Node %u] BlockReqHandler::handleBlockRequest obtained block request, post: (%u, %u)\n", self_conn_id, cmd.post_stripe_id, cmd.post_block_id);
 
         BlockReq req;
         req.cmd = cmd;
@@ -101,10 +106,28 @@ void BlockReqHandler::run()
         // distribute the socket to worker
         unsigned int assigned_worker_id = block_request_counter % num_workers;
 
+        // obtain block request socket
+        printf("[Node %u] BlockReqHandler::run obtained block request, assign to Worker %u, post: (%u, %u)\n", self_conn_id, assigned_worker_id, cmd.post_stripe_id, cmd.post_block_id);
+
         req_handler_queues[assigned_worker_id]->Push(req);
 
-        // increment number of connections
-        cur_conn++;
+        // increment counter
+        block_request_counter++;
+
+        // // increment number of connections
+        // cur_conn++;
+    }
+
+    // distribute stop requests
+    Command cmd_stop;
+    cmd_stop.buildCommand(CommandType::CMD_STOP, self_conn_id, self_conn_id);
+
+    BlockReq req;
+    req.cmd = cmd_stop;
+    req.skt = NULL;
+    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
+    {
+        req_handler_queues[worker_id]->Push(req);
     }
 
     // join block request handlers
@@ -146,6 +169,9 @@ void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
                 is_finished = true;
                 continue;
             }
+
+            // obtain block request socket
+            printf("[Node %u] BlockReqHandler::handleBlockRequest obtained block request, type: %u, post: (%u, %u)\n", self_conn_id, cmd.type, cmd.post_stripe_id, cmd.post_block_id);
 
             if (cmd.type == CommandType::CMD_TRANSFER_BLK)
             {
@@ -192,11 +218,11 @@ void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
             skt->close();
             delete skt;
 
-            // reduce connections
-            unique_lock<mutex> lck(max_conn_mutex);
-            cur_conn--;
-            lck.unlock();
-            max_conn_cv.notify_one();
+            // // reduce connections
+            // unique_lock<mutex> lck(max_conn_mutex);
+            // cur_conn--;
+            // lck.unlock();
+            // max_conn_cv.notify_one();
         }
     }
 
@@ -207,34 +233,37 @@ void BlockReqHandler::handleBlockRequest(unsigned int self_worker_id)
 
 void BlockReqHandler::stopHandling()
 {
-    // distribute stop requests
-    Command cmd_stop;
-    cmd_stop.buildCommand(CommandType::CMD_STOP, self_conn_id, self_conn_id);
-
-    BlockReq req;
-    req.cmd = cmd_stop;
-    req.skt = NULL;
-    for (unsigned int worker_id = 0; worker_id < num_workers; worker_id++)
+    // inform other nodes to stop handling block requests
+    for (auto &item : config.agent_addr_map)
     {
-        req_handler_queues[worker_id]->Push(req);
-    }
+        uint16_t conn_id = item.first;
+        if (conn_id != self_conn_id)
+        {
+            auto &addr = item.second;
 
-    // create tcp connection to main thread
-    sockpp::tcp_connector connector;
-    string block_req_ip = config.agent_addr_map[self_conn_id].first;
-    unsigned int block_req_port = config.agent_addr_map[self_conn_id].second + config.settings.num_nodes; // DEBUG
+            // create connection to block request handler
+            string block_req_ip = addr.first;
+            unsigned int block_req_port = addr.second + config.settings.num_nodes; // DEBUG
 
-    // create connection to block request handler
-    while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
-    {
-        this_thread::sleep_for(chrono::milliseconds(1));
-    }
+            sockpp::tcp_connector connector;
+            while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
+            {
+                this_thread::sleep_for(chrono::milliseconds(1));
+            }
 
-    // send block transfer request
-    if (connector.write_n(cmd_stop.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
-    {
-        fprintf(stderr, "ComputeWorker::requestDataFromAgent error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_stop.type, cmd_stop.src_conn_id, cmd_stop.dst_conn_id);
-        exit(EXIT_FAILURE);
+            // send stop request to block handlers of all other nodes
+            Command cmd_stop;
+            cmd_stop.buildCommand(CommandType::CMD_STOP, self_conn_id, conn_id);
+
+            // send block transfer request
+            if (connector.write_n(cmd_stop.content, MAX_CMD_LEN * sizeof(unsigned char)) == -1)
+            {
+                fprintf(stderr, "ComputeWorker::requestDataFromAgent error sending cmd, type: %u, src_conn_id: %u, dst_conn_id: %u\n", cmd_stop.type, cmd_stop.src_conn_id, cmd_stop.dst_conn_id);
+                exit(EXIT_FAILURE);
+            }
+
+            connector.close();
+        }
     }
 
     printf("[Node %u] BlockReqHandler::stopHandling trigger stop handling request\n", self_conn_id);

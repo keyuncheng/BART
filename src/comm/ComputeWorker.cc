@@ -214,8 +214,6 @@ void ComputeWorker::run()
                 string dst_block_path = dst_block_paths[0];
                 if (self_conn_id == dst_conn_id)
                 { // need to write to disk, and can be detached
-                    // now
-
                     thread write_data_thread(&ComputeWorker::writeBlockToDisk, this, dst_block_path, req_buffer, config.block_size);
                     write_data_thread.detach();
                 }
@@ -304,12 +302,11 @@ void ComputeWorker::requestDataFromAgent(Command *cmd_compute, uint16_t src_node
             Command cmd_transfer;
             cmd_transfer.buildCommand(CommandType::CMD_TRANSFER_BLK, self_conn_id, src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_node_id, self_conn_id, src_block_path, string());
 
-            // create connection to the node
-            sockpp::tcp_connector connector;
+            // create connection to block request handler
             string block_req_ip = config.agent_addr_map[src_node_id].first;
             unsigned int block_req_port = config.agent_addr_map[src_node_id].second + config.settings.num_nodes; // DEBUG
 
-            // create connection to block request handler
+            sockpp::tcp_connector connector;
             while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
             {
                 this_thread::sleep_for(chrono::milliseconds(1));
@@ -328,6 +325,8 @@ void ComputeWorker::requestDataFromAgent(Command *cmd_compute, uint16_t src_node
                 fprintf(stderr, "ComputeWorker::retrieveData error recv block from ComputeWorker (%u)\n", src_node_id);
                 exit(EXIT_FAILURE);
             }
+
+            connector.close();
 
             printf("ComputeWorker::requestDataFromAgent finished retrieving data from Node %u, post: (%u, %u), src_block_path: %s\n", src_node_id, cmd_compute->post_stripe_id, cmd_compute->post_block_id, src_block_path.c_str());
         }

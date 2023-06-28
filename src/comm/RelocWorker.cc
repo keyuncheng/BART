@@ -56,12 +56,11 @@ void RelocWorker::run()
                 exit(EXIT_FAILURE);
             }
 
-            // create TCP connection to the block request handler
-            sockpp::tcp_connector connector;
+            // create connection to the block request handler
             string block_req_ip = config.agent_addr_map[cmd_reloc.dst_conn_id].first;
             unsigned int block_req_port = config.agent_addr_map[cmd_reloc.dst_conn_id].second + config.settings.num_nodes; // DEBUG
 
-            // create connection to block request handler
+            sockpp::tcp_connector connector;
             while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
             {
                 this_thread::sleep_for(chrono::milliseconds(1));
@@ -79,6 +78,8 @@ void RelocWorker::run()
                 fprintf(stderr, "RelocWorker::handleDataTransfer error sending block: %s to RelocWorker %u\n", cmd_reloc.dst_block_path.c_str(), cmd_reloc.src_conn_id);
                 exit(EXIT_FAILURE);
             }
+
+            connector.close();
 
             printf("[Node %u, Worker %u] RelocWorker::run finished relocation task, post: (%u, %u)\n", self_conn_id, self_worker_id, cmd_reloc.post_stripe_id, cmd_reloc.post_block_id);
         }
