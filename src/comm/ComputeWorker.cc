@@ -267,7 +267,7 @@ void ComputeWorker::requestDataFromAgent(Command *cmd_compute, uint16_t src_node
     }
     else if (cmd_compute->enc_method == EncodeMethod::PARITY_MERGE)
     {
-        num_blocks_to_retrieve = config.code.m_f;
+        num_blocks_to_retrieve = config.code.lambda_i;
     }
     uint8_t cur_buffer_id = 0;
 
