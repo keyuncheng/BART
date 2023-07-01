@@ -2,6 +2,8 @@ import os
 import sys
 import subprocess
 import argparse
+import time
+import random
 import configparser
 from pathlib import Path
 
@@ -26,7 +28,7 @@ def main():
     if not args:
         exit()
 
-    enable_HDFS = False # DEBUG: hard code
+    # enable_HDFS = False # DEBUG: hard code
 
     # read config
     config_filename = args.config_filename
@@ -41,6 +43,7 @@ def main():
     num_nodes = int(config["Common"]["num_nodes"])
     num_stripes = int(config["Common"]["num_stripes"])
     approach = config["Common"]["approach"]
+    enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
 
     # Controller
     pre_placement_filename = config["Controller"]["pre_placement_filename"]
@@ -53,6 +56,17 @@ def main():
 
     print("pre_placement_filename: {}; pre_block_mapping_filename: {}; post_placement_filename: {}; post_block_mapping_filename: {}, sg_meta_filename: {}".format(pre_placement_filename, pre_block_mapping_filename, post_placement_filename, post_block_mapping_filename, sg_meta_filename))
 
+    # HDFS
+    hadoop_home = config["HDFS"]["hadoop_home"]
+    hadoop_namenode_addr = config["HDFS"]["hadoop_namenode_addr"]
+    hdfs_path = config["HDFS"]["hdfs_path"]
+    hdfs_file_prefix = config["HDFS"]["hdfs_file_prefix"]
+    hdfs_file_size = int(config["HDFS"]["hdfs_file_size"])
+    block_id_start = int(config["HDFS"]["block_id_start"])
+    block_group_id_start = int(config["HDFS"]["block_group_id_start"])
+    placement_file_path = config["HDFS"]["placement_file_path"]
+    metadata_file_path = config["HDFS"]["metadata_file_path"]
+    hdfs_data_dir = Path(hadoop_home + "tmp/dfs/data/current/BP-" + str(random.randint(100000000, 1000000000)) + "-" + hadoop_namenode_addr + "-" + str(int(time.time()*1000)) + "/current/finalized/")
 
     # Others
     lambda_ = int(k_f / k_i)
@@ -120,7 +134,7 @@ def main():
         for post_block_id, post_placed_node_id in enumerate(post_stripe_indices):
             post_block_placement_path = None
             if post_block_id < k_f:
-                # data block: read from pre_block_mapping
+                # Data blocks: read from pre_block_mapping
                 pre_stripe_id = int(post_block_id / k_i)
                 pre_block_id = int(post_block_id % k_i)
                 pre_stripe_id_global = sg_meta[post_stripe_id]["pre_stripe_ids"][pre_stripe_id]
@@ -135,15 +149,31 @@ def main():
                     post_block_placement_path = pre_block_mapping[pre_stripe_id_global][pre_block_id][1]
                 else:
                     # There is block relocation, rename the path
-                    post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / "reloc_block_{}_{}".format(pre_stripe_id_global, pre_block_id)
+                    if enable_HDFS:
+                        block_id = block_id_start
+                        stripe_id = block_group_id_start
+                        d0 = (block_id >> 16) & 0x1F
+                        d1 = (block_id >> 8) & 0x1F
+                        post_block_placement_path = hdfs_data_dir / "subdir{}".format(d0) / "subdir{}".format(d1) / "blk_{}_{}".format(block_id, stripe_id)
+                        block_id_start += 1
+                    else:
+                        post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / "reloc_block_{}_{}".format(pre_stripe_id_global, pre_block_id)
                 
             else:
+                # Parity blocks: generate new hdfs blocks
                 if enable_HDFS:
-                    pass # TO IMPLEMENT
+                    block_id = block_id_start
+                    stripe_id = block_group_id_start
+                    d0 = (block_id >> 16) & 0x1F
+                    d1 = (block_id >> 8) & 0x1F
+                    post_block_placement_path = hdfs_data_dir / "subdir{}".format(d0) / "subdir{}".format(d1) / "blk_{}_{}".format(block_id, stripe_id)
+                    block_id_start += 1
+                    # pass # TO IMPLEMENT
                 else:
                     # parity block: generate new filename
                     post_block_placement_path = data_dir / "node_{}".format(post_placed_node_id) / "post_block_{}_{}".format(post_stripe_id, post_block_id)
             post_block_mapping.append([post_stripe_id, post_block_id, post_placed_node_id, post_block_placement_path])
+        block_group_id_start += 1
 
     # Write post-transition block mapping file
     print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
