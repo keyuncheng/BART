@@ -22,17 +22,15 @@ ComputeWorker::ComputeWorker(Config &_config, unsigned int _self_worker_id, uint
         pm_buffers[block_id] = &block_buffer[block_id * config.block_size];
     }
 
-    // create memory pools for parity writes
-    memory_pool = new MemoryPool(5, config.block_size);
+    // // create memory pools for parity writes
+    // memory_pool = new MemoryPool(5, config.block_size);
 
     printf("[Node %u, Worker %u] ComputeWorker::ComputeWorker finished initialization\n", self_conn_id, self_worker_id);
 }
 
 ComputeWorker::~ComputeWorker()
 {
-
-    delete memory_pool;
-
+    // delete memory_pool;
     free(pm_buffers);
     free(re_buffers);
     free(block_buffer);
@@ -186,45 +184,55 @@ void ComputeWorker::run()
                 // step 2: encode data
                 uint8_t parity_id = cmd_compute.post_block_id - code.k_f;
                 uint16_t dst_conn_id = cmd_compute.parity_reloc_nodes[0];
-                unsigned char *req_buffer;
-                if (self_conn_id == dst_conn_id)
-                {
-                    // temporarily hold the memory
-                    unsigned char *temp_buffer = pm_buffers[code.lambda_i];
+                ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
 
-                    // request memory
-                    req_buffer = memory_pool->getBlock();
+                // // use memory pool
+                // unsigned char *req_buffer;
+                // if (self_conn_id == dst_conn_id)
+                // {
+                //     // temporarily hold the memory
+                //     unsigned char *temp_buffer = pm_buffers[code.lambda_i];
 
-                    // temporarily assign memory
-                    pm_buffers[code.lambda_i] = req_buffer;
+                //     // request memory
+                //     req_buffer = memory_pool->getBlock();
 
-                    // encode
-                    ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+                //     // temporarily assign memory
+                //     pm_buffers[code.lambda_i] = req_buffer;
 
-                    // return the memory
-                    pm_buffers[code.lambda_i] = temp_buffer;
-                }
-                else
-                {
-                    ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
-                }
+                //     // encode
+                //     ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+
+                //     // return the memory
+                //     pm_buffers[code.lambda_i] = temp_buffer;
+                // }
+                // else
+                // {
+                //     ec_encode_data(config.block_size, code.lambda_i, 1, pm_encode_gftbl[parity_id], pm_buffers, &pm_buffers[code.lambda_i]);
+                // }
 
                 // step 3: write data to disk
                 // write the parity block to disk
                 string dst_block_path = dst_block_paths[0];
-                if (self_conn_id == dst_conn_id)
-                { // need to write to disk, and can be detached
-                    thread write_data_thread(&ComputeWorker::writeBlockToDisk, this, dst_block_path, req_buffer, config.block_size);
-                    write_data_thread.detach();
+                if (BlockIO::writeBlock(dst_block_path, pm_buffers[code.lambda_i], config.block_size) != config.block_size)
+                {
+                    fprintf(stderr, "error writing block: %s\n", dst_block_path.c_str());
+                    exit(EXIT_FAILURE);
                 }
-                else
-                { // need to write to disk, and cannot be detached
-                    if (BlockIO::writeBlock(dst_block_path, pm_buffers[code.lambda_i], config.block_size) != config.block_size)
-                    {
-                        fprintf(stderr, "error writing block: %s\n", dst_block_path.c_str());
-                        exit(EXIT_FAILURE);
-                    }
-                }
+
+                // // use memory pool
+                // if (self_conn_id == dst_conn_id)
+                // { // need to write to disk, and can be detached
+                //     thread write_data_thread(&ComputeWorker::writeBlockToDisk, this, dst_block_path, req_buffer, config.block_size);
+                //     write_data_thread.detach();
+                // }
+                // else
+                // { // need to write to disk, and cannot be detached
+                //     if (BlockIO::writeBlock(dst_block_path, pm_buffers[code.lambda_i], config.block_size) != config.block_size)
+                //     {
+                //         fprintf(stderr, "error writing block: %s\n", dst_block_path.c_str());
+                //         exit(EXIT_FAILURE);
+                //     }
+                // }
 
                 // printf("ComputeWorker::run finished writing parity block %s\n", dst_block_path.c_str());
 
