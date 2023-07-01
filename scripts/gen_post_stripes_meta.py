@@ -66,7 +66,7 @@ def main():
     block_group_id_start = int(config["HDFS"]["block_group_id_start"])
     placement_file_path = config["HDFS"]["placement_file_path"]
     metadata_file_path = config["HDFS"]["metadata_file_path"]
-    hdfs_data_dir = Path(hadoop_home + "tmp/dfs/data/current/BP-" + str(random.randint(100000000, 1000000000)) + "-" + hadoop_namenode_addr + "-" + str(int(time.time()*1000)) + "/current/finalized/")
+    hdfs_data_dir = Path(hadoop_home + "/tmp/dfs/data/current/BP-" + str(random.randint(100000000, 1000000000)) + "-" + hadoop_namenode_addr + "-" + str(int(time.time()*1000)) + "/current/finalized/")
 
     # Others
     lambda_ = int(k_f / k_i)
@@ -82,7 +82,20 @@ def main():
     post_block_mapping_path = metadata_dir / post_block_mapping_filename
     sg_meta_path = metadata_dir / sg_meta_filename
     data_dir = root_dir / "data"
+
+    if enable_HDFS:
+        pre_placement_path = Path(placement_file_path + "/pre_placement_all").absolute()
+        pre_block_mapping_path = Path(placement_file_path + "/pre_mapping_all").absolute()
+        post_placement_path = Path(placement_file_path + "/post_placement_all").absolute()
+        post_block_mapping_path = Path(placement_file_path + "/post_mapping_all").absolute()
+        sg_meta_path = Path(placement_file_path + "/sg_meta_all").absolute()
     
+    # print(pre_placement_path)
+    # print(pre_block_mapping_path)
+    # print(post_placement_path)
+    # print(post_block_mapping_path)
+    # print(sg_meta_path)
+
     # Read pre-transition placement
     pre_placement = []
     with open("{}".format(str(pre_placement_path)), "r") as f:
