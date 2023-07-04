@@ -22,7 +22,7 @@ if (T) {
     #                 values=c(a="#19376D",b="#C38154",c="red")) +
     # scale_x_discrete(breaks=c("a","b","c","d"),
     #                 labels=c("5000", "10000", "15000", "20000")) +
-    # scale_y_continuous(expand = c(0,0),limits=c(0,800), breaks=c(0,200,400,600,800)) +
+    scale_y_continuous(expand = c(0,0),limits=c(0,1050), breaks=c(0,200,400,600,800,1000)) +
     
     guides(fill=guide_legend(nrow=2, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
     ylab("Maximum Loads (# of Blocks)") +
@@ -36,5 +36,5 @@ if (T) {
     theme(legend.text = element_text(size=15)) +
     theme(legend.background=element_rect(fill = alpha("white", 0.0))) + 
     theme(legend.position=c(0.5,0.95), legend.direction="vertical", legend.key=element_blank())
-    ggsave("../../../pdf/simulation/230704/exp_a2_2.pdf", width=6, height=4, device=cairo_pdf)
+    ggsave("../../../pdf/simulation/230704/exp_a2_2.pdf", width=7, height=4, device=cairo_pdf)
 }
