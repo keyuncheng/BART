@@ -10,7 +10,7 @@ if (T) {
     ggplot(x1, aes(x=code_param_id, y=max_load, fill=method_id)) +
     scale_fill_manual(name=element_blank(),
                     breaks=c("a","b","c"),
-                    labels=c("RDPM","BWPM","BTPM"),
+                    labels=c("RD","BW","BART"),
                     values=c(a="#19376D",b="#C38154",c="red")) +
     scale_x_discrete(breaks=c("a","b","c","d","e","f","g","h","i"),
                     labels=c("(4,2)", "(6,2)", "(8,2)", "(6,3)", "(8,3)", "(12,3)", "(8,4)", "(12,4)", "(16,4)"))

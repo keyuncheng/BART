@@ -9,7 +9,7 @@ if (T) {
     ggplot(x1, aes(x=network_id, y=max_time/1000, fill=method_id)) +
     scale_fill_manual(name=element_blank(),
                     breaks=c("a","b","c"),
-                    labels=c("RDPM","BWPM","BTPM"),
+                    labels=c("RD","BW","BART"),
                     values=c(a="#19376D",b="#C38154",c="red")) +
     scale_x_discrete(breaks=c("a","b","c","d"),
                     labels=c("1", "2", "5", "10")) +
