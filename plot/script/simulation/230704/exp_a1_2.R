@@ -15,7 +15,7 @@ if (T) {
     scale_x_discrete(breaks=c("a","b","c","d","e","f","g","h","i"),
                     labels=c("(4,2,2)", "(4,2,3)", "(4,2,4)", "(6,3,2)", "(6,3,3)", "(6,3,4)", "(8,4,2)", "(8,4,3)", "(8,4,4)")) +
     scale_y_continuous(expand = c(0,0),limits=c(0,750), breaks=c(0,100,200,300,400,500,600,700)) +
-    guides(fill=guide_legend(nrow=2, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
+    guides(fill=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
     #  geom_text(aes(label = max_load), hjust=-2, vjust=-0.4, color = "black", size=2, angle=60, stat="identity") +
     geom_bar(color="black", stat="identity", width=0.8, position=position_dodge()) +
     # geom_errorbar(aes(ymin=min, ymax=max),width=.2, position=position_dodge(.8)) +
