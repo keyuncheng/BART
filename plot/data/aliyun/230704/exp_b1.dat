@@ -1,13 +1,13 @@
-code_param_id	code_param	method_id	method	bandwidth	max_load
+code_param_id	code_param  method_id   method  bandwidth   max_time
 a	(4,2,2)     a       RDPM        2452    63429
 a	(4,2,2)     b       BWPM        302     15784
 a	(4,2,2)     c       BTPM        303     11176
-b	(6,2,2)     a       RDPM        NAN     NAN
+b	(6,2,2)     a       RDPM        0       0
 b	(6,2,2)     b       BWPM        431     16755
 b	(6,2,2)     c       BTPM        431     14719
-c	(6,3,2)     a       RDPM        NAN     NAN
+c	(6,3,2)     a       RDPM        0       0
 c	(6,3,2)     b       BWPM        806     29208
 c	(6,3,2)     c       BTPM        808     22874
-d	(6,3,3)     a       RDPM        NAN     NAN
+d	(6,3,3)     a       RDPM        0       0
 d	(6,3,3)     b       BWPM        1376    43317
 d	(6,3,3)     c       BTPM        1387    36045

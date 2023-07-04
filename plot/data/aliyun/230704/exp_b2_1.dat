@@ -1,0 +1,10 @@
+code_param_id	code_param	method_id	method	 block_size_id  block_size   bandwidth	max_time
+a	(4,2,2)     a       RDPM    a      32      0        0       
+a	(4,2,2)     b       BWPM    a      32      322      9089
+a	(4,2,2)     c       BTPM    a      32      322      6606
+a	(4,2,2)     a       RDPM    b      64      0        0
+a	(4,2,2)     b       BWPM    b      64      302      15784
+a	(4,2,2)     c       BTPM    b      64      303      11176
+a	(4,2,2)     a       RDPM    c      128     0        0      
+a	(4,2,2)     b       BWPM    c      128     304      31152
+a	(4,2,2)     c       BTPM    c      128     305      29431
