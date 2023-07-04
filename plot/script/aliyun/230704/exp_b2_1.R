@@ -19,7 +19,7 @@ if (T) {
     geom_bar(color="black", stat="identity", width=0.8, position=position_dodge()) +
     # geom_errorbar(aes(ymin=min, ymax=max),width=.2, position=position_dodge(.8)) +
     ylab("Transitioning Time (s)") +
-    xlab("Block Size (MB)") +
+    xlab("Block Size (MiB)") +
     theme_classic() +
     theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, vjust=1, color="black")) +
     theme(axis.text.y = element_text(size=15, color="black")) +
