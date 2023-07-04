@@ -1,7 +1,7 @@
 import os
 
 # Define the directory containing the log files
-directory = '/home/hcpuyang/BalancedConversion/log/exp_a2'
+directory = '/home/hcpuyang/BalancedConversion/log/exp_b1'
 
 merged_max_load_values_1 = []
 merged_max_load_values_2 = []
