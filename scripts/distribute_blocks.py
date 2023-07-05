@@ -123,12 +123,7 @@ def main():
 
         print("Generate blocks at Node {} ({})".format(node_id, node_ip))
 
-        node_dir = data_dir / "node_{}".format(node_id)
-
-        cmd = "ssh {} \"mkdir -p {}\"".format(node_ip, str(node_dir))
-        exec_cmd(cmd, exec=True)
-
-        cmd = "ssh {} \"bash -c \\\"rm -rf {}/*\\\"\"".format(node_ip, str(node_dir))
+        cmd = "ssh {} \"bash -c \\\"rm -rf {}/node_*\\\"\"".format(node_ip, str(data_dir))
         exec_cmd(cmd, exec=True)
 
         for pre_stripe_id in range(lambda_):
