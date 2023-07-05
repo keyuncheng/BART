@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "./common.sh"
+source "experiments/common.sh"
 
 nohup sh -c 'cd ${MIDDLEWARE_HOME_PATH}/build && rm -r * && cmake .. && make' > output.log 2>&1 & 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "./common.sh"
+source "experiments/common.sh"
 
 # modify config and sync
 num_nodes=20

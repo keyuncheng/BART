@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "./common.sh"
+source "experiments/common.sh"
 
 if [[ $# -ne 1 ]]; then
   echo "Please specify whether to kill"

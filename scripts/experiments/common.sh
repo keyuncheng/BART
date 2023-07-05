@@ -18,4 +18,4 @@ HDFS_PATTERN_FILE="${HOME_DIR}/BalancedConversion/metadata/"
 APPROACH_LIST=("RDPM" "BWPM" "BTPM")
 
 ## Network Bandwidth
-BANDWIDTH=1
+BANDWIDTH = 1048576
