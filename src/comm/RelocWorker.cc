@@ -61,6 +61,11 @@ void RelocWorker::run()
             unsigned int block_req_port = config.agent_addr_map[cmd_reloc.dst_conn_id].second + config.settings.num_nodes; // DEBUG
 
             sockpp::tcp_connector connector;
+            int on = 1;
+            connector.set_option(SOL_SOCKET, SO_REUSEADDR, &on);
+            connector.set_option(SOL_SOCKET, SO_REUSEPORT, &on);
+            connector.set_option(SOL_SOCKET, SO_KEEPALIVE, &on);
+
             while (!(connector = sockpp::tcp_connector(sockpp::inet_address(block_req_ip, block_req_port))))
             {
                 this_thread::sleep_for(chrono::milliseconds(1));

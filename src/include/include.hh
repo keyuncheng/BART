@@ -38,4 +38,6 @@ using namespace std;
 #define MAX_MEM_POOL_SIZE 1
 #define CTRL_NODE_ID (INVALID_NODE_ID - 1)
 
+#define TCP_BUFFER_SIZE 4096
+
 #endif // __INCLUDE_HH__

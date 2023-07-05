@@ -16,6 +16,10 @@ BlockReqHandler::BlockReqHandler(Config &_config, uint16_t _self_conn_id, unsign
     unsigned int self_port = config.agent_addr_map[self_conn_id].second + config.settings.num_nodes; // DEBUG
 
     acceptor = new sockpp::tcp_acceptor(self_port);
+
+    int on = 1;
+    acceptor->set_option(SOL_SOCKET, SO_REUSEADDR, &on);
+    acceptor->set_option(SOL_SOCKET, SO_REUSEPORT, &on);
 }
 
 BlockReqHandler::~BlockReqHandler()
@@ -65,6 +69,9 @@ void BlockReqHandler::run()
             fprintf(stderr, "BlockReqHandler::run invalid socket: %s\n", acceptor->last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
+
+        int on = 1;
+        skt->set_option(SOL_SOCKET, SO_KEEPALIVE, &on);
 
         // command
         Command cmd;

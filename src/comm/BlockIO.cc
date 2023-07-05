@@ -90,11 +90,11 @@ uint64_t BlockIO::sendBlock(sockpp::tcp_connector &connector, unsigned char *buf
     uint64_t bytes_left = block_size;
     while (offset < block_size)
     {
-        ssize_t send_bytes = connector.write_n(buffer + offset, bytes_left * sizeof(unsigned char));
+        ssize_t send_bytes = connector.write_n(buffer + offset, TCP_BUFFER_SIZE * sizeof(unsigned char));
 
         if (send_bytes == -1)
         {
-            fprintf(stderr, "BlockIO::sendBlock error send data: %lu\n", send_bytes);
+            fprintf(stderr, "BlockIO::sendBlock error send data: %d, %s\n", connector.last_error(), connector.last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
@@ -111,11 +111,11 @@ uint64_t BlockIO::sendBlock(sockpp::tcp_socket &skt, unsigned char *buffer, uint
     uint64_t bytes_left = block_size;
     while (offset < block_size)
     {
-        ssize_t send_bytes = skt.write_n(buffer + offset, bytes_left * sizeof(unsigned char));
+        ssize_t send_bytes = skt.write_n(buffer + offset, TCP_BUFFER_SIZE * sizeof(unsigned char));
 
         if (send_bytes == -1)
         {
-            fprintf(stderr, "BlockIO::sendBlock error send data: %lu\n", send_bytes);
+            fprintf(stderr, "BlockIO::sendBlock error send data: %d, %s\n", skt.last_error(), skt.last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
@@ -132,11 +132,11 @@ uint64_t BlockIO::recvBlock(sockpp::tcp_connector &connector, unsigned char *buf
     uint64_t bytes_left = block_size;
     while (offset < block_size)
     {
-        ssize_t recv_bytes = connector.read_n(buffer + offset, bytes_left * sizeof(unsigned char));
+        ssize_t recv_bytes = connector.read_n(buffer + offset, TCP_BUFFER_SIZE * sizeof(unsigned char));
 
         if (recv_bytes == -1)
         {
-            fprintf(stderr, "BlockIO::recvBlock error recv data, %lu\n", recv_bytes);
+            fprintf(stderr, "BlockIO::recvBlock error recv data: %d, %s\n", connector.last_error(), connector.last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
@@ -152,11 +152,11 @@ uint64_t BlockIO::recvBlock(sockpp::tcp_socket &skt, unsigned char *buffer, uint
     uint64_t bytes_left = block_size;
     while (offset < block_size)
     {
-        ssize_t recv_bytes = skt.read_n(buffer + offset, bytes_left * sizeof(unsigned char));
+        ssize_t recv_bytes = skt.read_n(buffer + offset, TCP_BUFFER_SIZE * sizeof(unsigned char));
 
         if (recv_bytes == -1)
         {
-            fprintf(stderr, "BlockIO::recvBlock error recv data, %lu\n", recv_bytes);
+            fprintf(stderr, "BlockIO::recvBlock error recv data: %d %s\n", skt.last_error(), skt.last_error_str().c_str());
             exit(EXIT_FAILURE);
         }
 
