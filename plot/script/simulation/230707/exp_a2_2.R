@@ -21,12 +21,13 @@ if (T) {
                         values=c(2,3,4)) +
     scale_x_discrete(breaks=c("a","b","c","d"),
                     labels=c("5000", "10000", "15000", "20000")) +
-    scale_y_continuous(expand = c(0,0),limits=c(0,1250), breaks=c(0,200,400,600,800,1000,1200)) +
+    scale_y_continuous(expand = c(0,0),limits=c(0,1050), breaks=c(0,200,400,600,800,1000)) +
     geom_errorbar(aes(ymin=max_load_min, ymax=max_load_max, color=method_id), width=.1) +
 
     geom_line(linewidth=1, aes(linetype=method_id)) +
-    geom_point(size=3, stroke=1, fill="white") +
-    guides(color=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
+    geom_point(size=5, stroke=1, fill="white") +
+    guides(color=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8),
+            linetype = guide_legend(override.aes = list(size = 3))) +
     ylab("Max Load (in Blocks)") +
     xlab(expression(paste("M"))) +
     theme_classic() +

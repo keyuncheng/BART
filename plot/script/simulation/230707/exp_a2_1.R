@@ -26,7 +26,7 @@ if (T) {
     # scale_color_manual("method_id", breaks=c(1,2,3),values=c("#0072B2", "#009E73", "#E69F00"))+
 
     geom_line(linewidth=1, aes(linetype=method_id)) +
-    geom_point(size=3, stroke=1, fill="white") +
+    geom_point(size=5, stroke=1, fill="white") +
     guides(color=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8), 
            linetype = guide_legend(override.aes = list(size = 3))) + # Increase the size of the line in the legend
     ylab("Max Load (in Blocks)") +
