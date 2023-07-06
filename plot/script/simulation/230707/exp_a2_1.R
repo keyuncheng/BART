@@ -10,7 +10,7 @@ if (T) {
     scale_color_manual(name=element_blank(),
                         breaks=c("a","b","c"),
                         labels=c("RD","BW","BART"),
-                        values=c(a='#041562',b='#2187c2',c='#ff0000')) +
+                        values=c(a='#1E90FF',b='#4044FF',c='#FF4500')) +
     scale_shape_manual(name=element_blank(),
                         breaks=c("a","b","c"),
                         labels=c("RD","BW","BART"),

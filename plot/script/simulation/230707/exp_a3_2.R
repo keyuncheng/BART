@@ -10,7 +10,7 @@ if (T) {
     scale_color_manual(name=element_blank(),
                         breaks=c("a","b","c"),
                         labels=c("RD","BW","BART"),
-                        values=c(a='#041562',b='#2187c2',c='#ff0000')) +
+                        values=c(a='#1E90FF',b='#4044FF',c='#FF4500')) +
     scale_shape_manual(name=element_blank(),
                         breaks=c("a","b","c"),
                         labels=c("RD","BW","BART"),
@@ -21,7 +21,7 @@ if (T) {
                         values=c(2,3,4)) +
     scale_x_discrete(breaks=c("a","b","c","d"),
                     labels=c("100", "200", "300", "400")) +
-    scale_y_continuous(expand = c(0,0),limits=c(0,505), breaks=c(0,100,200,300,400,500)) +
+    scale_y_continuous(expand = c(0,0),limits=c(0,520), breaks=c(0,100,200,300,400,500)) +
     geom_errorbar(aes(ymin=max_load_min, ymax=max_load_max, color=method_id), width=.1) +
     geom_line(linewidth=1, aes(linetype=method_id)) +
     geom_point(size=5, stroke=1, fill="white") +

@@ -11,14 +11,14 @@ if (T) {
     scale_fill_manual(name=element_blank(),
                     breaks=c("a","b","c"),
                     labels=c("RD","BW","BART"),
-                    values=c(a='#041562',b='#2187c2',c='#ff0000')) +
+                    values=c(a='#1E90FF',b='#4044FF',c='#FF4500')) +
     scale_x_discrete(breaks=c("a","b","c","d","e","f","g","h","i"),
                     labels=c("(6,3,2)", "(6,3,3)", "(6,3,4)", "(10,2,2)", "(10,2,3)", "(10,2,4)", "(16,4,2)", "(16,4,3)", "(16,4,4)")) +
                     # labels=c("(4,2,2)", "(4,2,3)", "(4,2,4)", "(6,3,2)", "(6,3,3)", "(6,3,4)", "(8,4,2)", "(8,4,3)", "(8,4,4)")) +
     scale_y_continuous(expand = c(0,0),limits=c(0,1050), breaks=c(0,200,400,600,800,1000)) +
     guides(fill=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
     #  geom_text(aes(label = max_load), hjust=-2, vjust=-0.4, color = "black", size=2, angle=60, stat="identity") +
-    geom_bar(color="black", stat="identity", width=0.8, position=position_dodge()) +
+    geom_bar(color="transparent", stat="identity", width=0.8, position=position_dodge()) +
     geom_errorbar(aes(ymin=max_load_min, ymax=max_load_max), width=.2, position=position_dodge(.8)) +
     ylab("Max Load (in Blocks)") +
     xlab(expression(paste("(k,m,", lambda, ")"))) +
