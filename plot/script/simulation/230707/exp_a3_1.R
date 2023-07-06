@@ -31,11 +31,11 @@ if (T) {
     ylab("Max Load (in Blocks)") +
     xlab(expression(italic(paste("N")))) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
-    theme(axis.text.y = element_text(size=15, color="black", family="Times New Roman")) +
-    theme(axis.title.x = element_text(size=15, family="Times New Roman")) +
-    theme(axis.title.y = element_text(size=15, family="Times New Roman")) +
-    theme(legend.text = element_text(size=15, family="Times New Roman")) +
+    theme(axis.text.x = element_text(size=20, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
+    theme(axis.text.y = element_text(size=20, color="black", family="Times New Roman")) +
+    theme(axis.title.x = element_text(size=20, family="Times New Roman")) +
+    theme(axis.title.y = element_text(size=20, family="Times New Roman")) +
+    theme(legend.text = element_text(size=20, family="Times New Roman")) +
     theme(legend.position=c(0.5,0.95), legend.direction = "horizontal", legend.key=element_blank())
     ggsave("../../../pdf/simulation/230707/exp_a3_1.pdf", width=5.5, height=4, device=cairo_pdf)
 }

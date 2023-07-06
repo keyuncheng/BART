@@ -21,7 +21,7 @@ if (T) {
                         values=c(2,3,4)) +
     scale_x_discrete(breaks=c("a","b","c","d"),
                     labels=c("100", "200", "300", "400")) +
-    scale_y_continuous(expand = c(0,0),limits=c(0,520), breaks=c(0,100,200,300,400,500)) +
+    scale_y_continuous(expand = c(0,0),limits=c(0,415), breaks=c(0,100,200,300,400)) +
     geom_errorbar(aes(ymin=max_load_min, ymax=max_load_max, color=method_id), width=.1) +
     geom_line(linewidth=1, aes(linetype=method_id)) +
     geom_point(size=5, stroke=1, fill="white") +
@@ -30,11 +30,11 @@ if (T) {
     ylab("Max Load (in Blocks)") +
     xlab(expression(italic(paste("N")))) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
-    theme(axis.text.y = element_text(size=15, color="black", family="Times New Roman")) +
-    theme(axis.title.x = element_text(size=15, family="Times New Roman")) +
-    theme(axis.title.y = element_text(size=15, family="Times New Roman")) +
-    theme(legend.text = element_text(size=15, family="Times New Roman")) +
+    theme(axis.text.x = element_text(size=20, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
+    theme(axis.text.y = element_text(size=20, color="black", family="Times New Roman")) +
+    theme(axis.title.x = element_text(size=20, family="Times New Roman")) +
+    theme(axis.title.y = element_text(size=20, family="Times New Roman")) +
+    theme(legend.text = element_text(size=20, family="Times New Roman")) +
     theme(legend.position=c(0.5,0.95), legend.direction = "horizontal", legend.key=element_blank())
     ggsave("../../../pdf/simulation/230707/exp_a3_2.pdf", width=5.5, height=4, device=cairo_pdf)
 }

@@ -3,9 +3,9 @@ if (T) {
     x1<-read.table("../../../data/simulation/230707/exp_a1_2.dat", header=TRUE)
     library(ggplot2)
     library(grid)
-    # library(extrafont)
-    # font_import()
-    # loadfonts()
+    library(extrafont)
+    font_import()
+    loadfonts()
 
     ggplot(x1, aes(x=code_param_id, y=max_load, fill=method_id)) +
     scale_fill_manual(name=element_blank(),
@@ -23,13 +23,13 @@ if (T) {
     ylab("Max Load (in Blocks)") +
     xlab(expression(paste("(k,m,", lambda, ")"))) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
-    theme(axis.text.y = element_text(size=15, color="black", family="Times New Roman")) +
-    theme(legend.text = element_text(size=15, family="Times New Roman")) +
-    theme(axis.title.x = element_text(size=15, family="Times New Roman")) +
-    theme(axis.title.y = element_text(size=15, family="Times New Roman")) +
-    theme(text = element_text(size=15, family="Times New Roman")) +
+    theme(axis.text.x = element_text(size=20, angle=30, hjust=1, vjust=1, color="black", family="Times New Roman")) +
+    theme(axis.text.y = element_text(size=20, color="black", family="Times New Roman")) +
+    theme(legend.text = element_text(size=20, family="Times New Roman")) +
+    theme(axis.title.x = element_text(size=20, family="Times New Roman")) +
+    theme(axis.title.y = element_text(size=20, family="Times New Roman")) +
+    theme(text = element_text(size=20, family="Times New Roman")) +
     theme(legend.background=element_rect(fill = alpha("white", 0.0))) + 
     theme(legend.position=c(0.5,0.95), legend.direction="vertical", legend.key=element_blank())
-    ggsave("../../../pdf/simulation/230707/exp_a1_2.pdf", width=9, height=4, device=cairo_pdf)
+    ggsave("../../../pdf/simulation/230707/exp_a1_2.pdf", width=9, height=4.4, device=cairo_pdf)
 }
