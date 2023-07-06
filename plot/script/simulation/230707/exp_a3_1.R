@@ -29,13 +29,13 @@ if (T) {
     guides(color=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8), 
            linetype = guide_legend(override.aes = list(size = 3))) + # Increase the size of the line in the legend
     ylab("Max Load (in Blocks)") +
-    xlab(expression(paste("N"))) +
+    xlab(expression(italic(paste("N")))) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, color="black")) +
-    theme(axis.title.y = element_text(size=15)) +
-    theme(axis.text.y = element_text(size=15, color="black")) +
-    theme(legend.text = element_text(size=15)) +
-    theme(axis.title = element_text(size=15)) +
+    theme(axis.text.x = element_text(size=15, angle=0, hjust=0.5, vjust=1, color="black", family="Times New Roman")) +
+    theme(axis.text.y = element_text(size=15, color="black", family="Times New Roman")) +
+    theme(axis.title.x = element_text(size=15, family="Times New Roman")) +
+    theme(axis.title.y = element_text(size=15, family="Times New Roman")) +
+    theme(legend.text = element_text(size=15, family="Times New Roman")) +
     theme(legend.position=c(0.5,0.95), legend.direction = "horizontal", legend.key=element_blank())
     ggsave("../../../pdf/simulation/230707/exp_a3_1.pdf", width=5.5, height=4, device=cairo_pdf)
 }
