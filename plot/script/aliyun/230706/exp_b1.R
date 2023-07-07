@@ -10,7 +10,7 @@ if (T) {
     scale_fill_manual(name=element_blank(),
                     breaks=c("a","b","c"),
                     labels=c("RD","BW","BART"),
-                    values=c(a='#1E90FF',b='#4044FF',c='#FF4500')) +
+                    values=c(a='#1E90FF',b='#C1A61D',c='#EE1111')) +
     scale_x_discrete(breaks=c("a","b","c","d"),
                     labels=c("(6,2,2)", "(6,3,2)", "(6,3,3)", "(10,2,2)")) +
     scale_y_continuous(expand = c(0,0),limits=c(0, 165), breaks=c(0,40,80,120,160)) +

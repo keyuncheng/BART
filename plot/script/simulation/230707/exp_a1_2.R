@@ -11,7 +11,7 @@ if (T) {
     scale_fill_manual(name=element_blank(),
                     breaks=c("a","b","c"),
                     labels=c("RD","BW","BART"),
-                    values=c(a='#1E90FF',b='#4044FF',c='#FF4500')) +
+                    values=c(a='#1E90FF',b='#C1A61D',c='#EE1111')) +
     scale_x_discrete(breaks=c("a","b","c","d","e","f","g","h","i"),
                     labels=c("(6,3,2)", "(6,3,3)", "(6,3,4)", "(10,2,2)", "(10,2,3)", "(10,2,4)", "(16,4,2)", "(16,4,3)", "(16,4,4)")) +
                     # labels=c("(4,2,2)", "(4,2,3)", "(4,2,4)", "(6,3,2)", "(6,3,3)", "(6,3,4)", "(8,4,2)", "(8,4,3)", "(8,4,4)")) +
@@ -23,7 +23,7 @@ if (T) {
     ylab("Max Load (in Blocks)") +
     xlab(expression(paste("(k,m,", lambda, ")"))) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=20, angle=30, hjust=1, vjust=1, color="black", family="Times New Roman")) +
+    theme(axis.text.x = element_text(size=20, angle=30, hjust=0.8, vjust=0.8, color="black", family="Times New Roman")) +
     theme(axis.text.y = element_text(size=20, color="black", family="Times New Roman")) +
     theme(legend.text = element_text(size=20, family="Times New Roman")) +
     theme(axis.title.x = element_text(size=20, family="Times New Roman")) +
