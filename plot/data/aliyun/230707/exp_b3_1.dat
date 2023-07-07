@@ -1,0 +1,16 @@
+code_param_id	code_param	method_id	method	 network_id  network   bandwidth	max_time
+b	(6,3,3)     a       RDPM    a       0.5    4513	    219225
+b	(6,3,3)     b       BWPM    a       0.5    1388	    78888
+b	(6,3,3)     c       BTPM    a       0.5    1390	    64306
+b	(6,3,3)     a       RDPM    b       1      4513	    110824
+b	(6,3,3)     b       BWPM    b       1      1388	    40190
+b	(6,3,3)     c       BTPM    b       1      1390	    34127
+b	(6,3,3)     a       RDPM    c       2      4513	    57928
+b	(6,3,3)     b       BWPM    c       2      1388	    22370
+b	(6,3,3)     c       BTPM    c       2      1390	    18985
+b	(6,3,3)     a       RDPM    d       5      4513	    43737
+b	(6,3,3)     b       BWPM    d       5      1388	    12793
+b	(6,3,3)     c       BTPM    d       5      1390	    11645
+b	(6,3,3)     a       RDPM    e       10     4513	    40362
+b	(6,3,3)     b       BWPM    e       10     1388	    13370
+b	(6,3,3)     c       BTPM    e       10     1390	    11042
