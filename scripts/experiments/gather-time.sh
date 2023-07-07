@@ -3,7 +3,7 @@
 source "experiments/common.sh"
 
 # modify config and sync
-num_nodes=20
+num_nodes=30
 
 num_nodes_provided=${#AGENTNODES[@]}
 if [[ $num_nodes -ne $num_nodes_provided ]]; then
@@ -22,7 +22,7 @@ time_min=-1
 node_index=0
 for node in ${AGENTNODES[@]}; do
   echo "Time from $node"
-  output=$(ssh ${USER}@${node} "cat ~/node_agent.log | grep time")
+  output=$(ssh ${USER}@${node} "cat ~/node_agent_${node_index}.log | grep time")
   echo $output
   iter_time=${output##*: }
   iter_time=${iter_time% ms}
@@ -38,6 +38,7 @@ for node in ${AGENTNODES[@]}; do
   fi
 
   time_sum=$(echo "scale=6; $time_sum + $iter_time" | bc)
+  ((node_index+=1))
 done
 
 echo "Statistics"
