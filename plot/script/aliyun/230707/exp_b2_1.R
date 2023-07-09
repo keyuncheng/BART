@@ -22,6 +22,8 @@ if (T) {
     scale_x_discrete(breaks=c("a","b","c"),
                     labels=c("32", "64", "128")) +
     scale_y_continuous(expand = c(0,0),limits=c(0, 255), breaks=c(0,50,100,150,200,250)) +
+    geom_errorbar(aes(ymin=max_time_min/1000, ymax=max_time_max/1000, color=method_id), width=.1) +
+
     geom_line(linewidth=1, aes(linetype=method_id)) +
     geom_point(size=5, stroke=1, fill="white") +
     guides(color=guide_legend(ncol=1, byrow=TRUE, keywidth=0.8, keyheight=0.8), 

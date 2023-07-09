@@ -17,7 +17,7 @@ if (T) {
     guides(fill=guide_legend(ncol=3, byrow=TRUE, keywidth=0.8, keyheight=0.8)) +
     #  geom_text(aes(label = max_load), hjust=-2, vjust=-0.4, color = "black", size=2, angle=60, stat="identity") +
     geom_bar(color="transparent", stat="identity", width=0.8, position=position_dodge()) +
-    # geom_errorbar(aes(ymin=max_load_min, ymax=max_load_max), width=.2, position=position_dodge(.8)) +
+    geom_errorbar(aes(ymin=max_time_min/1000, ymax=max_time_max/1000), width=.2, position=position_dodge(.8)) +
     ylab("Time (s)") +
     xlab(expression(paste("(k,m,", lambda, ")"))) +
     theme_classic() +

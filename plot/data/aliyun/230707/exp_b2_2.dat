@@ -1,10 +1,10 @@
-code_param_id	code_param	method_id	method	 block_size_id  block_size   bandwidth	max_time
-a	(10,2,2)     a       RDPM    a      32      4179    49971
-a	(10,2,2)     b       BWPM    a      32      966     17073
-a	(10,2,2)     c       BTPM    a      32      966     14327
-a	(10,2,2)     a       RDPM    b      64      4179    100487
-a	(10,2,2)     b       BWPM    b      64      966     34413
-a	(10,2,2)     c       BTPM    b      64      966     26080
-a	(10,2,2)     a       RDPM    c      128     4179    210374
-a	(10,2,2)     b       BWPM    c      128     966     68149
-a	(10,2,2)     c       BTPM    c      128     966     52270
+code_param_id	code_param	method_id	method	 block_size_id  block_size   bandwidth	max_load    max_time    max_time_max    max_time_min
+a	(10,2,2)     a       RDPM    a      32      4177.0      167.0   50922.4     53460.0     49431.0 
+a	(10,2,2)     b       BWPM    a      32      976.0       54.0    17396.2     17528.0     17215.0 
+a	(10,2,2)     c       BTPM    a      32      977.0       43.0    14092.4     14912.0     13260.0
+a	(10,2,2)     a       RDPM    b      64      04177.0     167.0   100110.6    103872.0    97897.0 
+a	(10,2,2)     b       BWPM    b      64      976.0       54.0    33873.2     34270.0     33264.0
+a	(10,2,2)     c       BTPM    b      64      977.0       43.0    27724.2     28219.0     27379.0
+a	(10,2,2)     a       RDPM    c      128     4177.0      167.0   198216.2    200513.0    196384.0 
+a	(10,2,2)     b       BWPM    c      128     976.0       54.0    67307.6     67622.0     66983.0 
+a	(10,2,2)     c       BTPM    c      128     977.0       43.0    54808.8     55570.0     54212.0 

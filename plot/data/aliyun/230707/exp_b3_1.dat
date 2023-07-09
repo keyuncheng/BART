@@ -1,16 +1,16 @@
-code_param_id	code_param	method_id	method	 network_id  network   bandwidth	max_time
-b	(6,3,3)     a       RDPM    a       0.5    4513	    219225
-b	(6,3,3)     b       BWPM    a       0.5    1388	    78888
-b	(6,3,3)     c       BTPM    a       0.5    1390	    64306
-b	(6,3,3)     a       RDPM    b       1      4513	    110824
-b	(6,3,3)     b       BWPM    b       1      1388	    40190
-b	(6,3,3)     c       BTPM    b       1      1390	    34127
-b	(6,3,3)     a       RDPM    c       2      4513	    57928
-b	(6,3,3)     b       BWPM    c       2      1388	    22370
-b	(6,3,3)     c       BTPM    c       2      1390	    18985
-b	(6,3,3)     a       RDPM    d       5      4513	    43737
-b	(6,3,3)     b       BWPM    d       5      1388	    12793
-b	(6,3,3)     c       BTPM    d       5      1390	    11645
-b	(6,3,3)     a       RDPM    e       10     4513	    40362
-b	(6,3,3)     b       BWPM    e       10     1388	    13370
-b	(6,3,3)     c       BTPM    e       10     1390	    11042
+code_param_id	code_param	method_id	method	 network_id  network   bandwidth	max_load    max_time    max_time_max    max_time_min
+b	(6,3,3)     a       RDPM    a       0.5    0    0   0   0   0
+b	(6,3,3)     b       BWPM    a       0.5    0    0   82677.0 83945.0 81635.0 
+b	(6,3,3)     c       BTPM    a       0.5    0    0   67317.75 72003.0 64634.0
+b	(6,3,3)     a       RDPM    b       1      0    0   0   0   0
+b	(6,3,3)     b       BWPM    b       1      0    0   42882.0 43854.0 42367.0
+b	(6,3,3)     c       BTPM    b       1      0    0   34467.5 35047.0 33524.0 
+b	(6,3,3)     a       RDPM    c       2      0    0   0   0   0
+b	(6,3,3)     b       BWPM    c       2      0    0   23095.0 24012.0 22612.0 
+b	(6,3,3)     c       BTPM    c       2      0    0   19735.666666666668 20012.0 19410.0 
+b	(6,3,3)     a       RDPM    d       5      0    0   0   0   0
+b	(6,3,3)     b       BWPM    d       5      0    0   15423.0 15996.0 14408.0
+b	(6,3,3)     c       BTPM    d       5      0    0   11505.666666666666 11679.0 11355.0
+b	(6,3,3)     a       RDPM    e       10     0    0   0   0   0
+b	(6,3,3)     b       BWPM    e       10     0    0   14655.6 16097.0 13647.0 
+b	(6,3,3)     c       BTPM    e       10     0    0   10666.0 10992.0 10197.0 
