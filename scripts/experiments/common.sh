@@ -1,13 +1,14 @@
 #!/bin/bash
 
-USER="hcpuyang"
+USER="bart"
 HOME_DIR="/home/${USER}"
 
-DATANODES=("cloud-node2" "cloud-node3" "cloud-node5" "cloud-node6" "cloud-node7" "cloud-node8" "cloud-node9" "cloud-node10" "cloud-node12" "cloud-node13" "cloud-node14" "cloud-node15" "cloud-node16" "cloud-node17" "cloud-node18" "cloud-node19" "cloud-node20" "cloud-node21" "cloud-node22" "cloud-node23")
-AGENTNODES=("cloud-node2" "cloud-node3" "cloud-node5" "cloud-node6" "cloud-node7" "cloud-node8" "cloud-node9" "cloud-node10" "cloud-node12" "cloud-node13" "cloud-node14" "cloud-node15" "cloud-node16" "cloud-node17" "cloud-node18" "cloud-node19" "cloud-node20" "cloud-node21" "cloud-node22" "cloud-node23")
+DATANODES=("agent00" "agent01" "agent02" "agent03" "agent04" "agent05" "agent06" "agent07" "agent08" "agent09" "agent10" "agent11" "agent12" "agent13" "agent14" "agent15" "agent16" "agent17" "agent18" "agent19" "agent20" "agent21" "agent22" "agent23" "agent24" "agent25" "agent26" "agent27" "agent28" "agent29")
+AGENTNODES=("agent00" "agent01" "agent02" "agent03" "agent04" "agent05" "agent06" "agent07" "agent08" "agent09" "agent10" "agent11" "agent12" "agent13" "agent14" "agent15" "agent16" "agent17" "agent18" "agent19" "agent20" "agent21" "agent22" "agent23" "agent24" "agent25" "agent26" "agent27" "agent28" "agent29")
+
 
 ## middleware configs
-MIDDILEWARE_CONTROLLER="cloud-node1"
+MIDDILEWARE_CONTROLLER="controller"
 MIDDLEWARE_HOME_PATH="${HOME_DIR}/BalancedConversion/"
 
 ## Placement Filename
@@ -15,7 +16,10 @@ ORIGINAL_PATTERN_FILE="${HOME_DIR}/hadoop-balanced-conversion/hadoop-transition-
 HDFS_PATTERN_FILE="${HOME_DIR}/BalancedConversion/metadata/"
 
 ## Experiment Methods
-APPROACH_LIST=("RDPM" "BWPM" "BTPM")
+# APPROACH_LIST=("RDPM")
+# APPROACH_LIST=("BWPM" "BTPM")
+APPROACH_LIST=("BWPM" "BTPM" "RDPM")
+# APPROACH_LIST=("BTPM")
 
 ## Network Bandwidth
-BANDWIDTH = 1048576
+BANDWIDTH=1048576

@@ -11,7 +11,7 @@ kill_switch=$1
 
 if [[ kill_switch -eq 1 ]]; then
   # stop controller
-  ssh ${USER}@${MIDDILEWARE_CONTROLLER} "killall Controller"
+  ssh ${USER}@${MIDDILEWARE_CONTROLLER} "killall -9 Controller"
 fi
 
 # start agents
@@ -22,7 +22,7 @@ for node in ${AGENTNODES[@]}; do
   if [[ kill_switch -eq 1 ]]; then
     # stop agent
     echo "kill Agent on ${node}"
-    ssh ${USER}@${node} "killall Agent"
+    ssh ${USER}@${node} "killall -9 Agent"
   fi
   ((node_index+=1))
   echo -e "\n"
