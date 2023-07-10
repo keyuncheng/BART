@@ -592,12 +592,12 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
     // bw is calculated with data relocation
     cur_lt.bw = accumulate(cur_lt.slt.begin(), cur_lt.slt.end(), 0);
 
-    // printf("current_lt initialized with data relocation send load:\n");
-    // printf("send load: ");
-    // Utils::printVector(cur_lt.slt);
-    // printf("recv load: ");
-    // Utils::printVector(cur_lt.rlt);
-    // printf("bandwidth: %u\n", cur_lt.bw);
+    printf("current_lt initialized with data relocation send load:\n");
+    printf("send load: ");
+    Utils::printVector(cur_lt.slt);
+    printf("recv load: ");
+    Utils::printVector(cur_lt.rlt);
+    printf("bandwidth: %u\n", cur_lt.bw);
 
     // check whether the stripe can be perfectly merged by parity merging
     vector<bool> is_sg_perfect_pm(stripe_batch.selected_sgs.size(), false);
@@ -626,12 +626,13 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
     uint64_t iter = 0;
     uint32_t cur_max_load_iter = UINT32_MAX;
     uint32_t cur_bw_iter = UINT32_MAX;
-    double cur_cv_iter = 1;
+    double cur_cv_iter = UINT32_MAX;
 
     while (true)
     {
         iter++;
         printf("iteration: %ld\n", iter);
+
         for (auto &item : stripe_batch.selected_sgs)
         {
             uint32_t sg_id = item.first;
@@ -719,7 +720,7 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
                 {
                     uint32_t min_max_load_pm_parity = UINT32_MAX;
                     uint8_t min_bw_pm_parity = UINT8_MAX;
-                    double min_cv_slt_pm_parity = 1;
+                    double min_cv_lt_pm_parity = UINT32_MAX;
 
                     vector<pair<uint16_t, LoadTable>> best_parity_compute_nodes;
 
@@ -757,33 +758,65 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
                         // maximum load for the current solution
                         uint32_t max_send_load_pm_parity = *max_element(cur_lt_after_pm_parity.slt.begin(), cur_lt_after_pm_parity.slt.end());
                         uint32_t max_recv_load_pm_parity = *max_element(cur_lt_after_pm_parity.rlt.begin(), cur_lt_after_pm_parity.rlt.end());
-
-                        // maximum load and bandwidth
                         uint32_t max_load_pm_parity = max(max_send_load_pm_parity, max_recv_load_pm_parity);
 
                         // mean, stddev, cv
                         double mean_load_slt = 1.0 * std::accumulate(cur_lt_after_pm_parity.slt.begin(), cur_lt_after_pm_parity.slt.end(), 0) / cur_lt_after_pm_parity.slt.size();
-                        double sq_sum_load_slt = std::inner_product(cur_lt_after_pm_parity.slt.begin(), cur_lt_after_pm_parity.slt.end(), cur_lt_after_pm_parity.slt.begin(), 0.0);
-                        double stddev_load_slt = std::sqrt(sq_sum_load_slt / cur_lt_after_pm_parity.slt.size() - mean_load_slt * mean_load_slt);
-                        double cv_slt = stddev_load_slt / mean_load_slt;
-
-                        // update min_max_load and min_bw
-                        if (max_load_pm_parity <= min_max_load_pm_parity)
+                        double sqr_sum_load_slt = 0;
+                        for (auto &item : cur_lt_after_pm_parity.slt)
                         {
-                            // have improved result
-                            if (max_load_pm_parity < min_max_load_pm_parity || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity < min_bw_pm_parity) || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity == min_bw_pm_parity && cv_slt < min_cv_slt_pm_parity))
-                            {
-                                min_max_load_pm_parity = max_load_pm_parity;
-                                min_bw_pm_parity = bw_pm_parity;
-                                min_cv_slt_pm_parity = cv_slt;
-                                best_parity_compute_nodes.clear();
-                            }
-                            if ((bw_pm_parity < min_bw_pm_parity) || (bw_pm_parity == min_bw_pm_parity && cv_slt <= min_cv_slt_pm_parity))
-                            {
-                                best_parity_compute_nodes.push_back(pair<uint16_t, LoadTable>(parity_compute_node, cur_lt_after_pm_parity));
-                            }
+                            sqr_sum_load_slt += pow((double)item - mean_load_slt, 2);
                         }
+                        double stddev_load_slt = std::sqrt(sqr_sum_load_slt / cur_lt_after_pm_parity.slt.size());
+                        double cv_slt = stddev_load_slt / mean_load_slt;
+                        double load_imb_slt = (max_send_load_pm_parity - mean_load_slt) / mean_load_slt;
+
+                        // mean, stddev, cv
+                        double mean_load_rlt = 1.0 * std::accumulate(cur_lt_after_pm_parity.rlt.begin(), cur_lt_after_pm_parity.rlt.end(), 0) / cur_lt_after_pm_parity.rlt.size();
+                        double sqr_sum_load_rlt = 0;
+                        for (auto &item : cur_lt_after_pm_parity.rlt)
+                        {
+                            sqr_sum_load_rlt += pow((double)item - mean_load_rlt, 2);
+                        }
+                        double stddev_load_rlt = std::sqrt(sqr_sum_load_rlt / cur_lt_after_pm_parity.rlt.size());
+                        double cv_rlt = stddev_load_rlt / mean_load_rlt;
+                        double load_imb_rlt = (max_send_load_pm_parity - mean_load_rlt) / mean_load_rlt;
+
+                        // double cv_lt = cv_slt;
+                        // double cv_lt = sqr_sum_load_slt;
+                        // double cv_lt = max(cv_slt, cv_rlt);
+                        double cv_lt = max(stddev_load_slt, stddev_load_rlt);
+
+                        // have improved result
+                        bool is_improved = max_load_pm_parity < min_max_load_pm_parity || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity < min_bw_pm_parity) || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity == min_bw_pm_parity && cv_lt < min_cv_lt_pm_parity);
+
+                        if (is_improved == true)
+                        {
+                            min_max_load_pm_parity = max_load_pm_parity;
+                            min_bw_pm_parity = bw_pm_parity;
+                            min_cv_lt_pm_parity = cv_lt;
+                            best_parity_compute_nodes.clear();
+
+                            best_parity_compute_nodes.push_back(pair<uint16_t, LoadTable>(parity_compute_node, cur_lt_after_pm_parity));
+                        }
+
+                        bool is_preserved = max_load_pm_parity < min_max_load_pm_parity || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity <= min_bw_pm_parity) || (max_load_pm_parity == min_max_load_pm_parity && bw_pm_parity == min_bw_pm_parity && cv_lt <= min_cv_lt_pm_parity);
+
+                        if (is_preserved)
+                        {
+                            best_parity_compute_nodes.push_back(pair<uint16_t, LoadTable>(parity_compute_node, cur_lt_after_pm_parity));
+                        }
+
+                        // if (max_load_pm_parity < min_max_load_pm_parity || (max_load_pm_parity == min_max_load_pm_parity && cv_lt < min_cv_lt_pm_parity) || (max_load_pm_parity == min_max_load_pm_parity && cv_lt == min_cv_lt_pm_parity && bw_pm_parity < min_bw_pm_parity))
+                        // {
+                        //     min_max_load_pm_parity = max_load_pm_parity;
+                        //     min_bw_pm_parity = bw_pm_parity;
+                        //     min_cv_lt_pm_parity = cv_lt;
+                        //     best_parity_compute_nodes.clear();
+                        // }
                     }
+
+                    // printf("$ of choices: %u\n", best_parity_compute_nodes.size());
 
                     // randomly choose a best parity compute node
                     size_t random_pos = Utils::randomUInt(0, best_parity_compute_nodes.size() - 1, random_generator);
@@ -795,9 +828,9 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
                     cur_lt_after_pm = selected_cur_lt_after_pm_parity;   // update the current load table
                     cur_block_placement[selected_parity_compute_node]++; // place the computed parity block at the node
 
-                    // printf("stripe group: %u, choose to compute parity %u at node %u, bandwidth: %u\n", stripe_group.id, parity_id, selected_parity_compute_node, min_bw_pm_parity);
-                    // Utils::printVector(cur_lt_after_pm.slt);
-                    // Utils::printVector(cur_lt_after_pm.rlt);
+                    printf("stripe group: %u, choose to compute parity %u at node %u, bandwidth: %u\n", stripe_group.id, parity_id, selected_parity_compute_node, min_bw_pm_parity);
+                    Utils::printVector(cur_lt_after_pm.slt);
+                    Utils::printVector(cur_lt_after_pm.rlt);
                 }
 
                 LoadTable cand_lt = stripe_group.genPartialLT4ParityCompute(EncodeMethod::PARITY_MERGE, pm_nodes);
@@ -849,21 +882,46 @@ void BalancedConversion::genParityComputationGreedyOptimized(StripeBatch &stripe
             // printf("bandwidth : %u\n", cur_lt.bw);
         }
         // summarize the current bw
-        uint32_t cur_max_load = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
+        uint32_t cur_max_send_load = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
+        uint32_t cur_max_recv_load = *max_element(cur_lt.rlt.begin(), cur_lt.rlt.end());
+        uint32_t cur_max_load = max(cur_max_send_load, cur_max_recv_load);
 
         // mean, stddev, cv
         double mean_load_slt = 1.0 * std::accumulate(cur_lt.slt.begin(), cur_lt.slt.end(), 0) / cur_lt.slt.size();
-        double sq_sum_load_slt = std::inner_product(cur_lt.slt.begin(), cur_lt.slt.end(), cur_lt.slt.begin(), 0.0);
-        double stddev_load_slt = std::sqrt(sq_sum_load_slt / cur_lt.slt.size() - mean_load_slt * mean_load_slt);
+        double sqr_sum_load_slt = 0;
+        for (auto &item : cur_lt.slt)
+        {
+            sqr_sum_load_slt += pow((double)item - mean_load_slt, 2);
+        }
+        double stddev_load_slt = std::sqrt(sqr_sum_load_slt / cur_lt.slt.size());
         double cv_slt = stddev_load_slt / mean_load_slt;
+        double load_imb_slt = (cur_max_send_load - mean_load_slt) / mean_load_slt;
 
-        bool improved = cur_max_load < cur_max_load_iter || (cur_max_load == cur_max_load_iter && cur_lt.bw < cur_bw_iter) || (cur_max_load == cur_max_load_iter && cur_lt.bw == cur_bw_iter && cv_slt < cur_cv_iter);
+        // mean, stddev, cv
+        double mean_load_rlt = 1.0 * std::accumulate(cur_lt.rlt.begin(), cur_lt.rlt.end(), 0) / cur_lt.rlt.size();
+        double sqr_sum_load_rlt = 0;
+        for (auto &item : cur_lt.rlt)
+        {
+            sqr_sum_load_rlt += pow((double)item - mean_load_rlt, 2);
+        }
+        double stddev_load_rlt = std::sqrt(sqr_sum_load_rlt / cur_lt.rlt.size());
+        double cv_rlt = stddev_load_rlt / mean_load_rlt;
+        double load_imb_rlt = (cur_max_recv_load - mean_load_rlt) / mean_load_rlt;
+
+        // max cv of send and recv respectively
+        // double cv_lt = cv_slt;
+        // double cv_lt = stddev_load_slt;
+        // double cv_lt = max(cv_slt, cv_rlt);
+        double cv_lt = max(stddev_load_slt, stddev_load_rlt);
+        // double cv_lt = max(load_imb_slt, load_imb_rlt);
+
+        bool improved = cur_max_load < cur_max_load_iter || (cur_max_load == cur_max_load_iter && cur_lt.bw < cur_bw_iter) || (cur_max_load == cur_max_load_iter && cur_lt.bw == cur_bw_iter && cv_lt < cur_cv_iter);
         if (improved == true)
         {
             // update the max load and bw
             cur_max_load_iter = cur_max_load;
             cur_bw_iter = cur_lt.bw;
-            cur_cv_iter = cv_slt;
+            cur_cv_iter = cv_lt;
         }
         else
         {
