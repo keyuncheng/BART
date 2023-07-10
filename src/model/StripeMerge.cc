@@ -74,7 +74,8 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
     { // parity merging only
 
         // find encode nodes
-        stripe_group.getMinPMBW(min_bw_pm_nodes);
+        // stripe_group.getMinPMBW(min_bw_pm_nodes);
+        stripe_group.getMinPMBWBF(true, &min_bw_pm_nodes, &random_generator);
     }
 
     // update parity computation nodes, final block placement and block distribution
