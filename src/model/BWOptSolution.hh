@@ -1,23 +1,23 @@
-#ifndef __STRIPE_MERGE_G_HH__
-#define __STRIPE_MERGE_G_HH__
+#ifndef __BW_OPT_SOLUTION_HH__
+#define __BW_OPT_SOLUTION_HH__
 
 #include "../include/include.hh"
 #include "../util/Utils.hh"
 #include "StripeBatch.hh"
 #include "StripeGroup.hh"
 
-class StripeMerge
+class BWOptSolution
 {
 private:
     /* data */
 public:
     mt19937 &random_generator;
 
-    StripeMerge(mt19937 &_random_generator);
-    ~StripeMerge();
+    BWOptSolution(mt19937 &_random_generator);
+    ~BWOptSolution();
 
     void genSolution(StripeBatch &stripe_batch, string approach);
     void genSolution(StripeGroup &stripe_group, string approach);
 };
 
-#endif // __STRIPE_MERGE_G_HH__
+#endif // __BW_OPT_SOLUTION_HH__

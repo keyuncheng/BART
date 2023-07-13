@@ -1,19 +1,19 @@
-#include "StripeMerge.hh"
+#include "BWOptSolution.hh"
 
-StripeMerge::StripeMerge(mt19937 &_random_generator) : random_generator(_random_generator)
+BWOptSolution::BWOptSolution(mt19937 &_random_generator) : random_generator(_random_generator)
 {
 }
 
-StripeMerge::~StripeMerge()
+BWOptSolution::~BWOptSolution()
 {
 }
 
-void StripeMerge::genSolution(StripeBatch &stripe_batch, string approach)
+void BWOptSolution::genSolution(StripeBatch &stripe_batch, string approach)
 {
     // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
     printf("Step 1: construct stripe groups\n");
-    // stripe_batch.constructSGByBW(approach);
     stripe_batch.constructSGByBWGreedy(approach);
+    // stripe_batch.constructSGByBW(approach);
     // stripe_batch.print();
 
     // Step 2: generate transition solutions from all stripe groups
@@ -24,23 +24,10 @@ void StripeMerge::genSolution(StripeBatch &stripe_batch, string approach)
     }
 }
 
-void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
+void BWOptSolution::genSolution(StripeGroup &stripe_group, string approach)
 {
     ConvertibleCode &code = stripe_group.code;
     uint16_t num_nodes = stripe_group.settings.num_nodes;
-
-    // record final block placements in final stripe
-    u16string final_block_placement(code.n_f, INVALID_NODE_ID);
-
-    // record current data block placement
-    for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
-    {
-        for (uint8_t block_id = 0; block_id < code.k_i; block_id++)
-        {
-            uint8_t final_block_id = stripe_id * code.k_i + block_id;
-            final_block_placement[final_block_id] = stripe_group.pre_stripes[stripe_id]->indices[block_id];
-        }
-    }
 
     /**
      * @brief Step 2.1: parity generation
@@ -52,7 +39,7 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
 
     if (approach == "BWRE")
     { // re-encoding only
-        // for re-encoding, find the node with most number of data blocks (at most code.lambda_i)
+        // for re-encoding, find the node stored with most number of data blocks (at most code.lambda_i)
         uint8_t max_num_placed_data_blocks = *max_element(stripe_group.data_dist.begin(), stripe_group.data_dist.end());
 
         // randomly find a node with max_num_placed_data_blocks
@@ -78,16 +65,29 @@ void StripeMerge::genSolution(StripeGroup &stripe_group, string approach)
         stripe_group.getMinPMBWBF(true, &min_bw_pm_nodes, &random_generator);
     }
 
+    /**
+     * @brief Step 2.2: block relocation
+     * for each node that placed with more than one block, relocate the corresponding blocks to other nodes without blocks
+     */
+
+    // record final block placements in final stripe
+    u16string final_block_placement(code.n_f, INVALID_NODE_ID);
+
+    // record current data block placement
+    for (uint8_t stripe_id = 0; stripe_id < code.lambda_i; stripe_id++)
+    {
+        for (uint8_t block_id = 0; block_id < code.k_i; block_id++)
+        {
+            uint8_t final_block_id = stripe_id * code.k_i + block_id;
+            final_block_placement[final_block_id] = stripe_group.pre_stripes[stripe_id]->indices[block_id];
+        }
+    }
+
     // update parity computation nodes, final block placement and block distribution
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
         final_block_placement[code.k_f + parity_id] = min_bw_pm_nodes[parity_id];
     }
-
-    /**
-     * @brief Step 2.2: block relocation
-     * for each node that placed with more than one block, relocate the corresponding blocks to other nodes without blocks
-     */
 
     // find blocks that needs relocation
     vector<bool> is_node_placed(num_nodes, false);

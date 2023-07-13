@@ -4,7 +4,7 @@
 #include "util/StripeGenerator.hh"
 #include "model/StripeBatch.hh"
 #include "model/RandomSolution.hh"
-#include "model/StripeMerge.hh"
+#include "model/BWOptSolution.hh"
 #include "model/BalancedConversion.hh"
 
 int main(int argc, char *argv[])
@@ -73,8 +73,8 @@ int main(int argc, char *argv[])
     }
     else if (approach == "BWRE" || approach == "BWPM")
     {
-        // StripeMerge
-        StripeMerge stripe_merge(random_generator);
+        // BWOptSolution
+        BWOptSolution stripe_merge(random_generator);
         stripe_merge.genSolution(stripe_batch, approach);
     }
     else if (approach == "BTRE" || approach == "BTPM" || approach == "BT")

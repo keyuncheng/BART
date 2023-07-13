@@ -30,6 +30,36 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
     ConvertibleCode &code = stripe_group.code;
     uint16_t num_nodes = stripe_group.settings.num_nodes;
 
+    /**
+     * @brief Step 2.1: parity generation
+     * for each parity block, randomly find an encoding node
+     */
+    u16string rand_pm_nodes(code.m_f, INVALID_NODE_ID);
+
+    if (approach == "RDRE")
+    {
+        size_t random_node = Utils::randomUInt(0, num_nodes - 1, random_generator);
+        rand_pm_nodes.assign(code.m_f, random_node);
+    }
+    else if (approach == "RDPM")
+    {
+        // randomly pick code.m_f nodes to do parity merging computation
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            rand_pm_nodes[parity_id] = Utils::randomUInt(0, num_nodes - 1, random_generator);
+        }
+    }
+    else
+    {
+        fprintf(stderr, "invalid approach: %s\n", approach.c_str());
+        return;
+    }
+
+    /**
+     * @brief Step 2.2: block relocation
+     * for each node that placed with more than one block, relocate the corresponding blocks to other nodes without blocks
+     */
+
     // record final block placements in final stripe
     u16string final_block_placement(code.n_f, INVALID_NODE_ID);
 
@@ -43,44 +73,11 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
         }
     }
 
-    /**
-     * @brief Step 2.1: parity generation
-     * for each parity block, find the node with minimum bandwidth for parity generation
-     */
-    u16string rand_parity_comp_nodes;
-
-    if (approach == "RDRE")
-    {
-        size_t random_node = Utils::randomUInt(0, num_nodes - 1, random_generator);
-        rand_parity_comp_nodes.assign(code.m_f, random_node);
-    }
-    else if (approach == "RDPM")
-    {
-        // randomly pick m_f nodes to do parity merging computation
-        u16string nodes(num_nodes, INVALID_NODE_ID);
-        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
-        {
-            nodes[node_id] = node_id;
-        }
-        shuffle(nodes.begin(), nodes.end(), random_generator);
-        rand_parity_comp_nodes = nodes.substr(0, code.m_f);
-    }
-    else
-    {
-        fprintf(stderr, "invalid approach: %s\n", approach.c_str());
-        return;
-    }
-
-    // update parity computation nodes, final block placement and block distribution
+    // update parity computation nodes into final block placement
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        final_block_placement[code.k_f + parity_id] = rand_parity_comp_nodes[parity_id];
+        final_block_placement[code.k_f + parity_id] = rand_pm_nodes[parity_id];
     }
-
-    /**
-     * @brief Step 2.2: block relocation
-     * for each node that placed with more than one block, relocate the corresponding blocks to other nodes without blocks
-     */
 
     // find blocks that needs relocation
     vector<bool> is_node_placed(num_nodes, false);
@@ -130,6 +127,6 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
     {
         stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
     }
-    stripe_group.parity_comp_nodes = rand_parity_comp_nodes;
+    stripe_group.parity_comp_nodes = rand_pm_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }
