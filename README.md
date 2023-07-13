@@ -1,5 +1,5 @@
-# BalancedConversion
-Balanced Code Conversion
+# BART
+BAlanced Redundancy Transitioning
 
 ## Workflow
 

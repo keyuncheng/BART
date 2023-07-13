@@ -5,7 +5,7 @@
 #include "model/StripeBatch.hh"
 #include "model/RandomSolution.hh"
 #include "model/BWOptSolution.hh"
-#include "model/BalancedConversion.hh"
+#include "model/BART.hh"
 
 int main(int argc, char *argv[])
 {
@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
     }
     else if (approach == "BTRE" || approach == "BTPM" || approach == "BT")
     {
-        // Balanced Conversion
-        BalancedConversion balanced_conversion(random_generator);
-        balanced_conversion.genSolution(stripe_batch, approach);
+        // BART solution
+        BART bart(random_generator);
+        bart.genSolution(stripe_batch, approach);
     }
     else
     {

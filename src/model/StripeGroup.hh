@@ -51,7 +51,7 @@ public:
     EncodeMethod parity_comp_method;
     u16string parity_comp_nodes;
 
-    // (for BalancedConversion only) load tables
+    // (for BART only) load tables
     LoadTable applied_lt;
     vector<LoadTable> cand_partial_lts;
 
@@ -108,15 +108,59 @@ public:
      */
     uint8_t getPMBW(u16string &enc_nodes);
 
-    bool isPerfectParityMerging();
+    /**
+     * @brief check if the parity block can be perfectly merged (zero
+     * bandwidth), which requires that the parity blocks all reside in the
+     * same node
+     *
+     * @param parity_id
+     * @return true
+     * @return false
+     */
+    bool isPerfectPM(uint8_t parity_id);
 
-    // generate parity computation scheme for perfect parity merging (parity generation bandwidth = 0)
-    void genParityComputeScheme4PerfectPM();
+    /**
+     * @brief check if all code.m_f parity block can be perfectly merged
+     *
+     * @return true
+     * @return false
+     */
+    bool isPerfectPM();
 
-    // generate candidate partial load tables for the stripe group with re-encoding and parity merging
-    void genPartialLTs4ParityCompute(string approach);
+    /**
+     * @brief get the encoding node where all the parity blocks all reside for
+     * perfect parity merging
+     *
+     * @param parity_id
+     * @return uint16_t
+     */
+    uint16_t genEncNodeForPerfectPM(uint8_t parity_id);
 
-    LoadTable genPartialLT4ParityCompute(EncodeMethod enc_method, u16string enc_nodes);
+    /**
+     * @brief generate the load table for perfect parity merging, where all
+     * code.m_f parity blocks can be perfectly merged
+     *
+     */
+    void genLTForPerfectPM();
+
+    /**
+     * @brief generate partial load table with traffic for parity generation
+     * only; the encoding nodes and enc_method specifies the computation scheme
+     *
+     * @param enc_method
+     * @param enc_nodes
+     * @return LoadTable
+     */
+    LoadTable genPartialLTForParityCompute(EncodeMethod enc_method, u16string &enc_nodes);
+
+    /**
+     * @brief generate all possible partial load tables with traffic for
+     * parity generation only
+     *
+     * @param approach transitioning approach
+     * @return LoadTable
+     */
+    void genAllPartialLTs4ParityCompute(string approach);
 };
 
 #endif // __STRIPE_GROUP_HH__

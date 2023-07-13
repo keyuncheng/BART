@@ -71,12 +71,10 @@ public:
      */
     bool loadSGMetadata(string sg_meta_filename);
 
-    // bool constructByCostAndSendLoad(vector<Stripe> &stripes, mt19937 &random_generator);
-
-    // bool constructBySendLoadAndCost(vector<Stripe> &stripes, mt19937 &random_generator);
-
-    // bool constructBySendLoadAndCostv2(vector<Stripe> &stripes, mt19937 &random_generator);
-
+    /**
+     * @brief print stripe batch
+     *
+     */
     void print();
 };
 

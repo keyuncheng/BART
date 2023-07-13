@@ -6,12 +6,12 @@
 #include "Node.hh"
 #include "CmdHandler.hh"
 #include "CmdDist.hh"
+#include "../util/MessageQueue.hh"
 #include "../util/StripeGenerator.hh"
 #include "../model/TransSolution.hh"
 #include "../model/RandomSolution.hh"
 #include "../model/BWOptSolution.hh"
-#include "../util/MessageQueue.hh"
-#include "../model/BalancedConversion.hh"
+#include "../model/BART.hh"
 
 class CtrlNode : public Node
 {

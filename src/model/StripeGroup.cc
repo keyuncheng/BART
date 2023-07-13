@@ -180,16 +180,13 @@ uint8_t StripeGroup::getPMBW(u16string &enc_nodes)
     return sum_pm_bw;
 }
 
-bool StripeGroup::isPerfectParityMerging()
+bool StripeGroup::isPerfectPM()
 {
-    uint8_t num_required_parity_blocks = pre_stripes.size();
-
+    // requires that all parity blocks are perfectly merged
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        // candidate nodes for parity merging
-        u16string &parity_dist = parity_dists[parity_id];
-        if (*max_element(parity_dist.begin(), parity_dist.end()) != num_required_parity_blocks)
-        { // requires that there are num_required_parity_blocks parity blocks placed at a node
+        if (isPerfectPM(parity_id) == false)
+        {
             return false;
         }
     }
@@ -197,18 +194,35 @@ bool StripeGroup::isPerfectParityMerging()
     return true;
 }
 
-void StripeGroup::genParityComputeScheme4PerfectPM()
+bool StripeGroup::isPerfectPM(uint8_t parity_id)
 {
-    // for perfect parity merging, parity generation generates zero transition bandwidth for
+    uint8_t num_pre_stripes = pre_stripes.size();
+
+    // requires that all <num_pre_stripes> parity blocks are placed at a node
+    u16string &parity_dist = parity_dists[parity_id];
+    if (*max_element(parity_dist.begin(), parity_dist.end()) != num_pre_stripes)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+uint16_t StripeGroup::genEncNodeForPerfectPM(uint8_t parity_id)
+{
+    u16string &parity_dist = parity_dists[parity_id];
+    return (uint16_t)distance(parity_dist.begin(), max_element(parity_dist.begin(), parity_dist.end()));
+}
+
+void StripeGroup::genLTForPerfectPM()
+{
     applied_lt.approach = EncodeMethod::PARITY_MERGE;
 
     // find corresponding code.m_f nodes for perfect parity merging
     applied_lt.enc_nodes.assign(code.m_f, INVALID_NODE_ID);
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        u16string &parity_dist = parity_dists[parity_id];
-        uint16_t min_bw_node_id = distance(parity_dist.begin(), max_element(parity_dist.begin(), parity_dist.end()));
-        applied_lt.enc_nodes[parity_id] = min_bw_node_id;
+        applied_lt.enc_nodes[parity_id] = genEncNodeForPerfectPM(parity_id);
     }
 
     // assign load tables
@@ -219,7 +233,7 @@ void StripeGroup::genParityComputeScheme4PerfectPM()
     applied_lt.bw = 0;
 }
 
-void StripeGroup::genPartialLTs4ParityCompute(string approach)
+void StripeGroup::genAllPartialLTs4ParityCompute(string approach)
 {
     uint16_t num_nodes = settings.num_nodes;
 
@@ -232,7 +246,8 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     vector<LoadTable> cand_re_lts(num_re_lts);
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
-        cand_re_lts[node_id] = genPartialLT4ParityCompute(EncodeMethod::RE_ENCODE, u16string(code.m_f, node_id));
+        u16string enc_nodes(code.m_f, node_id);
+        cand_re_lts[node_id] = genPartialLTForParityCompute(EncodeMethod::RE_ENCODE, enc_nodes);
     }
 
     // enumerate partial load tables for parity merging
@@ -240,7 +255,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     u16string pm_nodes(code.m_f, 0); // computation for parity i is at pm_nodes[i]
     for (uint32_t perm_id = 0; perm_id < num_pm_lts; perm_id++)
     {
-        cand_pm_lts[perm_id] = genPartialLT4ParityCompute(EncodeMethod::PARITY_MERGE, pm_nodes);
+        cand_pm_lts[perm_id] = genPartialLTForParityCompute(EncodeMethod::PARITY_MERGE, pm_nodes);
 
         // get next permutation
         Utils::getNextPerm(num_nodes, code.m_f, pm_nodes);
@@ -263,7 +278,7 @@ void StripeGroup::genPartialLTs4ParityCompute(string approach)
     }
 }
 
-LoadTable StripeGroup::genPartialLT4ParityCompute(EncodeMethod enc_method, u16string enc_nodes)
+LoadTable StripeGroup::genPartialLTForParityCompute(EncodeMethod enc_method, u16string &enc_nodes)
 {
     uint16_t num_nodes = settings.num_nodes;
 
@@ -311,7 +326,10 @@ LoadTable StripeGroup::genPartialLT4ParityCompute(EncodeMethod enc_method, u16st
                 }
             }
 
-            // compute at parity_comp_node_id; if there is a data block located there, then we need to relocate the parity block
+            // compute at parity_comp_node_id; if there is a data block /
+            // other new
+            // parity block located there, then we need to relocate the
+            // current new parity block
             if (temp_block_placement[parity_comp_node_id] > 1)
             {
                 lt.slt[parity_comp_node_id]++;
