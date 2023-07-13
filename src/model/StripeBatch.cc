@@ -88,7 +88,7 @@ void StripeBatch::constructSGByRandomPick()
     }
 }
 
-void StripeBatch::constructSGByBW(string approach)
+void StripeBatch::constructSGByBWBF(string approach)
 {
     uint32_t num_sgs = settings.num_stripes / code.lambda_i;
 
@@ -132,7 +132,7 @@ void StripeBatch::constructSGByBW(string approach)
 
         StripeGroup stripe_group(0, code, settings, selected_pre_stripes, NULL);
         u16string sg_enc_nodes(code.m_f, INVALID_NODE_ID);
-        uint8_t min_bw = stripe_group.getMinTransBW(approach, sg_enc_nodes);
+        uint8_t min_bw = stripe_group.getTransBW(approach, sg_enc_nodes);
         bw_sgs_table[min_bw].push_back(sg_stripe_ids);
 
         // printf("candidate stripe group: %lu, minimum bandwidth: %u\n", cand_sg_id, min_bw);
@@ -216,7 +216,7 @@ void StripeBatch::constructSGByBW(string approach)
     // }
 }
 
-void StripeBatch::constructSGByBWGreedy(string approach)
+void StripeBatch::constructSGByBWPartial(string approach)
 {
     uint32_t num_sgs = settings.num_stripes / code.lambda_i;
     uint8_t max_bw = code.n_f + code.k_f; // allowed maximum bandwidth
@@ -321,7 +321,7 @@ void StripeBatch::constructSGByBWGreedy(string approach)
             // calculate bandwidth
             StripeGroup partial_stripe_group(partial_sg_id, code, settings, updated_partial_pre_stripes, NULL);
 
-            uint8_t min_bw = partial_stripe_group.getMinTransBW(approach, sg_enc_nodes);
+            uint8_t min_bw = partial_stripe_group.getTransBW(approach, sg_enc_nodes);
 
             // update bw table
             bw_partial_sgs_table[min_bw].push_back(partial_sg_id);

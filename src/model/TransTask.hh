@@ -40,6 +40,10 @@ public:
     TransTask(TransTaskType _type, uint32_t _post_stripe_id, uint8_t _post_block_id, uint32_t _pre_stripe_id_global, uint8_t _pre_stripe_id_relative, uint8_t _pre_block_id, uint16_t _src_node_id, uint16_t _dst_node_id);
     ~TransTask();
 
+    /**
+     * @brief print task
+     *
+     */
     void print();
 };
 

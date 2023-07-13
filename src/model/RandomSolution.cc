@@ -34,19 +34,19 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
      * @brief Step 2.1: parity generation
      * for each parity block, randomly find an encoding node
      */
-    u16string rand_pm_nodes(code.m_f, INVALID_NODE_ID);
+    u16string enc_nodes(code.m_f, INVALID_NODE_ID);
 
     if (approach == "RDRE")
     {
         size_t random_node = Utils::randomUInt(0, num_nodes - 1, random_generator);
-        rand_pm_nodes.assign(code.m_f, random_node);
+        enc_nodes.assign(code.m_f, random_node);
     }
     else if (approach == "RDPM")
     {
         // randomly pick code.m_f nodes to do parity merging computation
         for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
         {
-            rand_pm_nodes[parity_id] = Utils::randomUInt(0, num_nodes - 1, random_generator);
+            enc_nodes[parity_id] = Utils::randomUInt(0, num_nodes - 1, random_generator);
         }
     }
     else
@@ -76,7 +76,7 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
     // update parity computation nodes into final block placement
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        final_block_placement[code.k_f + parity_id] = rand_pm_nodes[parity_id];
+        final_block_placement[code.k_f + parity_id] = enc_nodes[parity_id];
     }
 
     // find blocks that needs relocation
@@ -127,6 +127,11 @@ void RandomSolution::genSolution(StripeGroup &stripe_group, string approach)
     {
         stripe_group.parity_comp_method = EncodeMethod::PARITY_MERGE;
     }
-    stripe_group.parity_comp_nodes = rand_pm_nodes;
+    else
+    {
+        stripe_group.parity_comp_method = EncodeMethod::UNKNOWN_METHOD;
+    }
+
+    stripe_group.parity_comp_nodes = enc_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }

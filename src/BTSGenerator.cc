@@ -117,32 +117,43 @@ int main(int argc, char *argv[])
     u32string &send_load_dist = transfer_load_dist[0];
     u32string &recv_load_dist = transfer_load_dist[1];
 
-    // get bandwidth
+    // send load
+    // min, max
+    uint32_t min_send_load = *min_element(send_load_dist.begin(), send_load_dist.end());
+    uint32_t max_send_load = *max_element(send_load_dist.begin(), send_load_dist.end());
+    // mean, stddev, cv
+    double mean_send_load = 1.0 * std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
+    double sqr_send_load = 0;
+    for (auto &item : send_load_dist)
+    {
+        sqr_send_load += pow((double)item - mean_send_load, 2);
+    }
+    double stddev_send_load = std::sqrt(sqr_send_load / send_load_dist.size());
+    double cv_send_load = stddev_send_load / mean_send_load;
+
+    // recv load
+    // min max
+    uint32_t min_recv_load = *min_element(recv_load_dist.begin(), recv_load_dist.end());
+    uint32_t max_recv_load = *max_element(recv_load_dist.begin(), recv_load_dist.end());
+    // mean, stddev, cv
+    double mean_recv_load = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
+    double sqr_recv_load = 0;
+    for (auto &item : recv_load_dist)
+    {
+        sqr_recv_load += pow((double)item - mean_recv_load, 2);
+    }
+    double stddev_recv_load = std::sqrt(sqr_recv_load / recv_load_dist.size());
+    double cv_recv_load = stddev_recv_load / mean_recv_load;
+
+    // max load
+    uint32_t max_load = max(max_send_load, max_recv_load);
+
+    // bandwidth
     uint64_t total_bandwidth = 0;
     for (auto item : send_load_dist)
     {
         total_bandwidth += item;
     }
-
-    // in-degree
-    // min, max
-    uint32_t min_in_degree = *min_element(send_load_dist.begin(), send_load_dist.end());
-    uint32_t max_in_degree = *max_element(send_load_dist.begin(), send_load_dist.end());
-    // mean, stddev, cv
-    double mean_in_degree = 1.0 * std::accumulate(send_load_dist.begin(), send_load_dist.end(), 0) / send_load_dist.size();
-    double sq_sum_in_degree = std::inner_product(send_load_dist.begin(), send_load_dist.end(), send_load_dist.begin(), 0.0);
-    double stddev_in_degree = std::sqrt(sq_sum_in_degree / send_load_dist.size() - mean_in_degree * mean_in_degree);
-    double cv_in_degree = stddev_in_degree / mean_in_degree;
-
-    // out-degree
-    // min max
-    uint32_t min_out_degree = *min_element(recv_load_dist.begin(), recv_load_dist.end());
-    uint32_t max_out_degree = *max_element(recv_load_dist.begin(), recv_load_dist.end());
-    // mean, stddev, cv
-    double mean_out_degree = 1.0 * std::accumulate(recv_load_dist.begin(), recv_load_dist.end(), 0) / recv_load_dist.size();
-    double sq_sum_out_degree = std::inner_product(recv_load_dist.begin(), recv_load_dist.end(), recv_load_dist.begin(), 0.0);
-    double stddev_out_degree = std::sqrt(sq_sum_out_degree / recv_load_dist.size() - mean_out_degree * mean_out_degree);
-    double cv_out_degree = stddev_out_degree / mean_out_degree;
 
     printf("================ Approach : %s =========================\n", approach.c_str());
     printf("send load: ");
@@ -150,11 +161,11 @@ int main(int argc, char *argv[])
     printf("recv load: ");
     Utils::printVector(recv_load_dist);
 
-    printf("send load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_in_degree, max_in_degree, mean_in_degree, stddev_in_degree, cv_in_degree);
+    printf("send load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_send_load, max_send_load, mean_send_load, stddev_send_load, cv_send_load);
 
-    printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_out_degree, max_out_degree, mean_out_degree, stddev_out_degree, cv_out_degree);
+    printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_recv_load, max_recv_load, mean_recv_load, stddev_recv_load, cv_recv_load);
 
-    printf("max_load: %u, bandwidth: %lu\n", max(max_in_degree, max_out_degree), total_bandwidth);
+    printf("max_load: %u, bandwidth: %lu\n", max_load, total_bandwidth);
 
     return 0;
 }

@@ -31,9 +31,28 @@ public:
     ConvertibleCode(/* args */);
     ConvertibleCode(uint8_t k_in, uint8_t m_in, uint8_t k_out, uint8_t m_out);
     ~ConvertibleCode();
+
+    /**
+     * @brief print coding parameters
+     *
+     */
     void print();
 
+    /**
+     * @brief check the coding parameter is valid for parity merging
+     *
+     * @return true
+     * @return false
+     */
     bool isValidForPM();
+
+    /**
+     * @brief compute LCM (least common multiple)
+     *
+     * @param a
+     * @param b
+     * @return uint8_t
+     */
     uint8_t lcm(uint8_t a, uint8_t b);
 };
 

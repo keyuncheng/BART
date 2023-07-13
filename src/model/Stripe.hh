@@ -15,6 +15,11 @@ public:
 
     Stripe();
     ~Stripe();
+
+    /**
+     * @brief print stripe
+     *
+     */
     void print();
 };
 

@@ -34,9 +34,6 @@ class StripeGroup
 {
 
 private:
-    void initDataDist();
-    void initParityDists();
-
 public:
     uint32_t id;
     ConvertibleCode &code;
@@ -60,14 +57,56 @@ public:
 
     StripeGroup(uint32_t _id, ConvertibleCode &_code, ClusterSettings &_settings, vector<Stripe *> &_pre_stripes, Stripe *_post_stripe);
     ~StripeGroup();
+
+    /**
+     * @brief print stripe group
+     *
+     */
     void print();
 
-    uint8_t getMinTransBW(string approach, u16string &enc_nodes);
+    /**
+     * @brief initialize data distribution
+     *
+     */
+    void initDataDist();
+
+    /**
+     * @brief initialize parity distributions
+     *
+     */
+    void initParityDists();
+
+    /**
+     * @brief Get transitioning bandwidth for the stripe group
+     *
+     * @param approach transitioning approach (re-encoding, parity merging)
+     * @param enc_nodes encoding node for assignment
+     * @return uint8_t bandwidth
+     */
+    uint8_t getTransBW(string approach, u16string &enc_nodes);
+
+    /**
+     * @brief Get data relocation bandwidth
+     *
+     * @return uint8_t bandwidth
+     */
     uint8_t getDataRelocBW();
-    uint8_t getMinREBW(u16string &enc_nodes);
-    uint8_t getMinPMBWBF(bool choose_nodes, u16string *enc_nodes = NULL, mt19937 *random_generator = NULL);
-    uint8_t getMinPMBWForParities(u16string &enc_nodes);
-    uint8_t getMinPMBW(u16string &enc_nodes);
+
+    /**
+     * @brief get re-encoding bandwidth
+     *
+     * @param enc_nodes
+     * @return uint8_t
+     */
+    uint8_t getREBW(u16string &enc_nodes);
+
+    /**
+     * @brief get parity merging bandwidth
+     *
+     * @param enc_nodes
+     * @return uint8_t
+     */
+    uint8_t getPMBW(u16string &enc_nodes);
 
     bool isPerfectParityMerging();
 
@@ -78,22 +117,6 @@ public:
     void genPartialLTs4ParityCompute(string approach);
 
     LoadTable genPartialLT4ParityCompute(EncodeMethod enc_method, u16string enc_nodes);
-
-    // // enumerate send load tables
-    // vector<vector<size_t>> getCandSendLoadTables();
-    // int constructInitSLTWithDataRelocation(vector<size_t> &send_load_table);
-    // void appendCandSLTsWithParityMerging(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts);
-    // void appendCandSLTsWithReEncoding(vector<size_t> &init_slt, vector<vector<size_t>> &cand_slts);
-
-    // vector<LoadTable> getCandSLTs();
-    // LoadTable getPartialSLTWithDataRelocation();
-    // LoadTable getPartialSLTWithReEncoding();
-    // LoadTable getPartialSLTWIthParityMerging();
-
-    // // get min cost send load tables
-    // vector<vector<size_t>> getCandSendLoadTablesForMinTransCost(int min_cost);
-    // int appendMinCostSLTWithParityMerging(vector<size_t> &send_load_table, vector<vector<size_t>> &cand_send_load_tables, int min_cost);
-    // int appendMinCostSLTWithReEncoding(vector<size_t> &init_send_load_table, vector<vector<size_t>> &cand_send_load_tables, int min_cost);
 };
 
 #endif // __STRIPE_GROUP_HH__

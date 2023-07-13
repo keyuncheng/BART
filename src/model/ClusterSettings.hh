@@ -16,8 +16,19 @@ public:
     ClusterSettings(uint16_t _num_nodes, uint32_t _num_stripes);
     ~ClusterSettings();
 
+    /**
+     * @brief print cluster settings
+     *
+     */
     void print();
 
+    /**
+     * @brief check if the parameters are valid
+     *
+     * @param code
+     * @return true
+     * @return false
+     */
     bool isParamValid(const ConvertibleCode &code);
 };
 

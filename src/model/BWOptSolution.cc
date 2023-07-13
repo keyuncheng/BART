@@ -10,10 +10,12 @@ BWOptSolution::~BWOptSolution()
 
 void BWOptSolution::genSolution(StripeBatch &stripe_batch, string approach)
 {
-    // Step 1: enumerate all possible stripe groups; pick non-overlapped stripe groups in ascending order of transition costs (bandwidth)
+    // Step 1: enumerate a sufficiently large number of possible stripe
+    // groups; pick non-overlapped stripe groups in ascending order of
+    // transitioning bandwidth
     printf("Step 1: construct stripe groups\n");
-    stripe_batch.constructSGByBWGreedy(approach);
-    // stripe_batch.constructSGByBW(approach);
+    stripe_batch.constructSGByBWPartial(approach);
+    // stripe_batch.constructSGByBWBF(approach);
     // stripe_batch.print();
 
     // Step 2: generate transition solutions from all stripe groups
@@ -30,39 +32,20 @@ void BWOptSolution::genSolution(StripeGroup &stripe_group, string approach)
     uint16_t num_nodes = stripe_group.settings.num_nodes;
 
     /**
-     * @brief Step 2.1: parity generation
+     * @brief Step 2.1: parity block generation
      * for each parity block, find the node with minimum bandwidth for parity generation
      */
 
     // record minimum bw and corresponding placement
-    u16string min_bw_pm_nodes(code.m_f, INVALID_NODE_ID);
+    u16string enc_nodes(code.m_f, INVALID_NODE_ID);
 
     if (approach == "BWRE")
     { // re-encoding only
-        // for re-encoding, find the node stored with most number of data blocks (at most code.lambda_i)
-        uint8_t max_num_placed_data_blocks = *max_element(stripe_group.data_dist.begin(), stripe_group.data_dist.end());
-
-        // randomly find a node with max_num_placed_data_blocks
-        vector<uint16_t> valid_parity_compute_nodes;
-        for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
-        {
-            if (stripe_group.data_dist[node_id] == max_num_placed_data_blocks)
-            {
-                valid_parity_compute_nodes.push_back(node_id);
-            }
-        }
-
-        // randomly find a solution
-        size_t rand_pos = Utils::randomUInt(0, valid_parity_compute_nodes.size() - 1, random_generator);
-        uint16_t parity_compute_node = valid_parity_compute_nodes[rand_pos];
-        min_bw_pm_nodes.assign(code.m_f, parity_compute_node);
+        stripe_group.getREBW(enc_nodes);
     }
     else if (approach == "BWPM")
     { // parity merging only
-
-        // find encode nodes
-        // stripe_group.getMinPMBW(min_bw_pm_nodes);
-        stripe_group.getMinPMBWBF(true, &min_bw_pm_nodes, &random_generator);
+        stripe_group.getPMBW(enc_nodes);
     }
 
     /**
@@ -86,7 +69,7 @@ void BWOptSolution::genSolution(StripeGroup &stripe_group, string approach)
     // update parity computation nodes, final block placement and block distribution
     for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
     {
-        final_block_placement[code.k_f + parity_id] = min_bw_pm_nodes[parity_id];
+        final_block_placement[code.k_f + parity_id] = enc_nodes[parity_id];
     }
 
     // find blocks that needs relocation
@@ -141,6 +124,6 @@ void BWOptSolution::genSolution(StripeGroup &stripe_group, string approach)
     {
         stripe_group.parity_comp_method = EncodeMethod::UNKNOWN_METHOD;
     }
-    stripe_group.parity_comp_nodes = min_bw_pm_nodes;
+    stripe_group.parity_comp_nodes = enc_nodes;
     stripe_group.post_stripe->indices = final_block_placement;
 }
