@@ -155,6 +155,9 @@ int main(int argc, char *argv[])
         total_bandwidth += item;
     }
 
+    // percent imbalance metric
+    double percent_imbalance = (max_load - mean_send_load) / mean_send_load * 100;
+
     printf("================ Approach : %s =========================\n", approach.c_str());
     printf("send load: ");
     Utils::printVector(send_load_dist);
@@ -165,7 +168,7 @@ int main(int argc, char *argv[])
 
     printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_recv_load, max_recv_load, mean_recv_load, stddev_recv_load, cv_recv_load);
 
-    printf("max_load: %u, bandwidth: %lu\n", max_load, total_bandwidth);
+    printf("max_load: %u, bandwidth: %lu, percent_imbalance: %f\n", max_load, total_bandwidth, percent_imbalance);
 
     return 0;
 }
