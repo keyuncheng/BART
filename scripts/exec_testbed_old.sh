@@ -70,7 +70,7 @@ if [[ exp_index -eq 1 ]]; then
                 current_post_iteration=0
                 while [ $current_post_iteration -lt $num_of_post ]; do
                     error_trial=0
-                    while [ $error_trial -le 3 ]; do
+                    while [ $error_trial -le 5 ]; do
                         # Generate post-transition information
                         python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
 
@@ -120,7 +120,7 @@ if [[ exp_index -eq 1 ]]; then
 
                     ((current_post_iteration+=1))
 
-                    if [[ $error_trial -eq 3 && $grep_error -ne 0 ]]; then
+                    if [[ $error_trial -eq 5 && $grep_error -ne 0 ]]; then
                         echo "Too many errors!" >> ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
                         exit -1
                     fi
@@ -146,7 +146,8 @@ elif [[ exp_index -eq 2 ]]; then
     # m_list=(3 2)
     # lambda_list=(3 2)
     # block_size_list=(33554432)
-    block_size_list=(33554432 67108864 134217728)
+    block_size_list=(33554432 134217728)
+    # block_size_list=(33554432 67108864 134217728)
 
     current_iteration=0
     while [ $current_iteration -lt $num_of_pre ]; do
@@ -169,7 +170,7 @@ elif [[ exp_index -eq 2 ]]; then
             sed -i "s/num_reloc_workers = .*/num_reloc_workers = 10/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
 
             # Generate pre-transition information
-            python3 gen_pre_stripes.py -config_filename ../conf/config.ini
+            # python3 gen_pre_stripes.py -config_filename ../conf/config.ini
 
             for approach in ${APPROACH_LIST[@]}; do
                 # echo $pre_transition_output >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/load_${k}_${m}_${lambda}_${approach}_${num_stripes}.log
@@ -178,7 +179,7 @@ elif [[ exp_index -eq 2 ]]; then
                 sed -i "s/approach = .*/approach = $approach/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
                 
                 # Generate post-transition information
-                python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${num_stripes}.log
+                # python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${num_stripes}.log
 
                 for block_size in ${block_size_list[@]}; do    
                     # Modify config file
@@ -196,7 +197,7 @@ elif [[ exp_index -eq 2 ]]; then
                     current_post_iteration=0
                     while [ $current_post_iteration -lt $num_of_post ]; do
                         error_trial=0
-                        while [ $error_trial -le 3 ]; do
+                        while [ $error_trial -le 5 ]; do
 
                             # Distribute blocks 
                             python3 distribute_blocks.py -config_filename ../conf/config.ini 
@@ -236,7 +237,7 @@ elif [[ exp_index -eq 2 ]]; then
                                 sleep 10
                                 # echo "${k}_${m}_${lambda}_${approach}: " $last_line >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
                             else
-                                grep_error=5
+                                grep_error=10
                                 bash experiments/kill-middleware.sh 1 
                                 break
                             fi
@@ -245,7 +246,7 @@ elif [[ exp_index -eq 2 ]]; then
 
                         ((current_post_iteration+=1))
 
-                        if [[ $error_trial -eq 3 && $grep_error -ne 0 ]]; then
+                        if [[ $error_trial -eq 5 && $grep_error -ne 0 ]]; then
                             echo "Too many errors!" >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
                             exit -1
                         fi
@@ -264,12 +265,12 @@ elif [[ exp_index -eq 3 ]]; then
 
     bash experiments/kill-middleware.sh 1
 
-    # k_list=(10)
-    # m_list=(2)
-    # lambda_list=(2)
-    k_list=(6 10)
-    m_list=(3 2)
-    lambda_list=(3 2)
+    k_list=(10)
+    m_list=(2)
+    lambda_list=(2)
+    # k_list=(6 10)
+    # m_list=(3 2)
+    # lambda_list=(3 2)
     # network_bandwidth_list=(10485760)
     network_bandwidth_list=(524288 1048576 2097152 5242880 10485760)
 
@@ -296,7 +297,7 @@ elif [[ exp_index -eq 3 ]]; then
             sed -i "s/num_reloc_workers = .*/num_reloc_workers = 10/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
 
             # Generate pre-transition information
-            python3 gen_pre_stripes.py -config_filename ../conf/config.ini
+            # python3 gen_pre_stripes.py -config_filename ../conf/config.ini
 
             for approach in ${APPROACH_LIST[@]}; do
                 sed -i "s/approach = .*/approach = $approach/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
@@ -314,7 +315,7 @@ elif [[ exp_index -eq 3 ]]; then
                 current_post_iteration=0
                 while [ $current_post_iteration -lt $num_of_post ]; do
                     # Generate post-transition information
-                    python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${num_stripes}_${current_post_iteration}.log
+                    # python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${num_stripes}.log
                     
                     error_trial=0
                     for bandwidth in ${network_bandwidth_list[@]}; do
@@ -323,12 +324,12 @@ elif [[ exp_index -eq 3 ]]; then
                         bash experiments/setup-wondershaper.sh ${bandwidth}
                         sleep 10
 
-                        while [ $error_trial -le 3 ]; do
+                        while [ $error_trial -le 10 ]; do
                     
                             # Distribute blocks 
                             python3 distribute_blocks.py -config_filename ../conf/config.ini 
                         
-                            sleep 10
+                            sleep 20
 
                             # Execute 
                             bash experiments/deploy-middleware.sh
@@ -363,7 +364,6 @@ elif [[ exp_index -eq 3 ]]; then
                                 sleep 10
                                 # echo "${k}_${m}_${lambda}_${approach}: " $last_line >> ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}/${k}_${m}_${lambda}_${approach}_${num_stripes}_${bandwidth}.log
                             else
-                                grep_error=5
                                 bash experiments/kill-middleware.sh 1
                                 break 
                             fi
@@ -372,7 +372,7 @@ elif [[ exp_index -eq 3 ]]; then
 
                     ((current_post_iteration+=1))
 
-                    if [[ $error_trial -eq 3 && $grep_error -ne 0 ]]; then
+                    if [[ $error_trial -gt 9 && $grep_error -ne 0 ]]; then
                         echo "Too many errors!" >> ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}/${k}_${m}_${lambda}_${approach}_${num_stripes}_${bandwidth}.log
                         exit -1
                     fi

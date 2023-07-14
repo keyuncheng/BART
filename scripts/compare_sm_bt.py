@@ -14,21 +14,22 @@ def exec_cmd(cmd, exec=False):
     return msg
 
 def main():
-    exp_name = "exp_b1"
+    exp_name = "exp_a4"
     # ks = [4,6,8,12,16]
     # ms = [2,3,4]
     # kmlpairs = [(6, 3, 3), (8, 4, 2)]
-    kmlpairs = [(4, 2, 2), (6, 3, 3)]
+    kmlpairs = [(6,3,3)]
     # kmlpairs = [(4, 2, 2), (6, 2, 2), (6, 3, 2), (6, 3, 3)]
     # kmlpairs = [(4,2,2), (6,2,2), (8,2,2), (6,3,2), (8,3,2), (12,3,2), (8,4,2), (12,4,2), (16,4,2)]
     # lambdas = [2,3,4]
-    methods = ["RDPM", "BWPM", "BTPM"]
+    # methods = ["RDPM", "BWPM", "BTPM"]
+    methods = ["BTPM"]
 
     # num_nodes = [100, 200, 300, 400]
     num_nodes = [30]
-    num_stripes = [1000]
-    num_runs = 1
-    num_runs_per_placement = 1
+    num_stripes = [1000, 5000, 10000, 15000, 20000]
+    num_runs = 5
+    num_runs_per_placement = 5
     pre_placement_filename = "pre_placement"
     post_placement_filename = "post_placement"
     sg_meta_filename = "sg_meta"

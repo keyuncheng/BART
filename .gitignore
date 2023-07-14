@@ -3,6 +3,8 @@
 */*.txt
 /data/
 /metadata/
+/scripts/placements/
+/scripts/pastplacements/
 
 # Binaries
 /build
