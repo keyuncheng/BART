@@ -5,6 +5,7 @@
 /metadata/
 /scripts/placements/
 /scripts/pastplacements/
+/scripts/tmp_logs/
 
 # Binaries
 /build

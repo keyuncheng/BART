@@ -29,7 +29,7 @@ done
 # Experiment B2 - Impact of Block Sizes
 # Settings: (6,3,3), (10,2,2)
 
-mkdir -p ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}
+mkdir -p ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}
 
 bash experiments/kill-middleware.sh 1
 
@@ -78,18 +78,6 @@ while [ $current_iteration -lt $num_of_pre ]; do
             # Modify config file
             sed -i "s/approach = .*/approach = $approach/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
 
-            # Generate post-transition information
-            post_placement_src=""
-            if [[ $k -eq 6 ]]; then
-                post_placement_src=${MIDDLEWARE_HOME_PATH}/scripts/placements/633/round$current_iteration/$approach/round$current_post_iteration
-            else
-                post_placement_src=${MIDDLEWARE_HOME_PATH}/scripts/placements/1022/round$current_iteration/$approach/round$current_post_iteration
-            fi
-            cp $post_placement_src/post_block_mapping ${MIDDLEWARE_HOME_PATH}/metadata/
-            cp $post_placement_src/post_placement ${MIDDLEWARE_HOME_PATH}/metadata/
-            cp $post_placement_src/sg_meta ${MIDDLEWARE_HOME_PATH}/metadata/
-
-
             for block_size in ${block_size_list[@]}; do  
                 sed -i "s/block_size = .*/block_size = $block_size/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
 
@@ -104,6 +92,17 @@ while [ $current_iteration -lt $num_of_pre ]; do
                 echo "~~~~~~~~~~~~~"
                 current_post_iteration=0
                 while [ $current_post_iteration -lt $num_of_post ]; do
+
+                    # Generate post-transition information
+                    post_placement_src=""
+                    if [[ $k -eq 6 ]]; then
+                        post_placement_src=${MIDDLEWARE_HOME_PATH}/scripts/placements/633/round$current_iteration/$approach/round$current_post_iteration
+                    else
+                        post_placement_src=${MIDDLEWARE_HOME_PATH}/scripts/placements/1022/round$current_iteration/$approach/round$current_post_iteration
+                    fi
+                    cp $post_placement_src/post_block_mapping ${MIDDLEWARE_HOME_PATH}/metadata/
+                    cp $post_placement_src/post_placement ${MIDDLEWARE_HOME_PATH}/metadata/
+                    cp $post_placement_src/sg_meta ${MIDDLEWARE_HOME_PATH}/metadata/
 
                     error_trial=0
                     while [ $error_trial -le 10 ]; do
@@ -133,7 +132,7 @@ while [ $current_iteration -lt $num_of_pre ]; do
                                 sleep 10
                             else
                                 last_line=$(echo "$output" | tail -1)
-                                echo "${k}_${m}_${lambda}_${approach}_${bandwidth}: " $last_line >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
+                                echo "${k}_${m}_${lambda}_${approach}_${block_size}: " $last_line >> ${MIDDLEWARE_HOME_PATH}/log/exp_b2_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
                                 break
                             fi
                             sleep 10

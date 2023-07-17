@@ -22,17 +22,19 @@ bash experiments/kill-middleware.sh 1
 
 
 
-k_list=(10)
-m_list=(2)
-lambda_list=(2)
+# k_list=(6)
+# m_list=(3)
+# lambda_list=(3)
 
-# k_list=(6 10)
-# m_list=(3 2)
-# lambda_list=(3 2)
+k_list=(6 10)
+m_list=(3 2)
+lambda_list=(3 2)
 # network_bandwidth_list=(10485760)
-network_bandwidth_list=(524288 2097152 5242880 10485760)
+network_bandwidth_list=(524288 1048576 2097152 5242880 10485760)
+# network_bandwidth_list=(102400)
+# network_bandwidth_list=(2097152 5242880 10485760)
 
-current_iteration=2
+current_iteration=0
 while [ $current_iteration -lt $num_of_pre ]; do
     for index in "${!k_list[@]}"
     do

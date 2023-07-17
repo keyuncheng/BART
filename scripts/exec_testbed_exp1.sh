@@ -29,7 +29,7 @@ done
 # Experiment B1 - Transitioning Time Reduction 
 # Settings: (6,2,2), (6,3,2), (6,3,3), (10,2,2)
 
-mkdir -p ${MIDDLEWARE_HOME_PATH}/log/exp_b3_${exp_flag}
+mkdir -p ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}
 
 bash experiments/kill-middleware.sh 1
 
@@ -40,8 +40,6 @@ bash experiments/setup-wondershaper.sh 1048576
 k_list=(6 6)
 m_list=(2 3)
 lambda_list=(2 2)
-# network_bandwidth_list=(10485760)
-# block_size_list=(33554432 67108864 134217728)
 
 current_iteration=0
 while [ $current_iteration -lt $num_of_pre ]; do
@@ -53,6 +51,7 @@ while [ $current_iteration -lt $num_of_pre ]; do
         k_f=$(echo "$k*$lambda" | bc -l)
         num_stripes=1200
         num_nodes=30
+        block_size=67108864
 
         sed -i "s/k_i = .*/k_i = $k/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
         sed -i "s/m_i = .*/m_i = $m/" ${MIDDLEWARE_HOME_PATH}/conf/config.ini
@@ -74,7 +73,7 @@ while [ $current_iteration -lt $num_of_pre ]; do
 
             if [[ $current_iteration -eq 0 ]]; then
                 # Initialize log file
-                echo "" > ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
+                echo "" > ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
             fi
 
             echo "~~~~~~~~~~~~~"
@@ -85,7 +84,7 @@ while [ $current_iteration -lt $num_of_pre ]; do
                 error_trial=0
                 while [ $error_trial -le 5 ]; do
                     # Generate post-transition information
-                    python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
+                    python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini >> ${MIDDLEWARE_HOME_PATH}/log/exp_b1_${exp_flag}/loads_${k}_${m}_${lambda}_${approach}_${block_size}_${num_stripes}.log
 
                     # Distribute blocks 
                     python3 distribute_blocks.py -config_filename ../conf/config.ini 
