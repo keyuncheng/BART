@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HADOOP_SRC_DIR=/home/pararc/hadoop-3.3.4-src
+HADOOP_SRC_DIR=/home/bart/hadoop-3.3.4-src
 
 # Step 0: sync Balanced Transitioning modifications to hadoop source code
 cp src/HdfsClientConfigKeys.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java/org/apache/hadoop/hdfs/client/
