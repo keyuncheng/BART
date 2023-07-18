@@ -3,6 +3,8 @@ import sys
 import subprocess
 import argparse
 import configparser
+import json
+import re
 from pathlib import Path
 
 def parse_args(cmd_args):
@@ -20,6 +22,81 @@ def exec_cmd(cmd, exec=False):
         msg = return_str.decode().strip()
         print(msg)
     return msg
+
+def run_cmd(args_list):
+    # import subprocess
+    print('Running system command: {0}'.format(' '.join(args_list)))
+    proc = subprocess.Popen(
+        args_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    s_output, s_err = proc.communicate()
+    s_return = proc.returncode
+    return s_return, s_output, s_err
+
+hadoop_home = "/home/hcpuyang/hadoop-3.3.4"
+hadoop_data_dir = ""
+
+class hdfsFile:
+    def __init__(self, file_id, file_size, file_ecpolicy, file_blocknum):
+        self.file_id = file_id
+        self.file_size = file_size
+        self.file_ecpolicy = file_ecpolicy
+        self.file_blocknum = file_blocknum
+
+    def __str__(self):
+        return json.dumps(self)
+
+
+class Block:
+    def __init__(self, block_name, block_size, block_replica):
+        self.block_name = block_name
+        self.block_size = block_size
+        self.block_replica = block_replica
+        
+        block_id = self.block_name.split('_')[1]
+        self.block_id = (int)(block_id)
+        d1 = ((self.block_id >> 16) & 0x1F)
+        d2 = ((self.block_id >> 8) & 0x1F)
+        self.block_location = os.path.join(
+            "/home/hcpuyang/hadoop-3.3.4/tmp/dfs/data/current", hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
+
+    def __str__(self):
+        return json.dumps(self)
+
+
+
+class BlockLoc:
+    def __init__(self, location_name, location_dn, location_ds, hadoop_data_dir):
+        self.location_name = location_name
+        self.location_dn = location_dn
+        self.location_ds = location_ds
+        self.location_id = (int)(self.location_name.split('_')[1])
+        d1 = ((self.location_id >> 16) & 0x1F)
+        d2 = ((self.location_id >> 8) & 0x1F)
+        self.location_path = os.path.join(
+            "/home/hcpuyang/hadoop-3.3.4/tmp/dfs/data/current", hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
+
+datanode_map = {
+    "12": "00",
+    "13": "01",
+    "15": "02",
+    "16": "03",
+    "17": "04",
+    "18": "05",
+    "19": "06",
+    "20": "07",
+    "22": "08",
+    "23": "09",
+    "24": "10",
+    "25": "11",
+    "26": "12",
+    "27": "13",
+    "28": "14",
+    "29": "15",
+    "30": "16",
+    "31": "17",
+    "32": "18",
+    "33": "19",
+}
 
 def main():
     args = parse_args(sys.argv[1:])
@@ -58,6 +135,74 @@ def main():
     pre_placement_path = metadata_dir / pre_placement_filename
     pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     data_dir = root_dir / "data"
+
+    # HDFS
+    enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
+    hadoop_transitioning_path = config["HDFS"]["hadoop_transitioning_path"]
+    hadoop_home = config["HDFS"]["hadoop_home"]
+    if enable_HDFS:
+        file2blocks = {}
+        block2locations = {}
+
+        # execute scripts
+        (ret, out, err) = run_cmd(
+            ['hdfs', 'fsck', os.path.join(hadoop_transitioning_path), '-locations', '-files', '-blocks'])
+        lines = out.decode("utf-8").split('\n')
+
+        filekey = ""
+        blockkey = ""
+
+        for line in lines:
+            # file description line
+            if re.search("^" + hadoop_transitioning_path + "/", line):
+                file_meta_list = re.split('=|,| |: ', line)
+                if file_meta_list[11] == "OK":
+                    filekey = file_meta_list[0]
+                    file2blocks[filekey] = []
+                    filesize = file_meta_list[1]
+                    fileecpolicy = file_meta_list[6]
+                    fileblocknum = file_meta_list[8]
+                else:
+                    print("Block error! Stop processing.")
+                    exit(-1)
+            elif re.search("^[0-9]+\.", line):
+                block_file_list = re.split('\[|\]|,', line.strip(' '))
+                block_meta = re.split(' ', block_file_list[0].strip())
+                block_data_dir = block_meta[1].split(":")[0]
+                block = Block(block_meta[1], block_meta[2].split(
+                    "=")[1], block_meta[3].split("=")[1])
+                if filekey != "":
+                    file2blocks[filekey].append(block)
+                    blockkey = block.block_name
+                    block2locations[blockkey] = []
+                for blockindex in range(int(block_meta[3].split("=")[1])):
+                    location = BlockLoc(
+                        re.split(':', block_file_list[blockindex*5+1])[0].strip(),
+                        block_file_list[blockindex*5+2].strip(),
+                        block_file_list[blockindex*5+3].strip(),
+                        block_data_dir
+                    )
+                    if blockkey != "":
+                        block2locations[blockkey].append(location)
+        pre_block_mapping_hdfs_path = Path(str(pre_block_mapping_path) + "_hdfs")
+        with open(pre_placement_path, 'w') as ppf, open(pre_block_mapping_path, 'w') as pmf, open(pre_block_mapping_hdfs_path, 'w') as pmhf:
+            fileindex=0
+            for filename in file2blocks:
+                for blockgroup in file2blocks[filename]:
+                    locindex=0
+                    for loc in block2locations[blockgroup.block_name]:
+                        locdn = datanode_map[loc.location_dn.split(".")[3].split(":")[0]]
+                        locpath = loc.location_path + "/blk_" + str(loc.location_id) + "_" + blockgroup.block_name.split("_")[2]
+                        locpath_hdfs = loc.location_path + "/blk_" + str(loc.location_id)
+                        ppf.write(locdn + " ")
+                        pmf.write(str(fileindex) + " " + str(locindex) + " " + locdn + " " + locpath)
+                        pmhf.write(str(fileindex) + " " + str(locindex) + " " + locdn + " " + locpath_hdfs)
+                        locindex = locindex + 1
+                        pmf.write("\n")
+                        pmhf.write("\n")
+                fileindex = fileindex + 1
+                ppf.write("\n")
+        exit(0)
 
     # Generate pre-transition stripe placement file
     print("generate pre-transition placement file {}".format(str(pre_placement_path)))
