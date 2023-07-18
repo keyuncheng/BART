@@ -1879,7 +1879,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final long DFS_LEASE_HARDLIMIT_DEFAULT =
       HdfsClientConfigKeys.DFS_LEASE_HARDLIMIT_DEFAULT;
 
-  // hcpuyang
+  // Balanced Transitioning: external metadata path
   public static final String DFS_EXTERNAL_METADATA_PATH_DEFAULT = "/home/hcpuyang/jsonfiles";
   public static final String DFS_EXTERNAL_METADATA_PATH = "dfs.namenode.external.metadata.path";
 }

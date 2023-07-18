@@ -29,6 +29,8 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SERVICE_HANDLER_
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_AUXILIARY_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_STATE_CONTEXT_ENABLED_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_STATE_CONTEXT_ENABLED_KEY;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH_DEFAULT;
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.MAX_PATH_DEPTH;
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.MAX_PATH_LENGTH;
 import static org.apache.hadoop.util.Time.now;
@@ -144,6 +146,9 @@ import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.NamenodeProt
 import org.apache.hadoop.hdfs.protocol.proto.ReconfigurationProtocolProtos.ReconfigurationProtocolService;
 import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolServerSideTranslatorPB;
+import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolClientSideTranslatorPB;
+import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolServerSideTranslatorPB;
+import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeLifelineProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeLifelineProtocolServerSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeProtocolPB;
@@ -166,6 +171,7 @@ import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.namenode.sps.StoragePolicySatisfyManager;
 import org.apache.hadoop.hdfs.server.protocol.BlockReportContext;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
+import org.apache.hadoop.hdfs.server.protocol.CoordinatorProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
@@ -2683,11 +2689,13 @@ public class NameNodeRpcServer implements NamenodeProtocols {
       // Create an ObjectMapper instance
       ObjectMapper mapper = new ObjectMapper();
       
+      // Balanced Transitioning: read from external metadata
+      // For example: for file /bart/testfile1 in HDFS, DFS_EXTERNAL_METADATA_PATH = "/home/bart/jsonfiles/" 
+      // The corresponding metadata file is: /home/bart/jsonfiles/file-bart-testfile1.json
       src = src.replace("/", "-");
-      String filePath = "/home/hcpuyang/jsonfile/file" + src + ".json"; // hcpuyang TODO
+      String filePath = nn.getConf().get(DFS_EXTERNAL_METADATA_PATH,
+          DFS_EXTERNAL_METADATA_PATH_DEFAULT) + "/file" + src + ".json";
       JsonNode jsonData = mapper.readTree(new File(filePath));
-      // String filePath = conf.get(DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH,
-      //    DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH_DEFAULT);
 
       currentMetaFile.setFileName(jsonData.get("file_name").asText());
       currentMetaFile.setFileSize(jsonData.get("file_size").asLong());
@@ -2695,12 +2703,11 @@ public class NameNodeRpcServer implements NamenodeProtocols {
 
       String[] rs = jsonData.get("block_group_ec_policy").asText().split("-");
       int blkNum = 0;
-      if (rs[1] == "LEGACY") {
+      if (rs[1].equals("LEGACY")) {
         blkNum = Integer.parseInt(rs[2]) + Integer.parseInt(rs[3]);
       } else {
         blkNum =  Integer.parseInt(rs[1]) + Integer.parseInt(rs[2]);
       }
-        
 
       int blockGroupListLength = jsonData.get("block_group_list").size();
       NewMetaBlockGroup[] metaBlockGroupList = new NewMetaBlockGroup[blockGroupListLength];
