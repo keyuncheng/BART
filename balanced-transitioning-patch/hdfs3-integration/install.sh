@@ -38,7 +38,10 @@ cp src/ExternalDatasetImpl.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/
 cp src/SimulatedFSDataset.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/
 cp src/pom.xml $HADOOP_SRC_DIR/
 
-# Step 1: 
+# Step 1: Build hadoop source code
 
 cd $HADOOP_SRC_DIR
 mvn package -Pdist,native -DskipTests -Dtar -Dmaven.javadoc.skip=true
+
+# Step 2: Deploy hadoop
+cp $HADOOP_SRC_DIR/hadoop-dist/target/hadoop-3.3.4.tar.gz /home/bart/

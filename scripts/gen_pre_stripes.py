@@ -75,28 +75,7 @@ class BlockLoc:
         self.location_path = os.path.join(
             "/home/hcpuyang/hadoop-3.3.4/tmp/dfs/data/current", hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
 
-datanode_map = {
-    "12": "00",
-    "13": "01",
-    "15": "02",
-    "16": "03",
-    "17": "04",
-    "18": "05",
-    "19": "06",
-    "20": "07",
-    "22": "08",
-    "23": "09",
-    "24": "10",
-    "25": "11",
-    "26": "12",
-    "27": "13",
-    "28": "14",
-    "29": "15",
-    "30": "16",
-    "31": "17",
-    "32": "18",
-    "33": "19",
-}
+datanode_map = {}
 
 def main():
     args = parse_args(sys.argv[1:])
@@ -117,6 +96,7 @@ def main():
     num_stripes = int(config["Common"]["num_stripes"])
 
     # Controller
+    agent_addrs = config["Controller"]["agent_addrs"].split(",")
     pre_placement_filename = config["Controller"]["pre_placement_filename"]
     pre_block_mapping_filename = config["Controller"]["pre_block_mapping_filename"]
 
@@ -135,6 +115,10 @@ def main():
     pre_placement_path = metadata_dir / pre_placement_filename
     pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     data_dir = root_dir / "data"
+
+    for i, addr in enumerate(agent_addrs):
+        datanode_map[addr.split(":")[0]] = str(i)
+    print(datanode_map)
 
     # HDFS
     enable_HDFS = False if int(config["Common"]["enable_HDFS"]) == 0 else True
@@ -191,9 +175,9 @@ def main():
                 for blockgroup in file2blocks[filename]:
                     locindex=0
                     for loc in block2locations[blockgroup.block_name]:
-                        locdn = datanode_map[loc.location_dn.split(".")[3].split(":")[0]]
-                        locpath = loc.location_path + "/blk_" + str(loc.location_id) + "_" + blockgroup.block_name.split("_")[2]
-                        locpath_hdfs = loc.location_path + "/blk_" + str(loc.location_id)
+                        locdn = datanode_map[loc.location_dn.split(":")[0]]
+                        locpath = loc.location_path + "/blk_" + str(loc.location_id)
+                        locpath_hdfs = loc.location_path + "/blk_" + str(loc.location_id) + "_" + blockgroup.block_name.split("_")[2]
                         ppf.write(locdn + " ")
                         pmf.write(str(fileindex) + " " + str(locindex) + " " + locdn + " " + locpath)
                         pmhf.write(str(fileindex) + " " + str(locindex) + " " + locdn + " " + locpath_hdfs)

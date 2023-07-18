@@ -6,13 +6,8 @@
 3. Modify the Hadoop src code path in `install.sh`.
 
 ## Install and Deploy
-1. Install BART-integration with `bash install.sh`.
-2. Deploy Hadoop in the cluster with `bash deploy-hadoop.sh`.
+1. Install and deploy BART-integration with `bash install.sh`.
+<!-- 2. Deploy Hadoop in the cluster with `bash deploy-hadoop.sh` -->
 
-## BART Experiments
-
-1. Write $N$ stripes to HDFS with scripts.
-2. Retrieve pre-transitioning stripe placement with `python3 gen_pre_placement.py -config_filename [config_file_path]`.
-3. [Middleware Side] Generate transitioning solution and execute transition.
-4. Obtain post-transitioning stripe placement with `python3 recover_post_placement.py`.
-Evaluate post-transitioning stripe with `hadoop fs -get [filename].`
+## HDFS configuration
+1. Add `dfs.namenode.external.metadata.path` to hdfs-site.xml, and make sure its value is the same as the `metadata_file_path` in ../../conf/config.ini.

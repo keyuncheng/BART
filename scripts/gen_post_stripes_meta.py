@@ -28,8 +28,6 @@ def main():
     if not args:
         exit()
 
-    # enable_HDFS = False # DEBUG: hard code
-
     # read config
     config_filename = args.config_filename
     config = configparser.ConfigParser()
@@ -76,14 +74,12 @@ def main():
     pre_block_mapping_path = metadata_dir / pre_block_mapping_filename
     post_placement_path = metadata_dir / post_placement_filename
     post_block_mapping_path = metadata_dir / post_block_mapping_filename
+    post_block_mapping_hdfs_path = metadata_dir / (post_block_mapping_filename + "_hdfs")
     sg_meta_path = metadata_dir / sg_meta_filename
     data_dir = root_dir / "data"
     
-    # print(pre_placement_path)
-    # print(pre_block_mapping_path)
-    # print(post_placement_path)
-    # print(post_block_mapping_path)
-    # print(sg_meta_path)
+    if enable_HDFS:
+        pre_block_mapping_path = metadata_dir / (pre_block_mapping_filename + "_hdfs")
 
     # Read pre-transition placement
     pre_placement = []
@@ -181,6 +177,9 @@ def main():
     print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
 
     with open("{}".format(str(post_block_mapping_path)), "w") as f:
+        for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
+            f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)[:-5]))
+    with open("{}".format(str(post_block_mapping_hdfs_path)), "w") as f:
         for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
             f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)))
         
