@@ -41,4 +41,4 @@ cp src/pom.xml $HADOOP_SRC_DIR/
 # Step 1: 
 
 cd $HADOOP_SRC_DIR
-mvn package -Pdist,native -DskipTests -Dmaven.javadoc.skip=true -DskipShade -e -Drequire.isal -Drequire.ssl
+mvn package -Pdist,native -DskipTests -Dtar -Dmaven.javadoc.skip=true

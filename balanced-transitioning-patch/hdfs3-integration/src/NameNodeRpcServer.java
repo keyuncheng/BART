@@ -146,9 +146,6 @@ import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.NamenodeProt
 import org.apache.hadoop.hdfs.protocol.proto.ReconfigurationProtocolProtos.ReconfigurationProtocolService;
 import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolServerSideTranslatorPB;
-import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolClientSideTranslatorPB;
-import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolServerSideTranslatorPB;
-import org.apache.hadoop.hdfs.protocolPB.CoordinatorProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeLifelineProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeLifelineProtocolServerSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeProtocolPB;
@@ -171,7 +168,6 @@ import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.namenode.sps.StoragePolicySatisfyManager;
 import org.apache.hadoop.hdfs.server.protocol.BlockReportContext;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
-import org.apache.hadoop.hdfs.server.protocol.CoordinatorProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
