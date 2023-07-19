@@ -11,3 +11,4 @@
 
 ## HDFS configuration
 1. Add `dfs.namenode.external.metadata.path` to hdfs-site.xml, and make sure its value is the same as the `metadata_file_path` in ../../conf/config.ini.
+2. Based on `etc/user_ec_policies_legacy_4_2.xml.template`, modify the erasure coding policy and copy to `hadoop-3.3.4/etc/hadoop/`.

@@ -9,6 +9,6 @@ fi
 
 target_file=$1
 
-for node in ${DATANODES[@]}; do
+for node in ${AGENTNODES[@]}; do
   scp -r ${target_file} ${USER}@${node}:${target_file}
 done
