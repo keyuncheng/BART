@@ -134,7 +134,7 @@ def main():
                 data = {
                     'file_name': "",
                     'file_size': file_size,
-                    'block_group_ec_policy': "RS-" + str(k_f) + "-" + str(m_f) + "-1024k",
+                    'block_group_ec_policy': "RS-LEGACY-" + str(k_f) + "-" + str(m_f) + "-1024k",
                     'block_group_list': []
                 }
                 stripe_index = stripe_index + 1
