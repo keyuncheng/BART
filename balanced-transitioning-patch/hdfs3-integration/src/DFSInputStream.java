@@ -554,7 +554,6 @@ public class DFSInputStream extends FSInputStream
         final LocatedBlocks newBlocks = (length == 0)
             ? dfsClient.getLocatedBlocks(src, offset)
             : dfsClient.getLocatedBlocks(src, offset, length);
-        // DFSClient.LOG.info("[hcpuyang] DFSInputStream newBlocks: " + newBlocks.toString());
         
         if (newBlocks == null || newBlocks.locatedBlockCount() == 0) {
           throw new EOFException("Could not find target position " + offset);
@@ -571,10 +570,8 @@ public class DFSInputStream extends FSInputStream
 
       // locatedBlocks.refreshUsefulBlocks();
       if (locatedBlocks.getUsefulBlocks() != null) {
-        // DFSClient.LOG.info("[hcpuyang] DFSInputStream useful blocks not empty");
         return locatedBlocks.getUsefulBlock(targetBlockIdx);
       } else {
-        // DFSClient.LOG.info("[hcpuyang] DFSInputStream useful blocks are empty");
         return locatedBlocks.get(targetBlockIdx);
       }
     }

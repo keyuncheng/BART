@@ -2082,8 +2082,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
    */
   LocatedBlocks getBlockLocations(String clientMachine, String srcArg,
       long offset, long length) throws IOException {
-    // hcpuyang TODO
-    LOG.info("[hpuyang] clientMachine: " + clientMachine + " srcArg: " + srcArg + " offset: " + offset + " length: "
+    LOG.info("getBlockLocations clientMachine: " + clientMachine + " srcArg: " + srcArg + " offset: " + offset + " length: "
         + length);
     final String operationName = "open";
     checkOperation(OperationCategory.READ);
@@ -8729,7 +8728,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           genStamps[j] = currentBlockGroup.getBlockList(j).getBlockGenStamp();
         } else {
           poolIDs[j] = currentBlockGroup.getBlockList(j).getBlockPath();
-          blockIDs[j] = -1; // hcpuyang temp
+          blockIDs[j] = -1;
           genStamps[j] = -1;
         }
 

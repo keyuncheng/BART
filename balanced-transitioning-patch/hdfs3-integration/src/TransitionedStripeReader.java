@@ -88,20 +88,16 @@ class TransitionedStripeReader extends StripeReader {
 
   @Override
   void readData() throws IOException {
-    // hcpuyang: read only the data blocks belonging to the current file
-
-    // DFSClient.LOG.info("[hcpuyang] successfully execute readData for TransitionedStripedReader, usefulDataBlkNum : "
     //  + usefulDataBlkNum);
     for (int i = 0; i < usefulDataBlkNum; i++) {
       if (alignedStripe.chunks[i] != null &&
           alignedStripe.chunks[i].state != StripingChunk.ALLZERO) {
         if (!readChunk(targetBlocks[i], i)) {
-          // DFSClient.LOG.info("[hcpuyang] read chunk failed for target " + i);
           alignedStripe.missingChunksNum++;
         }
       }
     }
-    // DFSClient.LOG.info("[hcpuyang] successfully finished readData for TransitionedStripedReader, usefulDataBlkNum : "
+    // DFSClient.LOG.info("Redundancy Transitioning successfully finished readData for TransitionedStripedReader, usefulDataBlkNum : "
     //     + usefulDataBlkNum);
   }
 

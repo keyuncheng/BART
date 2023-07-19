@@ -261,8 +261,6 @@ public class DFSStripedInputStream extends DFSInputStream {
 
     while (true) {
       try {
-        // the cached block location might have been re-fetched, so always
-        // get it from cache.
         targetBlocks[chunkIndex] = block;
 
         // internal block has one location, just rule out the deadNodes
@@ -457,7 +455,6 @@ public class DFSStripedInputStream extends DFSInputStream {
   private int copyToTargetBuf(ReaderStrategy strategy, int length) {
     final long offsetInBlk = getOffsetInBlockGroup();
     int bufOffset = getStripedBufOffset(offsetInBlk);
-    // DFSClient.LOG.info("[hcpuyang] copyToTargetBuf with bufOffset: " + bufOffset);
     curStripeBuf.position(bufOffset);
     return strategy.readFromBuffer(curStripeBuf,
         Math.min(length, curStripeBuf.remaining()));

@@ -389,13 +389,12 @@ public class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       lazyWriter = null;
     }
 
-    // registerMBean(datanode.getDatanodeUuid()); // hcpuyang TODO
+    // registerMBean(datanode.getDatanodeUuid());
 
     // Add a Metrics2 Source Interface. This is same
     // data as MXBean. We can remove the registerMbean call
     // in a release where we can break backward compatibility
     // Balanced Transitioning: Metric system resgitration
-    // hcpuyang TODO
     // MetricsSystem ms = DefaultMetricsSystem.instance();
     // ms.register("FSDatasetState", "FSDatasetState", this);
 

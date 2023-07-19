@@ -33,7 +33,6 @@ cp src/FsVolumeImpl.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/mai
 cp src/FsVolumeImplBuilder.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/datanode/fsdataset/impl/
 cp src/FSNamesystem.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/
 cp src/NameNodeRpcServer.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/server/namenode/
-cp src/DFSck.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/tools/
 cp src/ExternalDatasetImpl.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/extdataset/
 cp src/SimulatedFSDataset.java $HADOOP_SRC_DIR/hadoop-hdfs-project/hadoop-hdfs/src/test/java/org/apache/hadoop/hdfs/server/datanode/
 cp src/pom.xml $HADOOP_SRC_DIR/

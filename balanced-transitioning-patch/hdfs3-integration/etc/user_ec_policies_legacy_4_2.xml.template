@@ -32,7 +32,7 @@
 <layoutversion>1</layoutversion>
 <schemas>
   <!-- schema id is only used to reference internally in this document -->
-  <schema id="RS-LEGACY-8-2-1024k">
+  <schema id="RS-LEGACY-4-2-1024k">
     <codec>rs-legacy</codec>
     <k>4</k>
     <m>2</m>
@@ -41,7 +41,7 @@
 </schemas>
 <policies>
   <policy>
-    <schema>RS-LEGACY-8-2-1024k</schema>
+    <schema>RS-LEGACY-4-2-1024k</schema>
     <cellsize>1048576</cellsize>
   </policy>
 </policies>

@@ -282,7 +282,7 @@ public class BlockReaderRemote implements BlockReader {
     // to send more than this amount if the read starts/ends mid-chunk.
     this.bytesNeededToFinish = bytesToRead + (startOffset - firstChunkOffset);
     
-    // hcpuyang mark
+    // Redundancy Transitioning: disable checksum
     // bytesPerChecksum = this.checksum.getBytesPerChecksum();
     // checksumSize = this.checksum.getChecksumSize();
 

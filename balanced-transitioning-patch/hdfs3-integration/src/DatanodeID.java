@@ -54,7 +54,7 @@ public class DatanodeID implements Comparable<DatanodeID> {
   private int infoSecurePort; // info server port
   private int ipcPort;       // IPC server port
   private String xferAddr;
-  private boolean infoUseful = true; // datanode useful, added by hcpuyang
+  private boolean infoUseful = true; // datanode useful, added for BART
 
   /**
    * UUID identifying a given datanode. For upgraded Datanodes this is the

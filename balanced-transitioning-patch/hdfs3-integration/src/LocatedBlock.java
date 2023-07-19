@@ -181,11 +181,6 @@ public class LocatedBlock {
     if (null == infos) {
       return EMPTY_LOCS;
     }
-
-    // System.out.println("[hcpuyang] convert the datanodeinfowithStorage with pool and block ids");
-    // for (int i=0; i<infos.length; i++) {
-    //   System.out.println("[hcpuyang] datanodeinfowithStorage i " + infos[i].toString());
-    // }
     
     DatanodeInfoWithStorage[] ret = new DatanodeInfoWithStorage[infos.length];
     for (int i = 0; i < infos.length; i++) {

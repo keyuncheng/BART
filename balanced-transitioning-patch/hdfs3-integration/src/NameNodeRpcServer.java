@@ -284,8 +284,7 @@ public class NameNodeRpcServer implements NamenodeProtocols {
 
   private final String defaultECPolicyName;
 
-  // hcpuyang
-  private static int myswitch = 0;
+  // private static int myswitch = 0;
 
   public NameNodeRpcServer(Configuration conf, NameNode nn)
       throws IOException {
@@ -779,26 +778,28 @@ public class NameNodeRpcServer implements NamenodeProtocols {
     checkNNStartup();
     metrics.incrGetBlockLocations();
 
-    // hcpuyang TODO
-    if (myswitch%2 == 0) {
-      long startTime = System.currentTimeMillis();
+    // if (myswitch%2 == 0) {
+    //   long startTime = System.currentTimeMillis();
       
-      LocatedBlocks locatedBlocks = namesystem.getBlockLocations(getClientMachine(), src, offset, length);
-      LOG.info("[hcpuyang] original locatedBlocks is: " + locatedBlocks.toString());
-      long elapsedTime = (new Date()).getTime() - startTime;
-      LOG.info("[hcpuyang] elpasedTime is: " + elapsedTime);
-      myswitch += 1;
-      return locatedBlocks;
-    } else {
-      long startTime = System.currentTimeMillis();
+    //   LocatedBlocks locatedBlocks = namesystem.getBlockLocations(getClientMachine(), src, offset, length);
+    //   long elapsedTime = (new Date()).getTime() - startTime;
+    //   myswitch += 1;
+    //   return locatedBlocks;
+    // } else {
+    //   long startTime = System.currentTimeMillis();
 
-      LocatedBlocks locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
-      LOG.info("[hcpuyang] manual locatedBlocks is: " + locatedBlocks.toString());
-      long elapsedTime = (new Date()).getTime() - startTime;
-      LOG.info("[hcpuyang] elpasedTime is: " + elapsedTime);
-      myswitch += 1;
-      return locatedBlocks;
-    }    
+    //   LocatedBlocks locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
+    //   long elapsedTime = (new Date()).getTime() - startTime;
+    //   myswitch += 1;
+    //   return locatedBlocks;
+    // }
+  
+    long startTime = System.currentTimeMillis();
+    LocatedBlocks locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
+    LOG.info("NameNodeRpcServer get block locations result: " + locatedBlocks.toString());
+    long elapsedTime = (new Date()).getTime() - startTime;
+    LOG.info("NameNodeRpcServer get block locations elpasedTime is: " + elapsedTime);
+    return locatedBlocks;
   }
   
   @Override // ClientProtocol

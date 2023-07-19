@@ -87,7 +87,6 @@ public class FsVolumeImplBuilder {
       // set usage unless overridden by unit tests
       usage = new DF(sd.getCurrentDir().getParentFile(), conf);
       // usage = new DF(sd.getCurrentDir().getParentFile(), 60000);
-      // hcpuyang TODO
     }
     return new FsVolumeImpl(
         dataset, storageID, sd,

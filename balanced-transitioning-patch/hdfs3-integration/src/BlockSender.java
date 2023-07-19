@@ -61,10 +61,12 @@ import org.apache.hadoop.tracing.TraceScope;
 
 import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_DONTNEED;
 import static org.apache.hadoop.io.nativeio.NativeIO.POSIX.POSIX_FADV_SEQUENTIAL;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY;
 
 import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.thirdparty.com.google.common.base.Preconditions;
 import org.slf4j.Logger;
+
 
 /**
  * Reads a block from the disk and sends it to a recipient.
@@ -310,7 +312,7 @@ class BlockSender implements java.io.Closeable {
         if (block.getBlockId() == -1) {
           blockFile = new File(block.getBlockPoolId());
         } else {
-          blockFile = new File("/home/hcpuyang/hadoop-3.3.4/tmp/dfs/data/current/"
+          blockFile = new File(conf.get(DFS_DATANODE_DATA_DIR_KEY) + "/current/"
               + block.getBlockPoolId() + "/current/finalized/subdir" + d1 + "/subdir"
               + d2 + "/blk_" + block.getBlockId());
         }

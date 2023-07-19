@@ -583,8 +583,7 @@ class DataXceiver extends Receiver implements Runnable {
 
     // send the block
     BlockSender blockSender = null;
-    // Balanced Transitioning: read datanode from registration
-    // hcpuyang: TODO
+    // Balanced Transitioning: disabled getting datanode from registration
     // DatanodeRegistration dnR = 
     //   datanode.getDNRegistrationForBP(block.getBlockPoolId());
     final String clientTraceFmt =
