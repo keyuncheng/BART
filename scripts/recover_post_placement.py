@@ -66,8 +66,10 @@ def main():
     with open(os.path.join(sg_meta_filename), 'r') as sg_file:
         for line in sg_file:
             parts = line.split(" ")
-            stripe_list.append(int(parts[0])+1)
-            stripe_list.append(int(parts[1])+1)
+            for part_index in range(stripe_file_size):
+                stripe_list.append(int(parts[part_index])+1)
+
+    # print(len(stripe_list))
 
 
     # Open the input files
