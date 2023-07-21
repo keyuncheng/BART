@@ -1882,4 +1882,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   // Balanced Transitioning: external metadata path
   public static final String DFS_EXTERNAL_METADATA_PATH_DEFAULT = "/home/bart/jsonfiles";
   public static final String DFS_EXTERNAL_METADATA_PATH = "dfs.namenode.external.metadata.path";
+
+  // Balanced Transitioning: whether to use external metadata
+  public static final boolean DFS_EXTERNAL_METADATA_ENABLED_DEFAULT = true;
+  public static final String DFS_EXTERNAL_METADATA_ENABLED = "dfs.namenode.external.metadata.enabled";
 }

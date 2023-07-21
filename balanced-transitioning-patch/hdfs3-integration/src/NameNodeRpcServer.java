@@ -31,6 +31,8 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_STATE_CONTEXT_EN
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_STATE_CONTEXT_ENABLED_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_PATH_DEFAULT;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_ENABLED;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_EXTERNAL_METADATA_ENABLED_DEFAULT;
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.MAX_PATH_DEPTH;
 import static org.apache.hadoop.hdfs.server.common.HdfsServerConstants.MAX_PATH_LENGTH;
 import static org.apache.hadoop.util.Time.now;
@@ -283,8 +285,6 @@ public class NameNodeRpcServer implements NamenodeProtocols {
   private final String minimumDataNodeVersion;
 
   private final String defaultECPolicyName;
-
-  // private static int myswitch = 0;
 
   public NameNodeRpcServer(Configuration conf, NameNode nn)
       throws IOException {
@@ -778,24 +778,17 @@ public class NameNodeRpcServer implements NamenodeProtocols {
     checkNNStartup();
     metrics.incrGetBlockLocations();
 
-    // if (myswitch%2 == 0) {
-    //   long startTime = System.currentTimeMillis();
-      
-    //   LocatedBlocks locatedBlocks = namesystem.getBlockLocations(getClientMachine(), src, offset, length);
-    //   long elapsedTime = (new Date()).getTime() - startTime;
-    //   myswitch += 1;
-    //   return locatedBlocks;
-    // } else {
-    //   long startTime = System.currentTimeMillis();
 
-    //   LocatedBlocks locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
-    //   long elapsedTime = (new Date()).getTime() - startTime;
-    //   myswitch += 1;
-    //   return locatedBlocks;
-    // }
-  
     long startTime = System.currentTimeMillis();
-    LocatedBlocks locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
+    boolean exMetaEnabled = nn.getConf().getBoolean(
+      DFSConfigKeys.DFS_EXTERNAL_METADATA_ENABLED,
+      DFSConfigKeys.DFS_EXTERNAL_METADATA_ENABLED_DEFAULT);
+    LocatedBlocks locatedBlocks;
+    if (exMetaEnabled) {
+      locatedBlocks = getBlockLocationsFromJSON(getClientMachine(), src, offset, length);
+    } else {
+      locatedBlocks = namesystem.getBlockLocations(getClientMachine(), src, offset, length);
+    }
     LOG.info("NameNodeRpcServer get block locations result: " + locatedBlocks.toString());
     long elapsedTime = (new Date()).getTime() - startTime;
     LOG.info("NameNodeRpcServer get block locations elpasedTime is: " + elapsedTime);
