@@ -60,6 +60,7 @@ def main():
     hdfs_file_size = int(config["HDFS"]["hdfs_file_size"])
     block_id_start = int(config["HDFS"]["block_id_start"])
     block_group_id_start = int(config["HDFS"]["block_group_id_start"])
+    # hdfs_data_dir = Path(hadoop_home + "/post-transitioning/")
     hdfs_data_dir = Path(hadoop_home + "/tmp/dfs/data/current/BP-" + str(random.randint(100000000, 1000000000)) + "-" + hadoop_namenode_addr + "-" + str(int(time.time()*1000)) + "/current/finalized/")
 
     # Others
@@ -152,6 +153,7 @@ def main():
                         stripe_id = block_group_id_start
                         d0 = (block_id >> 16) & 0x1F
                         d1 = (block_id >> 8) & 0x1F
+                        # post_block_placement_path = hdfs_data_dir / "blk_{}_{}".format(block_id, stripe_id)
                         post_block_placement_path = hdfs_data_dir / "subdir{}".format(d0) / "subdir{}".format(d1) / "blk_{}_{}".format(block_id, stripe_id)
                         block_id_start += 1
                     else:
@@ -164,6 +166,7 @@ def main():
                     stripe_id = block_group_id_start
                     d0 = (block_id >> 16) & 0x1F
                     d1 = (block_id >> 8) & 0x1F
+                    # post_block_placement_path = hdfs_data_dir / "blk_{}_{}".format(block_id, stripe_id)
                     post_block_placement_path = hdfs_data_dir / "subdir{}".format(d0) / "subdir{}".format(d1) / "blk_{}_{}".format(block_id, stripe_id)
                     block_id_start += 1
                     # pass # TO IMPLEMENT
@@ -176,13 +179,16 @@ def main():
     # Write post-transition block mapping file
     print("generate post-transition block mapping file {}".format(str(post_block_mapping_path)))
 
-    with open("{}".format(str(post_block_mapping_path)), "w") as f:
-        for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
-            f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)[:-5]))
-    with open("{}".format(str(post_block_mapping_hdfs_path)), "w") as f:
-        for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
-            f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)))
-        
-
+    if enable_HDFS:
+        with open("{}".format(str(post_block_mapping_path)), "w") as f:
+            for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
+                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)[:-5]))
+        with open("{}".format(str(post_block_mapping_hdfs_path)), "w") as f:
+            for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
+                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)))
+    else:
+        with open("{}".format(str(post_block_mapping_path)), "w") as f:
+            for stripe_id, block_id, node_id, post_block_placement_path in post_block_mapping:
+                f.write("{} {} {} {}\n".format(stripe_id, block_id, node_id, str(post_block_placement_path)))
 if __name__ == '__main__':
     main()

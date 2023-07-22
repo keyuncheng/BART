@@ -67,9 +67,9 @@ def main():
         for line in sg_file:
             parts = line.split(" ")
             for part_index in range(stripe_file_size):
-                stripe_list.append(int(parts[part_index])+1)
+                stripe_list.append(int(parts[part_index]))
 
-    # print(len(stripe_list))
+    print(stripe_list)
 
 
     # Open the input files
