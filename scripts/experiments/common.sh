@@ -8,7 +8,7 @@ AGENTNODES=("agent00" "agent01" "agent02" "agent03" "agent04" "agent05" "agent06
 
 ## Middleware Configs
 MIDDILEWARE_CONTROLLER="controller"
-MIDDLEWARE_HOME_PATH="${HOME_DIR}/BalancedConversion/"
+MIDDLEWARE_HOME_PATH="${HOME_DIR}/BART/"
 
 ## Experiment Methods
 APPROACH_LIST=("BWPM" "BTPM" "RDPM")

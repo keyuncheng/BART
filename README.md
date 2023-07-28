@@ -8,7 +8,8 @@ BAlanced Redundancy Transitioning
 * [System Requirements](#system-requirements)
 * [Deployment](#deployment)
 * [Installation](#installation)
-* [Run](#run)
+* [Run Simulation](#run-simulation)
+* [Run Prototype](#run-prototype)
 
 ## Overview
 
@@ -297,7 +298,30 @@ We list the configuration parameters in `conf/config.ini` as below:
 | block_group_id_start | HDFS block metadata | `2000` (by default) |
 
 
-## Run
+## Run Simulation
+
+* Generate input stripe metadata (into `pre_placement`)
+
+```
+cd build
+./GenPrePlacement 6 3 18 3 30 1200 pre_placement
+```
+
+* Generate the transitioning solution (output stripe metadata into
+  `post_placement` and stripe group metadata `sg_meta`)
+
+```
+./BTSGenerator 6 3 18 3 30 1200 BTPM pre_placement post_placement sg_meta
+```
+
+We can find the load distribution, max load, transitioning bandwidth and other
+stats from the console output.
+
+```
+max_load: 61, bandwidth: 1577
+```
+
+## Run Prototype
 
 ### Generate Input Stripes
 
@@ -374,7 +398,8 @@ finishes after all Agents finish the execution. The transitioning time will be
 reported on each node.
 
 ```
-Agent::main finished transition, time: xxx ms
+Controller::main finished transitioning, time: xxx ms
+Agent::main finished transitioning, time: xxx ms
 ```
 
 ### Data Retrieval after transitioning

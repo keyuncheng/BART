@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(BalancedConversion)
+project(BART)
 
 add_subdirectory(util)
 add_subdirectory(model)
