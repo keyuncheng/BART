@@ -47,8 +47,7 @@ transitioning time through carefully scheduled parallelization.
           merging)
         * Stripe re-distribution (transfer data blocks or new parity blocks)
     * Distribute the transitioning commands to Agents
-    * Wait for all Agents to finish the transitioning
-        * Report transitioning time (implemented, verified)
+    * Wait for all Agents to finish the transitioning, and transitioning time
 
 * Agent (collocated with HDFS DataNode)
     * Handle the transitioning commands
@@ -81,9 +80,8 @@ transitioning time through carefully scheduled parallelization.
 * We assume the following default parameters:
     * Number of storage nodes = 30
     * Number of stripes (randomly distributed) = 1200
-    * Transitioning parameters: (k,m,λ) = (6,3,3)
-        * From (k,m) = (6,3) to (18,3)
-    * Block size: 64MiB (67108864 Byte)
+    * Transitioning parameters: (k,m,λ) = (6,3,3) (or (k,m) = (6,3) to (18,3))
+    * Block size: 64MiB
     * Network bandwidth: 1Gbps
     * Mode: HDFS3 integration mode
 
@@ -96,7 +94,7 @@ transitioning time through carefully scheduled parallelization.
         * Disk type: 100GiB ESSD with level PL1
     * Default username: `bart`
     * Configure mutual password-less ssh login for all machines: [link](https://www.ibm.com/support/pages/configuring-ssh-login-without-password)
-     * Configure network bandwidth: [link](#configure-network-bandwidth)
+    * Configure network bandwidth: [link](#configure-network-bandwidth)
         
 We provide the sample machine configs below:
     
@@ -119,7 +117,7 @@ sudo ./wondershaper -a eth0 -u 1048576 -d 1048576
 
 ## Installation
 
-Please install the middleware and HDFS (patched) for **ALL** machines.
+Please install HDFS (patched) and middleware for **ALL** machines.
 
 * [HDFS Installation](#hdfs-installation)
 * [Middleware Installation](#middleware-installation)
@@ -229,6 +227,8 @@ cp bart-hdfs3-integration/etc/user_ec_policies_rs_legacy_6_3.xml $HADOOP_HOME/et
 
 
 ### Middleware Installation
+
+Please install the below dependencies, and build the BART prototype.
 
 #### Sockpp
 
@@ -391,18 +391,18 @@ On each Agent node `<agent_id> (from 0 to 29)`, run the executable
 ./Agent <agent_id> ../conf/config.ini
 ```
 
-### Transitioning time
+### Transitioning Time
 
 The transitioning begins after we start the Controller and Agents, and
-finishes after all Agents finish the execution. The transitioning time will be
-reported on each node.
+finishes after the Controller and all Agents have finished the execution. The
+transitioning time will be reported on each node.
 
 ```
 Controller::main finished transitioning, time: xxx ms
 Agent::main finished transitioning, time: xxx ms
 ```
 
-### Data Retrieval after transitioning
+### Data Retrieval after Transitioning
 
 We can retrieve the data after transitioning (named `testfile1_out`), and
 compare with the original data `testfile1`
