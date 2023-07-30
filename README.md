@@ -26,14 +26,14 @@ transitioning time through carefully scheduled parallelization.
 
 ### Backend Storage
 
-* HDFS (HDFS3 integration mode)
+* HDFS (HDFS3 integration mode) (default)
 * Local FS (standalone mode)
 
 ### Middleware
 
 * BTSGenerator (collocated with HDFS NameNode)
     * Read input stripe metadata
-        * HDFS (default)
+        * HDFS
         * Local
     * Generate transitioning solution
         * output stripe metadata; stripe group metadata
@@ -158,6 +158,7 @@ Install ISA-L with the following instructions (you may also follow the default
 instructions on [Github repo](https://github.com/intel/isa-l)):
 
 ```
+git clone https://github.com/intel/isa-l.git
 ./autogen.sh
 ./configure
 make
@@ -201,22 +202,29 @@ cd bart-hdfs3-integration
 bash install.sh
 ```
 
+After the building, we can find the compiled Hadoop on
+`/home/bart/hadoop-3.3.4.tar.gz`. Extract to `hadoop-3.3.4`.
+
+Note: you can also refer to the official Hadoop document for building from the
+source code. [link](https://github.com/apache/hadoop/blob/trunk/BUILDING.txt)
 
 #### HDFS configurations
+
+Please copy the configuration files from `bart-hdfs3-integration/etc/hadoop`
+to `$HADOOP_HOME/etc/hadoop`.
+
+We highlight some configurations below:
 
 * Update `$HADOOP_HOME/etc/hadoop/hdfs-site.xml`
     * Update HDFS block size `dfs.blocksize` to 64MiB
     * Add `dfs.namenode.external.metadata.path` to hdfs-site.xml
+    * You can follow the configurations as below
 
-```
-<configuration>
-    <property><name>dfs.blocksize</name><value>67108864</value></property>
-    <property><name>dfs.namenode.external.metadata.path</name><value>/home/bart/jsonfile/</value></property>
-</configuration>
-```
+For the other configurations, you can check the Hadoop official document for
+details. [link](https://hadoop.apache.org/docs/r3.3.4/)
 
-* Copy the Vandermonde based RS(6,3) configuration file to
-   `$HADOOP_HOME/etc/hadoop/`
+* Copy the Vandermonde based RS(6,3) configuration file
+   `user_ec_policies_rs_legacy_6_3.xml` to `$HADOOP_HOME/etc/hadoop/`
     * Reference: RS-LEGACY in HDFS [link](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html)
 
 ```
@@ -225,6 +233,8 @@ cp bart-hdfs3-integration/etc/user_ec_policies_rs_legacy_6_3.xml $HADOOP_HOME/et
 
 * For the other unspecified parameters, we use the default settings.
 
+
+Note: please distribute `/home/bart/hadoop-3.3.4/` to ALL nodes.
 
 ### Middleware Installation
 
@@ -298,6 +308,8 @@ We list the configuration parameters in `conf/config.ini` as below:
 | block_group_id_start | HDFS block metadata | `2000` (by default) |
 
 
+Note: please distribute `/home/bart/BART/` to ALL nodes.
+
 ## Run Simulation
 
 * Generate input stripe metadata (into `pre_placement`)
@@ -325,6 +337,13 @@ max_load: 61, bandwidth: 1577
 
 ### Generate Input Stripes
 
+* Start HDFS
+
+```
+hdfs namenode -format
+start-dfs.sh
+```
+
 * We write 1200 input stripes to HDFS with RS(6,3)
 
 * Prepare the directory (`/ec_test`) for writing EC stripes
@@ -342,13 +361,13 @@ We can check whether the EC policy has been successfully applied to `/ec_test`:
 hdfs ec -getPolicy -path /ec_test
 ```
 
-* We write a single stripe as follows
+* For example, we write one single stripe (idx 0) as follows
     * Create random files of `hdfs_file_size` (k * block size = 6 * 64MiB = 402653184)
     * Write the file to HDFS (HDFS randomly distributes the blocks by default)
 
 ```
-dd if=/dev/urandom of=testfile1 bs=64MiB count=6
-hdfs dfs -put testfile1 /ec_test
+dd if=/dev/urandom of=testfile0 bs=64MiB count=6
+hdfs dfs -put testfile0 /ec_test
 ```
 
 
