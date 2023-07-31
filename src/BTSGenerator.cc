@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
     }
 
     // percent imbalance metric
-    double percent_imbalance = (max_load - mean_send_load) / mean_send_load * 100;
+    // double percent_imbalance = (max_load - mean_send_load) / mean_send_load * 100;
 
     printf("================ Approach : %s =========================\n", approach.c_str());
     printf("send load: ");
