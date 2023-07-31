@@ -47,7 +47,7 @@ transitioning time through carefully scheduled parallelization.
           merging)
         * Stripe re-distribution (transfer data blocks or new parity blocks)
     * Distribute the transitioning commands to Agents
-    * Wait for all Agents to finish the transitioning, and transitioning time
+    * Wait for all Agents to finish the transitioning
 
 * Agent (collocated with HDFS DataNode)
     * Handle the transitioning commands
@@ -203,7 +203,8 @@ bash install.sh
 ```
 
 After the building, we can find the compiled Hadoop on
-`/home/bart/hadoop-3.3.4.tar.gz`. Extract to `hadoop-3.3.4`.
+`/home/bart/hadoop-3.3.4.tar.gz`. Extract to `/home/bart/hadoop-3.3.4/`
+(the current `$HADOOP_HOME`).
 
 Note: you can also refer to the official Hadoop document for building from the
 source code. [link](https://github.com/apache/hadoop/blob/trunk/BUILDING.txt)
@@ -239,7 +240,8 @@ details. [link](https://hadoop.apache.org/docs/r3.3.4/)
 * For the other unspecified parameters, we use the default settings.
 
 
-Note: please distribute `/home/bart/hadoop-3.3.4/` to ALL nodes.
+Note: please distribute `$HADOOP_HOME/` together with all updated
+configuration files in `$HADOOP_HOME/etc/hadoop` to ALL nodes.
 
 ### Middleware Installation
 
