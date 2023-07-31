@@ -35,7 +35,7 @@ public:
     void genParityGenerationForPM(StripeBatch &stripe_batch);
 
     /**
-     * @brief initialize load table for parity generation
+     * @brief initialize load table for parity generation (data + parity version)
      *
      * @param stripe_batch
      * @param cur_lt
@@ -43,8 +43,16 @@ public:
     void initLTForParityGeneration(StripeBatch &stripe_batch, LoadTable &cur_lt);
 
     /**
+     * @brief initialize load table for parity generation (data version)
+     *
+     * @param stripe_batch
+     * @param cur_lt
+     */
+    void initLTForParityGenerationData(StripeBatch &stripe_batch, LoadTable &cur_lt);
+
+    /**
      * @brief initialize solution for parity generation (with parity
-     * merging only)
+     * merging only) (data + parity version)
      *
      * @param stripe_batch
      * @param is_perfect_pm identify whether each of the parity blocks can be
@@ -52,6 +60,17 @@ public:
      * @param cur_lt current load table
      */
     void initSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
+
+    /**
+     * @brief initialize solution for parity generation (with parity
+     * merging only) (data version)
+     *
+     * @param stripe_batch
+     * @param is_perfect_pm identify whether each of the parity blocks can be
+     * perfectly merged
+     * @param cur_lt current load table
+     */
+    void initSolOfParityGenerationForPMData(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
 
     /**
      * @brief optimize solution for parity generation (with parity
