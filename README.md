@@ -213,6 +213,14 @@ source code. [link](https://github.com/apache/hadoop/blob/trunk/BUILDING.txt)
 Please copy the configuration files from `bart-hdfs3-integration/etc/hadoop`
 to `$HADOOP_HOME/etc/hadoop`.
 
+For example, copy the Vandermonde-based RS(6,3) and RS(18,3) configuration
+   files `user_ec_policies_rs_legacy_6_3.xml` and
+   `user_ec_policies_rs_legacy_18_3.xml`
+```
+cp bart-hdfs3-integration/etc/hadoop/user_ec_policies_rs_legacy_6_3.xml $HADOOP_HOME/etc/hadoop
+cp bart-hdfs3-integration/etc/hadoop/user_ec_policies_rs_legacy_18_3.xml $HADOOP_HOME/etc/hadoop
+```
+
 We highlight some configurations below:
 
 * Update `$HADOOP_HOME/etc/hadoop/hdfs-site.xml`
@@ -223,13 +231,10 @@ We highlight some configurations below:
 For the other configurations, you can check the Hadoop official document for
 details. [link](https://hadoop.apache.org/docs/r3.3.4/)
 
-* Copy the Vandermonde based RS(6,3) configuration file
-   `user_ec_policies_rs_legacy_6_3.xml` to `$HADOOP_HOME/etc/hadoop/`
+* Vandermonde-based RS(6,3) configuration file
+   `user_ec_policies_rs_legacy_6_3.xml`
     * Reference: RS-LEGACY in HDFS [link](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html)
 
-```
-cp bart-hdfs3-integration/etc/user_ec_policies_rs_legacy_6_3.xml $HADOOP_HOME/etc/hadoop
-```
 
 * For the other unspecified parameters, we use the default settings.
 
@@ -346,11 +351,16 @@ start-dfs.sh
 
 * We write 1200 input stripes to HDFS with RS(6,3)
 
-* Prepare the directory (`/ec_test`) for writing EC stripes
+* Prepare the directory (`/ec_test`) for writing EC stripes.
+  * Add RS-LEGACY (6,3) and (18,3) to HDFS ec policies
+  * Set the coding scheme of input stripe as (6,3) 
 
 ```
 hdfs ec -addPolicies -policyFile ${HADOOP_HOME}/etc/hadoop/user_ec_policies_rs_legacy_6_3.xml
 hdfs ec -enablePolicy -policy RS-LEGACY-6-3-1024k
+hdfs ec -addPolicies -policyFile ${HADOOP_HOME}/etc/hadoop/user_ec_policies_rs_legacy_18_3.xml
+hdfs ec -enablePolicy -policy RS-LEGACY-18-3-1024k
+
 hadoop fs -mkdir /ec_test
 hdfs ec -setPolicy -path /ec_test -policy RS-LEGACY-6-3-1024k
 ```
@@ -361,13 +371,13 @@ We can check whether the EC policy has been successfully applied to `/ec_test`:
 hdfs ec -getPolicy -path /ec_test
 ```
 
-* For example, we write one single stripe (idx 0) as follows
+* For example, we write one single stripe (idx `<i>`, start from 0 to 1199) as follows
     * Create random files of `hdfs_file_size` (k * block size = 6 * 64MiB = 402653184)
     * Write the file to HDFS (HDFS randomly distributes the blocks by default)
 
 ```
-dd if=/dev/urandom of=testfile0 bs=64MiB count=6
-hdfs dfs -put testfile0 /ec_test
+dd if=/dev/urandom of=testfile<i> bs=64MiB count=6
+hdfs dfs -put testfile<i> /ec_test
 ```
 
 
@@ -388,9 +398,11 @@ python3 gen_post_stripes_meta.py -config_filename ../conf/config.ini
 ```
 
 * Parse output stripe metadata for HDFS to support data retrieval after
-  transitioning. The metadata is stored in `/home/bart/jsonfile/`
+  transitioning. The metadata is stored in `/home/bart/jsonfile/`. Please
+  create the directory `/home/bart/jsonfile/` first.
 
 ```
+mkdir /home/bart/jsonfile/
 python3 recover_post_placement.py -config_filename ../conf/config.ini
 ```
 
@@ -423,12 +435,12 @@ Agent::main finished transitioning, time: xxx ms
 
 ### Data Retrieval after Transitioning
 
-We can retrieve the data after transitioning (named `testfile1_out`), and
-compare with the original data `testfile1`
+We can retrieve the data after transitioning (named `testfile0_out`), and
+compare it with the original data `testfile0`
 
 ```
-hdfs dfs -get /ec_test/testfile1 testfile1_out
-diff testfile1 testfile1_out
+hdfs dfs -get /ec_test/testfile0
+diff testfile0 testfile0_out
 ```
 
 

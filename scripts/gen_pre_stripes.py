@@ -57,7 +57,7 @@ class Block:
         d1 = ((self.block_id >> 16) & 0x1F)
         d2 = ((self.block_id >> 8) & 0x1F)
         self.block_location = os.path.join(
-            "/home/bart/hadoop-3.3.4/tmp/dfs/data/current", hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
+            "{}/tmp/dfs/data/current".format(hadoop_home), hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
 
     def __str__(self):
         return json.dumps(self)
@@ -73,7 +73,7 @@ class BlockLoc:
         d1 = ((self.location_id >> 16) & 0x1F)
         d2 = ((self.location_id >> 8) & 0x1F)
         self.location_path = os.path.join(
-            "/home/bart/hadoop-3.3.4/tmp/dfs/data/current", hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
+            "{}/tmp/dfs/data/current".format(hadoop_home), hadoop_data_dir, "current/finalized", "subdir" + str(d1), "subdir" + str(d2))
 
 datanode_map = {}
 
