@@ -30,5 +30,5 @@ int main(int argc, char **argv)
     gettimeofday(&end_time, nullptr);
     finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
                   (end_time.tv_usec - start_time.tv_usec) / 1000;
-    printf("Agent::main finished transition, time: %f ms\n", finish_time);
+    printf("Agent::main finished transitioning, time: %f ms\n", finish_time);
 }

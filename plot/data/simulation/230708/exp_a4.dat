@@ -1,6 +1,0 @@
-code_param_id	code_param	method_id	method  num_stripes_id   num_stripes    max_time    step_1_time     step_2_time     step_3_time
-a   (6,3,3)     a   BTPM    999     a   1000      498.12        464.16      32.56       0.0
-a   (6,3,3)     a   BTPM    999     b   5000      11928.64      11713.72    210.4       3.76
-a   (6,3,3)     a   BTPM    999     c   10000     47438.96      47012.32    416.92      9.44
-a   (6,3,3)     a   BTPM    999     d   15000     106155.6      105513.88   625.68      15.64
-a   (6,3,3)     a   BTPM    999     e   20000     169814.0      167704.18   1551.56     20.10

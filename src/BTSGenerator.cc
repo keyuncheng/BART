@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 
     if (argc != 11)
     {
-        printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT] pre_placement_filename post_placement_filename sg_meta_filename");
+        printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT] pre_placement_filename post_placement_filename sg_meta_filename\n");
         return -1;
     }
 
@@ -168,7 +168,8 @@ int main(int argc, char *argv[])
 
     printf("recv load: min: %u, max: %u, mean: %f, stddev: %f, cv: %f\n", min_recv_load, max_recv_load, mean_recv_load, stddev_recv_load, cv_recv_load);
 
-    printf("max_load: %u, bandwidth: %lu, percent_imbalance: %f\n", max_load, total_bandwidth, percent_imbalance);
+    printf("max_load: %u, bandwidth: %lu\n", max_load, total_bandwidth);
+    // printf("max_load: %u, bandwidth: %lu, percent_imbalance: %f\n", max_load, total_bandwidth, percent_imbalance);
 
     return 0;
 }

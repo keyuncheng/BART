@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        printf("usage: ./Controller config_filename");
+        printf("usage: ./Controller config_filename\n");
         return -1;
     }
 
@@ -32,5 +32,5 @@ int main(int argc, char **argv)
     gettimeofday(&end_time, nullptr);
     finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
                   (end_time.tv_usec - start_time.tv_usec) / 1000;
-    printf("Controller::main finished transition, time: %f ms\n", finish_time);
+    printf("Controller::main finished transitioning, time: %f ms\n", finish_time);
 }

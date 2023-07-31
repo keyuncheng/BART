@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     if (argc != 8)
     {
-        printf("usage: ./GenPrePlacement k_i m_i k_f m_f num_nodes num_stripes pre_placement_filename");
+        printf("usage: ./GenPrePlacement k_i m_i k_f m_f num_nodes num_stripes pre_placement_filename\n");
         return -1;
     }
 

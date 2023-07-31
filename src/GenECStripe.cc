@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 7)
     {
-        printf("usage: ./GenECStripe k_i m_i k_f m_f block_size data_dir");
+        printf("usage: ./GenECStripe k_i m_i k_f m_f block_size data_dir\n");
         return -1;
     }
 
