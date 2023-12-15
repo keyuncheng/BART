@@ -90,8 +90,8 @@ def main():
 
     print("num_nodes: {}; bw_filename: {}".format(num_nodes, bw_filename))
 
-    root_dir = Path("..").absolute()
-    config_dir = root_dir / "config"
+    root_dir = Path("..").resolve()
+    config_dir = root_dir / "conf"
     bw_path = config_dir / Path(bw_filename).name
 
     # Read pre-transition placement
@@ -99,22 +99,18 @@ def main():
     bw_downloads = []
 
     # generate bandwidth distributions
-    bw_MBs_min = bw_MBs_max / 1000
+    bw_MBs_min = bw_MBs_max / 100
 
     # uniform distribution
     np.random.seed()
     bw_uploads = np.random.uniform(bw_MBs_min, bw_MBs_max, (1, num_nodes)).tolist()
     bw_downloads = np.random.uniform(bw_MBs_min, bw_MBs_max, (1, num_nodes)).tolist()
 
-    # normal distribution (TBD)
-    # np.random.seed()
-
-
     with open("{}".format(str(bw_path)), "w") as f:
-        for bw_upload in bw_uploads:
+        for bw_upload in bw_uploads[0]:
             f.write("{} ".format(bw_upload))
         f.write("\n")
-        for bw_download in bw_downloads:
+        for bw_download in bw_downloads[0]:
             f.write("{} ".format(bw_download))
         f.write("\n")
     

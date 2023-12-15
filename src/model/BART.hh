@@ -35,6 +35,14 @@ public:
     void genParityGenerationForPM(StripeBatch &stripe_batch);
 
     /**
+     * @brief generate weighted solution for parity block generation for the
+     * stripe batch (with parity merging only)
+     *
+     * @param stripe_batch
+     */
+    void genWeightedParityGenerationForPM(StripeBatch &stripe_batch);
+
+    /**
      * @brief initialize load table for parity generation (data + parity version)
      *
      * @param stripe_batch

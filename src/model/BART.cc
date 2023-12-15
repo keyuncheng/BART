@@ -19,7 +19,11 @@ void BART::genSolution(StripeBatch &stripe_batch, string approach)
     // Step 2: generate parity computation scheme (parity computation method and nodes)
     printf("Step 2: generate parity computation scheme\n");
     // genParityComputationHybrid(stripe_batch, approach);
-    genParityGenerationForPM(stripe_batch);
+    if (approach == "BTWeighted") {
+        // TODO
+    } else {
+        genParityGenerationForPM(stripe_batch);
+    }
 
     // Step 3: schedule (data and parity) block relocation
     printf("Step 3: schedule block relocation\n");
@@ -105,6 +109,87 @@ void BART::genParityGenerationForPM(StripeBatch &stripe_batch)
     printf("bandwidth: %u\n", cur_lt.bw);
     printf("number of re-encoding groups: (%u / %u), number of parity merging groups: (%u / %u)\n", num_re_groups, num_stripe_groups, (num_stripe_groups - num_re_groups), num_stripe_groups);
 }
+
+void BART::genWeightedParityGenerationForPM(StripeBatch &stripe_batch)
+{
+    double finish_time = 0.0;
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
+
+    ConvertibleCode &code = stripe_batch.code;
+    auto &stripe_groups = stripe_batch.selected_sgs;
+    uint32_t num_stripe_groups = stripe_groups.size();
+
+    // initialize the applied load tables for each stripe group
+    for (auto &item : stripe_groups)
+    {
+        StripeGroup &stripe_group = item.second;
+
+        stripe_group.applied_lt.approach = PARITY_MERGE;
+        stripe_group.applied_lt.enc_nodes.assign(code.m_f, INVALID_NODE_ID);
+    }
+
+    // maintain a load table for the traffic of all selected encoding nodes of
+    // all stripe groups
+    LoadTable cur_lt;
+
+    // initialize load table for parity block generation (with data relocation
+    // traffic)
+    initLTForParityGeneration(stripe_batch, cur_lt);
+
+    // We check each parity block and find whether the parity block can be
+    // perfectly merged. If yes, we fix the encoding node for the parity block
+    vector<vector<bool>> is_perfect_pm(num_stripe_groups, vector<bool>(code.m_f, false));
+    for (auto &item : stripe_groups)
+    {
+        uint32_t sg_id = item.first;
+        StripeGroup &stripe_group = item.second;
+
+        for (uint8_t parity_id = 0; parity_id < code.m_f; parity_id++)
+        {
+            if (stripe_group.isPerfectPM(parity_id) == true)
+            { // the parity block can be perfectly merged
+                is_perfect_pm[sg_id][parity_id] = true;
+                stripe_group.applied_lt.enc_nodes[parity_id] = stripe_group.genEncNodeForPerfectPM(parity_id);
+            }
+        }
+    }
+
+    // initialize solution of parity block generation
+    initSolOfParityGenerationForPM(stripe_batch, is_perfect_pm, cur_lt);
+
+    // optimize solution of parity block generation
+    optimizeSolOfParityGenerationForPM(stripe_batch, is_perfect_pm, cur_lt);
+
+    // update the metadata for stripe group
+    for (auto &item : stripe_groups)
+    {
+        StripeGroup &stripe_group = item.second;
+        stripe_group.parity_comp_method = stripe_group.applied_lt.approach;
+        stripe_group.parity_comp_nodes = stripe_group.applied_lt.enc_nodes;
+    }
+
+    // calculate the number of re-encoding groups
+    uint32_t num_re_groups = 0;
+    for (auto &item : stripe_groups)
+    {
+        num_re_groups += (item.second.parity_comp_method == EncodeMethod::RE_ENCODE ? 1 : 0);
+    }
+
+    gettimeofday(&end_time, nullptr);
+    finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                  (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished finding parity computation scheme for %u stripe groups, time: %f ms\n", num_stripe_groups, finish_time);
+
+    printf("final load table with data relocation (send load only), parity generation (both send and receive load) and parity relocation (send load only):\n");
+    printf("send load: ");
+    Utils::printVector(cur_lt.slt);
+    printf("recv load: ");
+    Utils::printVector(cur_lt.rlt);
+    printf("bandwidth: %u\n", cur_lt.bw);
+    printf("number of re-encoding groups: (%u / %u), number of parity merging groups: (%u / %u)\n", num_re_groups, num_stripe_groups, (num_stripe_groups - num_re_groups), num_stripe_groups);
+}
+
 
 void BART::initLTForParityGeneration(StripeBatch &stripe_batch, LoadTable &cur_lt)
 {

@@ -10,9 +10,9 @@
 int main(int argc, char *argv[])
 {
 
-    if (argc != 11)
+    if (argc != 11 || argc != 12)
     {
-        printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT] pre_placement_filename post_placement_filename sg_meta_filename\n");
+        printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT/BTWeighted] pre_placement_filename post_placement_filename sg_meta_filename [bw_filename]\n");
         return -1;
     }
 
@@ -26,6 +26,12 @@ int main(int argc, char *argv[])
     string pre_placement_filename = argv[8];
     string post_placement_filename = argv[9];
     string sg_meta_filename = argv[10];
+    string bw_filename;
+
+    // TODO
+    if (argc == 12) {
+        bw_filename = argv[11];
+    }
 
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
@@ -77,7 +83,7 @@ int main(int argc, char *argv[])
         BWOptSolution stripe_merge(random_generator);
         stripe_merge.genSolution(stripe_batch, approach);
     }
-    else if (approach == "BTRE" || approach == "BTPM" || approach == "BT")
+    else if (approach == "BTRE" || approach == "BTPM" || approach == "BT" || approach == "BTWeighted")
     {
         // BART solution
         BART bart(random_generator);
