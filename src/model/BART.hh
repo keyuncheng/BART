@@ -70,6 +70,17 @@ public:
     void initSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
 
     /**
+     * @brief initialize weighted solution for parity generation (with parity
+     * merging only) (data + parity version)
+     *
+     * @param stripe_batch
+     * @param is_perfect_pm identify whether each of the parity blocks can be
+     * perfectly merged
+     * @param cur_lt current load table
+     */
+    void initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
+
+    /**
      * @brief initialize solution for parity generation (with parity
      * merging only) (data version)
      *
@@ -90,6 +101,17 @@ public:
      * @param cur_lt current load table
      */
     void optimizeSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
+
+    /**
+     * @brief optimize weighted solution for parity generation (with parity
+     * merging only)
+     *
+     * @param stripe_batch
+     * @param is_perfect_pm identify whether each of the parity blocks can be
+     * perfectly merged
+     * @param cur_lt current load table
+     */
+    void optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt);
 
     /**
      * @brief generate solution for parity block generation for the stripe

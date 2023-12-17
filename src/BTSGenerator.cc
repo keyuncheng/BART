@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
 
-    if (argc != 11 || argc != 12)
+    if (argc != 11 && argc != 12)
     {
         printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT/BTWeighted] pre_placement_filename post_placement_filename sg_meta_filename [bw_filename]\n");
         return -1;
@@ -28,9 +28,12 @@ int main(int argc, char *argv[])
     string sg_meta_filename = argv[10];
     string bw_filename;
 
-    // TODO
-    if (argc == 12) {
+    // hetergeneous network settings
+    bool is_heterogeneous = false;
+    if (argc == 12)
+    {
         bw_filename = argv[11];
+        is_heterogeneous = true;
     }
 
     // random generator
@@ -39,6 +42,13 @@ int main(int argc, char *argv[])
     // initialize code
     ConvertibleCode code(k_i, m_i, k_f, m_f);
     ClusterSettings settings(num_nodes, num_stripes);
+
+    // load bandwidth profile
+    if (is_heterogeneous == true)
+    {
+        settings.loadBWProfile(bw_filename);
+    }
+
     code.print();
     settings.print();
 
