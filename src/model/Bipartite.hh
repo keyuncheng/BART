@@ -42,7 +42,23 @@ public:
     uint64_t addVertex(VertexType type); // 0: left_vertex; 1: right vertex; return:  new vertex id
     uint64_t addEdge(uint64_t lvtx_id, uint64_t rvtx_id);
 
-    vector<uint64_t> findOptSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map); // find optimal semi-matching with stripe group information
+    /**
+     * @brief find (optimal) semi-matching based on the load distribution
+     *
+     * @param lvtx2sg_map left vertex to stripe group construction mapping
+     * @param sg2lvtx_map stripe group to left vertex mapping
+     * @return vector<uint64_t>
+     */
+    vector<uint64_t> findOptSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map);
+
+    /**
+     * @brief find (optimal) weighted semi-matching based on the weighted load distribution
+     *
+     * @param lvtx2sg_map left vertex to stripe group construction mapping
+     * @param sg2lvtx_map stripe group to left vertex mapping
+     * @return vector<uint64_t>
+     */
+    vector<uint64_t> findOptWeightedSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map);
 
     void clear();
     void print();

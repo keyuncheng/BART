@@ -27,7 +27,6 @@ bool ClusterSettings::loadBWProfile(string bw_filename)
     bool is_upload = true;
     while (getline(ifs, line))
     {
-        // TODO
         istringstream iss(line);
         for (uint8_t node_id = 0; node_id < num_nodes; node_id++)
         {

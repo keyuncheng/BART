@@ -128,6 +128,13 @@ public:
      * @param stripe_batch
      */
     void genStripeRedistribution(StripeBatch &stripe_batch);
+
+    /**
+     * @brief generate weighted solution for stripe re-distribution for the stripe batch
+     *
+     * @param stripe_batch
+     */
+    void genWeightedStripeRedistribution(StripeBatch &stripe_batch);
 };
 
 #endif // __BART_HH__
