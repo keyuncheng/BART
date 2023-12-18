@@ -67,7 +67,7 @@ uint8_t StripeGroup::getTransBW(string approach, u16string &enc_nodes)
     { // parity-merging only
         parity_update_bw = getPMBW(enc_nodes);
     }
-    else if (approach == "BT")
+    else if (approach == "BT" || approach == "BTWeighted")
     { // mixed with re-encoding and parity merging
         // NOTE: here we assume that bandwidth(pm) <= bandwidth(re), thus we calculate pm bandwidth only
         parity_update_bw = getPMBW(enc_nodes);

@@ -64,7 +64,9 @@ void ClusterSettings::print()
     if (is_heterogeneous == true)
     {
         printf("bw_profile:\n");
+        printf("Upload: ");
         Utils::printVector(bw_profile.upload);
+        printf("Download: ");
         Utils::printVector(bw_profile.download);
     }
 }

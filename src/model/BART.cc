@@ -11,13 +11,13 @@ BART::~BART()
 void BART::genSolution(StripeBatch &stripe_batch, string approach)
 {
     // Step 1: construct stripe groups
-    printf("Step 1: construct stripe groups\n");
+    printf("Step 1: stripe group construction\n");
     // stripe_batch.constructSGByBWBF(approach);
     stripe_batch.constructSGByBWPartial(approach);
     // stripe_batch.print();
 
     // Step 2: generate parity computation scheme (parity computation method and nodes)
-    printf("Step 2: generate parity computation scheme\n");
+    printf("Step 2: parity block generation\n");
     // genParityComputationHybrid(stripe_batch, approach);
     if (approach == "BTWeighted")
     {
@@ -29,7 +29,7 @@ void BART::genSolution(StripeBatch &stripe_batch, string approach)
     }
 
     // Step 3: schedule (data and parity) block relocation
-    printf("Step 3: schedule block relocation\n");
+    printf("Step 3: stripe redistribution\n");
     genStripeRedistribution(stripe_batch);
 }
 
@@ -465,11 +465,11 @@ void BART::initSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vect
 
 void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vector<bool>> &is_perfect_pm, LoadTable &cur_lt)
 {
-    // based on the send load from data relocation, for each parity block,
-    // we identify the most load balanced encoding node for parity block
-    // generation
+    // based on the send load from data relocation and parity merging, for
+    // each parity block, we identify the most load balanced encoding node for
+    // parity block generation
 
-    // weighted version: weight = (# of blocks transferred / bw)
+    // weighted version: weight_val = (# of blocks transferred / bw_upload or bw_download)
 
     // metric for choosing load tables: (1) minimized max load; if (1)
     // finds multiple encoding nodes, randomly choose a node with minimum
@@ -508,6 +508,7 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
                 continue;
             }
 
+            // min max weighted load
             double min_max_weighted_load_pm = DBL_MAX;
             uint8_t min_bw_pm = UINT8_MAX;
             vector<pair<uint16_t, LoadTable>> best_pm_nodes;
@@ -544,31 +545,14 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
                 cur_lt_after_pm.rlt[cand_pm_node] += (code.lambda_i - num_parities_stored_pm_node);
 
                 // compute maximum weighted load
-                double max_weighted_load_pm = -1;
-
+                double max_weighted_load_pm = 0;
                 for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                 {
                     // weighted_load = load / bw
                     double send_weighted_load = cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
                     double recv_weighted_load = cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
-
-                    // max weighted load
-                    if (send_weighted_load > max_weighted_load_pm)
-                    {
-                        max_weighted_load_pm = send_weighted_load;
-                    }
-                    if (recv_weighted_load > max_weighted_load_pm)
-                    {
-                        max_weighted_load_pm = recv_weighted_load;
-                    }
+                    max_weighted_load_pm = max({max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                 }
-
-                // // maximum load for the current solution
-                // uint32_t max_send_load_pm = *max_element(cur_lt_after_pm.slt.begin(), cur_lt_after_pm.slt.end());
-                // uint32_t max_recv_load_pm = *max_element(cur_lt_after_pm.rlt.begin(), cur_lt_after_pm.rlt.end());
-
-                // // maximum load and bandwidth
-                // uint32_t max_load_pm = max(max_send_load_pm, max_recv_load_pm);
 
                 // check if the results are preserved
                 bool is_preserved = (max_weighted_load_pm < min_max_weighted_load_pm || (max_weighted_load_pm == min_max_weighted_load_pm && bw_pm <= min_bw_pm));
@@ -617,31 +601,26 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
         stripe_group.applied_lt = stripe_group.genPartialLTForParityCompute(EncodeMethod::PARITY_MERGE, selected_pm_nodes);
     }
 
-    printf("find initial solution, cur_lt:\n");
-    printf("send load: ");
-    Utils::printVector(cur_lt.slt);
-    printf("recv load: ");
-    Utils::printVector(cur_lt.rlt);
+    // printf("find initial solution, cur_lt:\n");
+    // printf("send load: ");
+    // Utils::printVector(cur_lt.slt);
+    // printf("recv load: ");
+    // Utils::printVector(cur_lt.rlt);
 
-    // TODO
-    printf("weighted lt:\n");
-
-    // temp weighted load table
-    LoadTable tmp_weighted_lt;
-    tmp_weighted_lt.slt.resize(settings.num_nodes);
-    tmp_weighted_lt.rlt.resize(settings.num_nodes);
-
+    // weighted load table
+    vector<double> weighted_slt(settings.num_nodes);
+    vector<double> weighted_rlt(settings.num_nodes);
     for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
         // weighted_load = load / bw
-        tmp_weighted_lt.slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-        tmp_weighted_lt.rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+        weighted_slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+        weighted_rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
     }
-
-    printf("send weighted load: ");
-    Utils::printVector(tmp_weighted_lt.slt);
-    printf("recv weighted load: ");
-    Utils::printVector(tmp_weighted_lt.rlt);
+    printf("find initial solution, weighted_lt:\n");
+    printf("send load: ");
+    Utils::printVector(weighted_slt);
+    printf("recv load: ");
+    Utils::printVector(weighted_rlt);
 
     printf("bandwidth: %u\n", cur_lt.bw);
 }
@@ -1020,7 +999,7 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
     // based on the previous solution, we adjust the encoding nodes to see
     // whether we can optimize the solution
 
-    // weighted version: weight = (# of blocks transferred / bw)
+    // weighted version: weight_val = (# of blocks transferred / bw)
 
     // metric for choosing load tables: (1) minimized max load; if (1)
     // finds multiple encoding nodes, randomly choose a node with minimum
@@ -1036,34 +1015,20 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
     // cannot further improve load balance and then bandwidth)
 
     // compute maximum weighted load
-    double max_weighted_load_iter = -1;
-
+    double max_weighted_load_iter = 0;
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
         // weighted_load = load / bw
         double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
         double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
-
-        // max weighted load
-        if (send_weighted_load > max_weighted_load_iter)
-        {
-            max_weighted_load_iter = send_weighted_load;
-        }
-        if (recv_weighted_load > max_weighted_load_iter)
-        {
-            max_weighted_load_iter = recv_weighted_load;
-        }
+        max_weighted_load_iter = max({max_weighted_load_iter, send_weighted_load, recv_weighted_load});
     }
-
-    // uint32_t max_send_load_iter = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
-    // uint32_t max_recv_load_iter = *max_element(cur_lt.rlt.begin(), cur_lt.rlt.end());
-    // uint32_t max_load_iter = max(max_send_load_iter, max_recv_load_iter);
 
     uint32_t bw_iter = cur_lt.bw;
     uint64_t iter = 0;
     while (true)
     {
-        printf("start iteration %ld, cur_lt: (max_weighted_load: %f, bw: %u)\n", iter, max_weighted_load_iter, bw_iter);
+        printf("start iteration %ld, cur_lt: (max_weighted_load: %.3f, bw: %u)\n", iter, max_weighted_load_iter, bw_iter);
         // printf("start iteration %ld, cur_lt: (max_load: %u, bw: %u)\n", iter, max_load_iter, bw_iter);
         for (auto &item : stripe_batch.selected_sgs)
         {
@@ -1097,29 +1062,14 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
                 uint8_t num_parities_stored_cur_pm_node = stripe_group.parity_dists[parity_id][cur_pm_node];
 
                 // compute original max weighted load and bandwidth for the current solution
-                double cur_max_weighted_load_pm = -1;
-
+                double cur_max_weighted_load_pm = 0;
                 for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                 {
                     // weighted_load = load / bw
                     double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
                     double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
-
-                    // max weighted load
-                    if (send_weighted_load > cur_max_weighted_load_pm)
-                    {
-                        cur_max_weighted_load_pm = send_weighted_load;
-                    }
-                    if (recv_weighted_load > cur_max_weighted_load_pm)
-                    {
-                        cur_max_weighted_load_pm = recv_weighted_load;
-                    }
+                    cur_max_weighted_load_pm = max({cur_max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                 }
-
-                // // original max load and bandwidth for the current solution
-                // uint32_t cur_max_send_load_pm = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
-                // uint32_t cur_max_recv_load_pm = *max_element(cur_lt.rlt.begin(), cur_lt.rlt.end());
-                // uint32_t cur_max_load_pm = max(cur_max_send_load_pm, cur_max_recv_load_pm);
 
                 uint8_t cur_bw_pm = code.lambda_i - num_parities_stored_cur_pm_node;
 
@@ -1148,10 +1098,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
                 // subtract the parity blocks received
                 cur_lt_rm.rlt[cur_pm_node] -= (code.lambda_i - num_parities_stored_cur_pm_node);
 
-                // set min_max_load and bw as of before optimization
+                // set min_max_weighted_load and bw as of before optimization
                 double min_max_weighted_load_pm = cur_max_weighted_load_pm;
-                // uint32_t min_max_load_pm = cur_max_load_pm;
-
                 uint8_t min_bw_pm = cur_bw_pm;
 
                 // double min_stddev_pm = UINT_MAX;
@@ -1190,32 +1138,14 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
                     cur_lt_after_pm.rlt[cand_pm_node] += (code.lambda_i - num_parities_stored_pm_node);
 
                     // compute maximum weighted load for the current solution
-                    double max_weighted_load_pm = -1;
-
+                    double max_weighted_load_pm = 0;
                     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                     {
                         // weighted_load = load / bw
                         double send_weighted_load = cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
                         double recv_weighted_load = cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
-
-                        // max weighted load
-                        if (send_weighted_load > max_weighted_load_pm)
-                        {
-                            max_weighted_load_pm = send_weighted_load;
-                        }
-                        if (recv_weighted_load > max_weighted_load_pm)
-                        {
-                            max_weighted_load_pm = recv_weighted_load;
-                        }
+                        max_weighted_load_pm = max({max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                     }
-
-                    // // maximum load for the current solution
-                    // uint32_t max_send_load_pm = *max_element(cur_lt_after_pm.slt.begin(), cur_lt_after_pm.slt.end());
-                    // uint32_t max_recv_load_pm = *max_element(cur_lt_after_pm.rlt.begin(), cur_lt_after_pm.rlt.end());
-
-                    // // maximum load and bandwidth
-                    // uint32_t max_load_pm = max(max_send_load_pm,
-                    // max_recv_load_pm);
 
                     //*****************consider stddev**********************//
                     // // mean, stddev, cv (send)
