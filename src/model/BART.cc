@@ -1232,57 +1232,36 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
         }
 
         // summarize the max weighted load and bw after the current iteration
-        double max_weighted_load_after_opt = -1;
-
+        double max_weighted_load_after_opt = 0;
         for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
         {
             // weighted_load = load / bw
             double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
             double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
-
-            // max weighted load
-            if (send_weighted_load > max_weighted_load_after_opt)
-            {
-                max_weighted_load_after_opt = send_weighted_load;
-            }
-            if (recv_weighted_load > max_weighted_load_after_opt)
-            {
-                max_weighted_load_after_opt = recv_weighted_load;
-            }
+            max_weighted_load_after_opt = max({max_weighted_load_after_opt, send_weighted_load, recv_weighted_load});
         }
-
-        // summarize the max load and bw after the current iteration
-        // uint32_t max_send_load_after_opt = *max_element(cur_lt.slt.begin(), cur_lt.slt.end());
-        // uint32_t max_recv_load_after_opt = *max_element(cur_lt.rlt.begin(), cur_lt.rlt.end());
-        // uint32_t max_load_after_opt = max(max_send_load_after_opt, max_recv_load_after_opt);
 
         uint32_t bw_after_opt = cur_lt.bw;
 
         bool improved = max_weighted_load_after_opt < max_weighted_load_iter || (max_weighted_load_after_opt == max_weighted_load_iter && bw_after_opt < bw_iter);
 
-        printf("end iteration: %ld, cur_lt: (max_weighted_load: %f, bw: %u), improved: %u\n", iter, max_weighted_load_after_opt, bw_after_opt, improved);
+        printf("end iteration: %ld, cur_lt: (max_weighted_load: %.3f, bw: %u), improved: %u\n", iter, max_weighted_load_after_opt, bw_after_opt, improved);
 
-        // temp weighted load table
-        LoadTable tmp_weighted_lt;
-        tmp_weighted_lt.slt.resize(settings.num_nodes);
-        tmp_weighted_lt.rlt.resize(settings.num_nodes);
-
+        // weighted load table
+        vector<double> weighted_slt(settings.num_nodes);
+        vector<double> weighted_rlt(settings.num_nodes);
         for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
         {
             // weighted_load = load / bw
-            tmp_weighted_lt.slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-            tmp_weighted_lt.rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+            weighted_slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+            weighted_rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
         }
 
-        printf("send weighted load: ");
-        Utils::printVector(tmp_weighted_lt.slt);
-        printf("recv weighted load: ");
-        Utils::printVector(tmp_weighted_lt.rlt);
-
-        // printf("send load: ");
-        // Utils::printVector(cur_lt.slt);
-        // printf("recv load: ");
-        // Utils::printVector(cur_lt.rlt);
+        printf("optimized weighted_lt:\n");
+        printf("send load: ");
+        Utils::printVector(weighted_slt);
+        printf("recv load: ");
+        Utils::printVector(weighted_rlt);
 
         printf("bandwidth: %u\n", cur_lt.bw);
 
