@@ -10,7 +10,6 @@
 
 int main(int argc, char *argv[])
 {
-
     if (argc != 11 && argc != 12)
     {
         printf("usage: ./BTSGenerator k_i m_i k_f m_f num_nodes num_stripes approach[RDRE/RDPM/BWRE/BWPM/BTRE/BTPM/BT/BTWeighted] pre_placement_filename post_placement_filename sg_meta_filename [bw_filename]\n");
@@ -27,6 +26,15 @@ int main(int argc, char *argv[])
     string pre_placement_filename = argv[8];
     string post_placement_filename = argv[9];
     string sg_meta_filename = argv[10];
+    string bw_filename;
+
+    // heterogeneous network
+    bool is_heterogeneous = false;
+    if (argc == 12)
+    {
+        bw_filename = argv[11];
+        is_heterogeneous = true;
+    }
 
     // random generator
     mt19937 random_generator = Utils::createRandomGenerator();
@@ -35,24 +43,11 @@ int main(int argc, char *argv[])
     ConvertibleCode code(k_i, m_i, k_f, m_f);
     ClusterSettings settings(num_nodes, num_stripes);
 
-    // heterogeneous network
-    bool is_heterogeneous = false;
-    if (argc == 12)
+    // load heterogeneous network settings
+    if (is_heterogeneous == true)
     {
-        string bw_filename = argv[11];
         if (settings.loadBWProfile(bw_filename) == false)
         {
-            return -1;
-        }
-        is_heterogeneous = true;
-    }
-
-    // load bandwidth profile for heterogeneous network settings
-    if (approach == "BTWeighted")
-    {
-        if (argc != 12)
-        {
-            printf("For heterogeneous network settings, please specify the bandwidth profile <bw_filename>\n");
             return -1;
         }
     }
@@ -65,6 +60,15 @@ int main(int argc, char *argv[])
     {
         printf("invalid parameters\n");
         return -1;
+    }
+
+    if (approach == "BTWeighted")
+    {
+        if (argc != 12)
+        {
+            printf("For BTWeighted, please explicitly specify the network settings <bw_filename>\n");
+            return -1;
+        }
     }
 
     // Stripe batch
