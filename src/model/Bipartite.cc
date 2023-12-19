@@ -232,7 +232,7 @@ vector<uint64_t> Bipartite::findOptSemiMatching(unordered_map<uint64_t, pair<uin
     return sol_edges;
 }
 
-vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map)
+vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map, unordered_map<uint64_t, double> &rvtx2weight_map)
 {
     vector<uint64_t> sol_edges;
 
@@ -264,9 +264,6 @@ vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, 
     //     printf("\n");
     // }
     // printf("\n");
-
-    // TODO: modify it to weighted version
-    printf("I'm here\n\n\n");
 
     // loop each left vertex (as root)
     for (uint64_t idx = 0; idx < num_lvtxes; idx++)
@@ -341,10 +338,22 @@ vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, 
                     }
                 }
 
-                // if currently least_load_rvtx is not selected, or current rvtx has lower load than least_load_rvtx, set current rvtx as the least load rvtx
-                if (least_load_rvtx == NULL || vtx.in_degree < least_load_rvtx->in_degree)
+                // if currently least_load_rvtx is not selected, or current
+                // rvtx has lower weighted load than least_load_rvtx, set
+                // current rvtx as the least load rvtx
+                double vtx_weight = 1.0 * vtx.in_degree / rvtx2weight_map[vtx.id];
+                if (least_load_rvtx == NULL)
                 {
                     least_load_rvtx = &vtx;
+                }
+                else
+                {
+                    double least_load_rvtx_weight = 1.0 * least_load_rvtx->in_degree / rvtx2weight_map[least_load_rvtx->id];
+
+                    if (vtx_weight < least_load_rvtx_weight)
+                    {
+                        least_load_rvtx = &vtx;
+                    }
                 }
             }
 

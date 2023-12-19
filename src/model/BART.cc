@@ -201,8 +201,8 @@ void BART::genWeightedParityGenerationForPM(StripeBatch &stripe_batch)
     for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
         // weighted_load = load / bw
-        weighted_slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-        weighted_rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+        weighted_slt[node_id] = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+        weighted_rlt[node_id] = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
     }
     printf("final weighted load table:\n");
     printf("send load: ");
@@ -547,8 +547,8 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
                 for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                 {
                     // weighted_load = load / bw
-                    double send_weighted_load = cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
-                    double recv_weighted_load = cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
+                    double send_weighted_load = 1.0 * cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
+                    double recv_weighted_load = 1.0 * cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
                     max_weighted_load_pm = max({max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                 }
 
@@ -611,8 +611,8 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
     for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
     {
         // weighted_load = load / bw
-        weighted_slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-        weighted_rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+        weighted_slt[node_id] = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+        weighted_rlt[node_id] = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
     }
     printf("find initial solution, weighted_lt:\n");
     printf("send load: ");
@@ -1017,8 +1017,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
     {
         // weighted_load = load / bw
-        double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-        double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+        double send_weighted_load = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+        double recv_weighted_load = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
         max_weighted_load_iter = max({max_weighted_load_iter, send_weighted_load, recv_weighted_load});
     }
 
@@ -1064,8 +1064,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
                 for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                 {
                     // weighted_load = load / bw
-                    double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-                    double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+                    double send_weighted_load = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+                    double recv_weighted_load = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
                     cur_max_weighted_load_pm = max({cur_max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                 }
 
@@ -1140,8 +1140,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
                     for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
                     {
                         // weighted_load = load / bw
-                        double send_weighted_load = cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
-                        double recv_weighted_load = cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
+                        double send_weighted_load = 1.0 * cur_lt_after_pm.slt[node_id] / settings.bw_profile.upload[node_id];
+                        double recv_weighted_load = 1.0 * cur_lt_after_pm.rlt[node_id] / settings.bw_profile.download[node_id];
                         max_weighted_load_pm = max({max_weighted_load_pm, send_weighted_load, recv_weighted_load});
                     }
 
@@ -1234,8 +1234,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
         for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
         {
             // weighted_load = load / bw
-            double send_weighted_load = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-            double recv_weighted_load = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+            double send_weighted_load = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+            double recv_weighted_load = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
             max_weighted_load_after_opt = max({max_weighted_load_after_opt, send_weighted_load, recv_weighted_load});
         }
 
@@ -1251,8 +1251,8 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
         for (uint16_t node_id = 0; node_id < settings.num_nodes; node_id++)
         {
             // weighted_load = load / bw
-            weighted_slt[node_id] = cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
-            weighted_rlt[node_id] = cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
+            weighted_slt[node_id] = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
+            weighted_rlt[node_id] = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
         }
 
         printf("optimized weighted_lt:\n");
@@ -1951,8 +1951,19 @@ void BART::genWeightedStripeRedistribution(StripeBatch &stripe_batch)
     printf("bipartite.left_vertices (size: %ld):\n", bipartite.left_vertices_map.size());
     printf("bipartite.right_vertices (size: %ld):\n", bipartite.right_vertices_map.size());
 
+    // create rvtx to weight map
+    // weight equals the download bandwidth of the node
+    unordered_map<uint64_t, double> rvtx2weight_map;
+    for (uint16_t node_id = 0; node_id < num_nodes; node_id++)
+    {
+        // for each node, create a right vertex
+        uint64_t rvtx_id = node2rvtx_map[node_id];
+        rvtx2weight_map[rvtx_id] = stripe_batch.settings.bw_profile.download[node_id];
+    }
+
     // step 3: find optimal semi-matching (based on the initial receive load)
-    vector<uint64_t> sm_edges = bipartite.findOptWeightedSemiMatching(lvtx2sg_map, sg2lvtx_map);
+    vector<uint64_t>
+        sm_edges = bipartite.findOptWeightedSemiMatching(lvtx2sg_map, sg2lvtx_map, rvtx2weight_map);
 
     printf("finished finding semi-matching solutions\n");
 

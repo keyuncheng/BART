@@ -56,9 +56,10 @@ public:
      *
      * @param lvtx2sg_map left vertex to stripe group construction mapping
      * @param sg2lvtx_map stripe group to left vertex mapping
+     * @param rvtx2weight_map right vertex to weight (node download bandwidth) mapping
      * @return vector<uint64_t>
      */
-    vector<uint64_t> findOptWeightedSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map);
+    vector<uint64_t> findOptWeightedSemiMatching(unordered_map<uint64_t, pair<uint32_t, uint8_t>> &lvtx2sg_map, unordered_map<uint32_t, vector<uint64_t>> &sg2lvtx_map, unordered_map<uint64_t, double> &rvtx2weight_map);
 
     void clear();
     void print();
