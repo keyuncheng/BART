@@ -275,7 +275,7 @@ vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, 
         bfs_queue.push(&root_lvtx);                   // enqueue root lvtx
         vector<bool> lvtx_visited(num_lvtxes, false); // record whether the lvtx is visited
         vector<bool> rvtx_visited(num_rvtxes, false);
-        Vertex *least_load_rvtx = NULL;                    // least load rvtx
+        Vertex *least_load_rvtx = NULL;                    // least (weightd) load rvtx
         unordered_map<uint64_t, uint64_t> lvtx_parent_map; // trace the alternating path
         unordered_map<uint64_t, uint64_t> rvtx_parent_map; // trace the alternating path
 
@@ -341,16 +341,18 @@ vector<uint64_t> Bipartite::findOptWeightedSemiMatching(unordered_map<uint64_t, 
                 // if currently least_load_rvtx is not selected, or current
                 // rvtx has lower weighted load than least_load_rvtx, set
                 // current rvtx as the least load rvtx
-                double vtx_weight = 1.0 * vtx.in_degree / rvtx2weight_map[vtx.id];
+
+                // weight_val = in_degree / bw_download
+                double vtx_weighted_val = 1.0 * vtx.in_degree / rvtx2weight_map[vtx.id];
                 if (least_load_rvtx == NULL)
                 {
                     least_load_rvtx = &vtx;
                 }
                 else
                 {
-                    double least_load_rvtx_weight = 1.0 * least_load_rvtx->in_degree / rvtx2weight_map[least_load_rvtx->id];
+                    double least_load_rvtx_weighted_val = 1.0 * least_load_rvtx->in_degree / rvtx2weight_map[least_load_rvtx->id];
 
-                    if (vtx_weight < least_load_rvtx_weight)
+                    if (vtx_weighted_val < least_load_rvtx_weighted_val)
                     {
                         least_load_rvtx = &vtx;
                     }

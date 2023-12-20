@@ -10,9 +10,9 @@ aux_source_directory(. DIR_SRCS)
 
 add_executable(GenPrePlacement GenPrePlacement.cc)
 add_executable(BTSGenerator BTSGenerator.cc)
+# add_executable(GenECStripe GenECStripe.cc)
 # add_executable(Controller Controller.cc)
 # add_executable(Agent Agent.cc)
-# add_executable(GenECStripe GenECStripe.cc)
 
 target_link_libraries(GenPrePlacement util model)
 target_link_libraries(BTSGenerator util model)

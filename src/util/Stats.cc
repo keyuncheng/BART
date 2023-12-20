@@ -73,41 +73,41 @@ void Stats::printWeightedLoadStats(vector<u32string> &transfer_load_dist, Cluste
     u32string &recv_load_dist = transfer_load_dist[1];
 
     // weighted load table
-    vector<double> weighted_upload_dist(send_load_dist.size(), 0);
-    vector<double> weighted_download_dist(recv_load_dist.size(), 0);
+    vector<double> weighted_send_load_dist(send_load_dist.size(), 0);
+    vector<double> weighted_recv_load_dist(recv_load_dist.size(), 0);
 
     for (uint16_t i = 0; i < num_nodes; i++)
     {
-        weighted_upload_dist[i] = 1.0 * send_load_dist[i] / settings.bw_profile.upload[i];
-        weighted_download_dist[i] = 1.0 * recv_load_dist[i] / settings.bw_profile.download[i];
+        weighted_send_load_dist[i] = 1.0 * send_load_dist[i] / settings.bw_profile.upload[i];
+        weighted_recv_load_dist[i] = 1.0 * recv_load_dist[i] / settings.bw_profile.download[i];
     }
 
     // weighted send load
     // min, max
-    double min_weighted_send_load = *min_element(weighted_upload_dist.begin(), weighted_upload_dist.end());
-    double max_weighted_send_load = *max_element(weighted_upload_dist.begin(), weighted_upload_dist.end());
+    double min_weighted_send_load = *min_element(weighted_send_load_dist.begin(), weighted_send_load_dist.end());
+    double max_weighted_send_load = *max_element(weighted_send_load_dist.begin(), weighted_send_load_dist.end());
     // mean, stddev, cv
-    double mean_send_load = 1.0 * std::accumulate(weighted_upload_dist.begin(), weighted_upload_dist.end(), 0) / weighted_upload_dist.size();
+    double mean_send_load = 1.0 * std::accumulate(weighted_send_load_dist.begin(), weighted_send_load_dist.end(), 0) / weighted_send_load_dist.size();
     double sqr_send_load = 0;
-    for (auto &item : weighted_upload_dist)
+    for (auto &item : weighted_send_load_dist)
     {
         sqr_send_load += pow((double)item - mean_send_load, 2);
     }
-    double stddev_send_load = std::sqrt(sqr_send_load / weighted_upload_dist.size());
+    double stddev_send_load = std::sqrt(sqr_send_load / weighted_send_load_dist.size());
     double cv_send_load = stddev_send_load / mean_send_load;
 
     // weighted recv load
     // min max
-    double min_weighted_recv_load = *min_element(weighted_download_dist.begin(), weighted_download_dist.end());
-    double max_weighted_recv_load = *max_element(weighted_download_dist.begin(), weighted_download_dist.end());
+    double min_weighted_recv_load = *min_element(weighted_recv_load_dist.begin(), weighted_recv_load_dist.end());
+    double max_weighted_recv_load = *max_element(weighted_recv_load_dist.begin(), weighted_recv_load_dist.end());
     // mean, stddev, cv
-    double mean_recv_load = 1.0 * std::accumulate(weighted_download_dist.begin(), weighted_download_dist.end(), 0) / weighted_download_dist.size();
+    double mean_recv_load = 1.0 * std::accumulate(weighted_recv_load_dist.begin(), weighted_recv_load_dist.end(), 0) / weighted_recv_load_dist.size();
     double sqr_recv_load = 0;
-    for (auto &item : weighted_download_dist)
+    for (auto &item : weighted_recv_load_dist)
     {
         sqr_recv_load += pow((double)item - mean_recv_load, 2);
     }
-    double stddev_recv_load = std::sqrt(sqr_recv_load / weighted_download_dist.size());
+    double stddev_recv_load = std::sqrt(sqr_recv_load / weighted_recv_load_dist.size());
     double cv_recv_load = stddev_recv_load / mean_recv_load;
 
     // max weighted load
@@ -123,14 +123,14 @@ void Stats::printWeightedLoadStats(vector<u32string> &transfer_load_dist, Cluste
     // percent imbalance metric
     // double percent_imbalance = (max_load - mean_send_load) / mean_send_load * 100;
     printf("send load: ");
-    Utils::printVector(weighted_upload_dist);
+    Utils::printVector(weighted_send_load_dist);
     printf("recv load: ");
-    Utils::printVector(weighted_download_dist);
+    Utils::printVector(weighted_recv_load_dist);
 
-    printf("send load: min: %.3f, max: %.3f, mean: %f, stddev: %f, cv: %f\n", min_weighted_send_load, max_weighted_send_load, mean_send_load, stddev_send_load, cv_send_load);
+    printf("send load: min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", min_weighted_send_load, max_weighted_send_load, mean_send_load, stddev_send_load, cv_send_load);
 
-    printf("recv load: min: %.3f, max: %.3f, mean: %f, stddev: %f, cv: %f\n", min_weighted_recv_load, max_weighted_recv_load, mean_recv_load, stddev_recv_load, cv_recv_load);
+    printf("recv load: min: %f, max: %f, mean: %f, stddev: %f, cv: %f\n", min_weighted_recv_load, max_weighted_recv_load, mean_recv_load, stddev_recv_load, cv_recv_load);
 
-    printf("max_weighted_load: %.3f, bandwidth: %lu\n", max_weighted_load, total_bandwidth);
+    printf("max_weighted_load: %f, bandwidth: %lu\n", max_weighted_load, total_bandwidth);
     // printf("max_load: %u, bandwidth: %lu, percent_imbalance: %f\n", max_load, total_bandwidth, percent_imbalance);
 }
