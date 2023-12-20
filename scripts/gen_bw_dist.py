@@ -11,7 +11,8 @@ from pathlib import Path
 def parse_args(cmd_args):
     arg_parser = argparse.ArgumentParser(description="generate bandwidth distribution")
     arg_parser.add_argument("-config_filename", type=str, required=True, help="configuration file name")
-    arg_parser.add_argument("-bw_MBs_max", type=int, required=True, help="configuration file name")
+    arg_parser.add_argument("-bw_min", type=int, required=True, help="bandwidth min value (MB/s)")
+    arg_parser.add_argument("-bw_max", type=int, required=True, help="bandwidth max value (MB/s)")    
     
 
     args = arg_parser.parse_args(cmd_args)
@@ -32,7 +33,8 @@ def main():
         exit()
 
     # read bandwidth
-    bw_MBs_max = args.bw_MBs_max
+    bw_min = args.bw_min
+    bw_max = args.bw_max
 
     # read config
     config_filename = args.config_filename
@@ -55,13 +57,10 @@ def main():
     bw_uploads = []
     bw_downloads = []
 
-    # generate bandwidth distributions
-    bw_MBs_min = bw_MBs_max / 100
-
     # uniform distribution
     np.random.seed()
-    bw_uploads = np.random.uniform(bw_MBs_min, bw_MBs_max, (1, num_nodes)).tolist()
-    bw_downloads = np.random.uniform(bw_MBs_min, bw_MBs_max, (1, num_nodes)).tolist()
+    bw_uploads = np.random.uniform(bw_max, bw_min, (1, num_nodes)).tolist()
+    bw_downloads = np.random.uniform(bw_max, bw_min, (1, num_nodes)).tolist()
 
     with open("{}".format(str(bw_path)), "w") as f:
         for bw_upload in bw_uploads[0]:

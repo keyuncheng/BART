@@ -2,6 +2,7 @@
 */*.log
 */*.txt
 /data/
+/conf/bw_profile
 /metadata/
 /scripts/placements/
 /scripts/pastplacements/
