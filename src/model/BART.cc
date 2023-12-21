@@ -1020,7 +1020,7 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
     uint64_t iter = 0;
     while (true)
     {
-        printf("start iteration %ld, cur_lt: (max_weighted_load: %f, bw: %u)\n", iter, max_weighted_load_iter, bw_iter);
+        printf("start iteration %ld, cur_lt: (max_load: %f, bw: %u)\n", iter, max_weighted_load_iter, bw_iter);
         // printf("start iteration %ld, cur_lt: (max_load: %u, bw: %u)\n", iter, max_load_iter, bw_iter);
         for (auto &item : stripe_batch.selected_sgs)
         {
@@ -1237,7 +1237,7 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
 
         bool improved = max_weighted_load_after_opt < max_weighted_load_iter || (max_weighted_load_after_opt == max_weighted_load_iter && bw_after_opt < bw_iter);
 
-        printf("end iteration: %ld, cur_lt: (max_weighted_load: %f, bw: %u), improved: %u\n", iter, max_weighted_load_after_opt, bw_after_opt, improved);
+        printf("end iteration: %ld, cur_lt: (max_load: %f, bw: %u), improved: %u\n", iter, max_weighted_load_after_opt, bw_after_opt, improved);
 
         // weighted load table
         vector<double> weighted_slt(settings.num_nodes);
