@@ -4,15 +4,15 @@ import subprocess
 import argparse
 import time
 import random
-import configparser
 import numpy as np
 from pathlib import Path
 
 def parse_args(cmd_args):
     arg_parser = argparse.ArgumentParser(description="generate bandwidth distribution")
-    arg_parser.add_argument("-config_filename", type=str, required=True, help="configuration file name")
+    arg_parser.add_argument("-num_nodes", type=int, required=True, help="number of storage nodes")
     arg_parser.add_argument("-bw_min", type=int, required=True, help="bandwidth min value (MB/s)")
     arg_parser.add_argument("-bw_max", type=int, required=True, help="bandwidth max value (MB/s)")    
+    arg_parser.add_argument("-bw_filename", type=str, required=True, help="bandwidth profile filename")    
     
 
     args = arg_parser.parse_args(cmd_args)
@@ -33,25 +33,15 @@ def main():
         exit()
 
     # read bandwidth
+    num_nodes = args.num_nodes
     bw_min = args.bw_min
     bw_max = args.bw_max
-
-    # read config
-    config_filename = args.config_filename
-    config = configparser.ConfigParser()
-    config.read(config_filename)
-
-    # Common
-    num_nodes = int(config["Common"]["num_nodes"])
-
-    # Controller
-    bw_filename = config["Controller"]["bw_filename"]
+    bw_filename = args.bw_filename 
 
     print("num_nodes: {}; bw_filename: {}".format(num_nodes, bw_filename))
 
     root_dir = Path("..").resolve()
-    config_dir = root_dir / "conf"
-    bw_path = config_dir / Path(bw_filename).name
+    bw_path = Path(bw_filename).resolve()
 
     # Read pre-transition placement
     bw_uploads = []
