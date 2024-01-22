@@ -335,6 +335,9 @@ void BART::initSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vect
     ConvertibleCode &code = stripe_batch.code;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
 
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
+
     for (auto &item : stripe_batch.selected_sgs)
     {
         uint32_t sg_id = item.first;
@@ -453,6 +456,11 @@ void BART::initSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<vect
         stripe_group.applied_lt = stripe_group.genPartialLTForParityCompute(EncodeMethod::PARITY_MERGE, selected_pm_nodes);
     }
 
+    gettimeofday(&end_time, nullptr);
+    double finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                         (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished initialization for %lu stripe groups, time: %f ms\n", stripe_batch.selected_sgs.size(), finish_time);
+
     printf("find initial solution, cur_lt:\n");
     printf("send load: ");
     Utils::printVector(cur_lt.slt);
@@ -476,6 +484,9 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
     ConvertibleCode &code = stripe_batch.code;
     ClusterSettings &settings = stripe_batch.settings;
     uint16_t num_nodes = stripe_batch.settings.num_nodes;
+
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, nullptr);
 
     for (auto &item : stripe_batch.selected_sgs)
     {
@@ -608,6 +619,12 @@ void BART::initWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch, vec
         weighted_slt[node_id] = 1.0 * cur_lt.slt[node_id] / settings.bw_profile.upload[node_id];
         weighted_rlt[node_id] = 1.0 * cur_lt.rlt[node_id] / settings.bw_profile.download[node_id];
     }
+
+    gettimeofday(&end_time, nullptr);
+    double finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                         (end_time.tv_usec - start_time.tv_usec) / 1000;
+    printf("finished initialization for %lu stripe groups, time: %f ms\n", stripe_batch.selected_sgs.size(), finish_time);
+
     printf("find initial solution, weighted_lt:\n");
     printf("send load: ");
     Utils::printVector(weighted_slt);
@@ -762,6 +779,9 @@ void BART::optimizeSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<
     uint64_t iter = 0;
     while (true)
     {
+        struct timeval start_time, end_time;
+        gettimeofday(&start_time, nullptr);
+
         printf("start iteration %ld, cur_lt: (max_load: %u, bw: %u)\n", iter, max_load_iter, bw_iter);
         for (auto &item : stripe_batch.selected_sgs)
         {
@@ -969,6 +989,11 @@ void BART::optimizeSolOfParityGenerationForPM(StripeBatch &stripe_batch, vector<
         Utils::printVector(cur_lt.rlt);
         printf("bandwidth: %u\n", cur_lt.bw);
 
+        gettimeofday(&end_time, nullptr);
+        double finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                             (end_time.tv_usec - start_time.tv_usec) / 1000;
+        printf("finished running the iteration %lu for %lu stripe groups, time: %f ms\n", iter, stripe_batch.selected_sgs.size(), finish_time);
+
         if (improved == true)
         {
             // update the max load and bw
@@ -1020,6 +1045,9 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
     uint64_t iter = 0;
     while (true)
     {
+        struct timeval start_time, end_time;
+        gettimeofday(&start_time, nullptr);
+
         printf("start iteration %ld, cur_lt: (max_load: %f, bw: %u)\n", iter, max_weighted_load_iter, bw_iter);
         // printf("start iteration %ld, cur_lt: (max_load: %u, bw: %u)\n", iter, max_load_iter, bw_iter);
         for (auto &item : stripe_batch.selected_sgs)
@@ -1256,6 +1284,11 @@ void BART::optimizeWeightedSolOfParityGenerationForPM(StripeBatch &stripe_batch,
         Utils::printVector(weighted_rlt);
 
         printf("bandwidth: %u\n", cur_lt.bw);
+
+        gettimeofday(&end_time, nullptr);
+        double finish_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                             (end_time.tv_usec - start_time.tv_usec) / 1000;
+        printf("finished running the iteration %lu for %lu stripe groups, time: %f ms\n", iter, stripe_batch.selected_sgs.size(), finish_time);
 
         if (improved == true)
         {
