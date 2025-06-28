@@ -22,6 +22,12 @@ transitioning time through carefully scheduled parallelization.
 * BART performs the actual transitioning operations to change the redundancy
   (i.e., coding parameters) of existing data
 
+## Publications
+
+Keyun Cheng, Huancheng Puyang, Xiaolu Li, Patrick P. C. Lee, Yuchong Hu, Jie
+Li, and Ting-Yi Wu. "Toward Load-Balanced Redundancy Transitioning for
+Erasure-Coded Storage." IEEE TPDS 2025.
+
 ## System Architecture
 
 ### Backend Storage
